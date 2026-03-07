@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0a0f1a"/>
-<title>Vector 3D</title>
+<title>SuperCalc</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -39,17 +39,18 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 /* ── HEADER ── */
 header{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;background:var(--surface);
-  border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;
+  padding:10px 14px;background:#0d1220;
+  border-bottom:1px solid #1e2d45;flex-shrink:0;gap:8px;
 }
-.logo{display:flex;align-items:center;gap:8px}.logo-inner{display:flex;flex-direction:column;gap:1px}
-.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;
-  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.logo-text{font-size:16px;font-weight:700;color:var(--text);letter-spacing:.02em}
-.logo-text span{color:var(--accent)}
-.header-controls{display:flex;gap:8px;align-items:center}
 
-/* Toggle pill */
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#7c6af7,#a594ff);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;
+  box-shadow:0 0 12px rgba(124,106,247,.3)}
+.logo-inner{display:flex;flex-direction:column;gap:1px}
+.logo-text{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;color:#e8f0fc;letter-spacing:-.01em}
+.logo-text span{color:#7c6af7}
+
 .pill{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .pill button{padding:6px 14px;font-size:11px;font-family:'Space Mono',monospace;font-weight:700;
   border:none;background:none;color:var(--text3);cursor:pointer;transition:all .2s;letter-spacing:.04em}
@@ -85,7 +86,7 @@ canvas:active{cursor:grabbing}
 #btn-reset:hover{border-color:var(--accent);color:var(--accent)}
 
 /* ── BOTTOM PANEL ── */
-#bottom{background:var(--surface);border-top:2px solid var(--border);flex-shrink:0;transition:all .25s}
+#bottom{background:#0d1220;border-top:1px solid #1e2d45;flex-shrink:0;transition:all .25s}
 #bottom.collapsed{display:none}
 #panel-tog-wrap{display:flex;justify-content:flex-end;align-items:center;
   padding:5px 12px;background:var(--surface);border-top:1px solid var(--border)}
@@ -99,48 +100,167 @@ canvas:active{cursor:grabbing}
 #panel-tog-btn.on .tog-lbl{color:var(--accent)}
 #panel-tog-btn.on .sw-track{background:var(--accent)}
 #panel-tog-btn.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
-.tabs{display:flex;background:var(--surface2);border-bottom:1px solid var(--border)}
-.tab{flex:1;padding:10px 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-align:center;
-  color:var(--text3);background:none;border:none;font-family:'Space Mono',monospace;cursor:pointer;
-  border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase}
-.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
-.panel{display:none;padding:12px 14px 16px;overflow-y:auto;max-height:260px}
+.tabs{display:flex;background:#0a0f1a;border-bottom:1px solid #1a2840;overflow-x:auto}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;padding:10px 6px;font-size:9px;font-weight:700;letter-spacing:.06em;text-align:center;white-space:nowrap;
+  background:none;border:none;font-family:'Space Mono',monospace;cursor:pointer;
+  color:#5a7a9a;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase}
+.tab.on{color:#7c6af7;background:#0d1220;border-bottom-color:#7c6af7}
+
+.panel{display:none;padding:12px 14px 16px;overflow-y:auto;max-height:340px}
 .panel.on{display:block}
 
-/* ── VECTOR CARDS ── */
-.vec-card{margin-bottom:10px;border:1px solid var(--border);border-radius:var(--r);
-  overflow:hidden;background:var(--surface2);border-left:3px solid transparent}
-.vec-card-header{display:flex;align-items:center;gap:8px;padding:9px 12px;
-  background:var(--surface3)}
-.vec-color-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.vec-name-input{background:none;border:none;border-bottom:2px solid rgba(255,255,255,.1);
-  font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
-  width:52px;text-align:center;outline:none;padding:1px 2px;transition:border-color .2s}
-.vec-name-input:focus{border-bottom-color:var(--accent)}
+/* ── VECTOR CARDS (redesigned) ── */
+.vec-card{
+  margin-bottom:8px;border:1px solid #1e2d45;border-radius:12px;
+  overflow:hidden;background:#0d1220;border-left:3px solid transparent;
+  transition:border-color .2s;
+}
+.vec-card-header{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:#111827;
+}
+.vec-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.vec-name-input{
+  background:transparent;border:none;outline:none;
+  font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;
+  letter-spacing:.01em;width:44px;padding:0;
+}
+.vec-inputs{display:flex;gap:6px;padding:8px 12px 10px;background:#0d1220}
+.inp-group{display:flex;flex-direction:column;gap:4px;flex:1}
+.inp-group label{font-size:9px;font-weight:700;letter-spacing:.08em;text-align:center;font-family:'Space Mono',monospace}
+.inp-group input{
+  background:#111827;border:1px solid #1e2d45;border-radius:7px;
+  color:#e8f0fc;font-family:'Space Mono',monospace;font-size:13px;
+  padding:7px 6px;width:100%;box-sizing:border-box;text-align:center;
+  transition:border-color .15s;
+}
+.inp-group input:focus{outline:none;border-color:#7c6af7}
+.add-vec-btn{
+  display:block;width:100%;padding:11px;
+  background:rgba(124,106,247,.06);border:1px dashed rgba(124,106,247,.25);
+  border-radius:10px;color:#7c6af7;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:12px;letter-spacing:.04em;
+  cursor:pointer;transition:all .2s;margin-top:4px;
+}
+.add-vec-btn:hover{background:rgba(124,106,247,.14);border-style:solid}
+
+.badge{font-size:9px;font-family:'Space Mono',monospace;font-weight:700;
+  padding:3px 8px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap}
+.badge-on{background:rgba(45,212,160,.12);color:#2dd4a0;border-color:rgba(45,212,160,.3)}
+.badge-off{background:rgba(255,85,114,.08);color:#ff5572;border-color:rgba(255,85,114,.2)}
+.badge-del{background:rgba(255,85,114,.08);color:#ff5572;border-color:rgba(255,85,114,.2);margin-left:auto}
+.badge-del:hover{background:rgba(255,85,114,.2)}
+
+.icon-tog{display:flex;align-items:center;gap:6px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;transition:all .2s}
+.icon-tog:hover{border-color:var(--border2)}
+.icon-tog.on{border-color:var(--accent);background:rgba(240,192,64,.08)}
+.icon-tog .tog-lbl{font-size:10px;font-family:'Space Mono',monospace;font-weight:700;
+  color:var(--text3);letter-spacing:.06em;transition:color .2s}
+.icon-tog.on .tog-lbl{color:var(--accent)}
+.sw{width:32px;height:18px;position:relative;flex-shrink:0}
+.sw-track{position:absolute;inset:0;background:var(--border);border-radius:9px;transition:.25s}
+.sw-knob{position:absolute;width:12px;height:12px;top:3px;left:3px;background:var(--text3);border-radius:50%;transition:.25s}
+.icon-tog.on .sw-track{background:var(--accent)}
+.icon-tog.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
+
+/* ── CANVAS ── */
+#cw{flex:1;position:relative;overflow:hidden;touch-action:none;min-height:0}
+canvas{display:block;width:100%;height:100%;cursor:grab}
+canvas:active{cursor:grabbing}
+#legend{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:52vw}
+.leg-item{display:flex;align-items:center;gap:6px;
+  background:rgba(10,15,26,.82);padding:3px 9px;border-radius:6px;border-left:3px solid transparent}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.leg-text{font-size:10px;font-family:'Space Mono',monospace;color:var(--text);white-space:nowrap}
+#btn-reset{position:absolute;top:10px;right:10px;background:rgba(10,15,26,.85);
+  border:1px solid var(--border);border-radius:8px;color:var(--text2);
+  font-size:11px;font-family:'Space Mono',monospace;font-weight:700;
+  padding:6px 12px;cursor:pointer;letter-spacing:.04em;transition:all .2s}
+#btn-reset:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── BOTTOM PANEL ── */
+#bottom{background:#0d1220;border-top:1px solid #1e2d45;flex-shrink:0;transition:all .25s}
+#bottom.collapsed{display:none}
+#panel-tog-wrap{display:flex;justify-content:flex-end;align-items:center;
+  padding:5px 12px;background:var(--surface);border-top:1px solid var(--border)}
+#panel-tog-btn{display:flex;align-items:center;gap:6px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;
+  transition:all .2s;user-select:none}
+#panel-tog-btn:hover{border-color:var(--border2)}
+#panel-tog-btn.on{border-color:var(--accent);background:rgba(240,192,64,.08)}
+#panel-tog-btn .tog-lbl{font-size:10px;font-family:'Space Mono',monospace;font-weight:700;
+  color:var(--text3);letter-spacing:.06em;transition:color .2s}
+#panel-tog-btn.on .tog-lbl{color:var(--accent)}
+#panel-tog-btn.on .sw-track{background:var(--accent)}
+#panel-tog-btn.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
+.tabs{display:flex;background:#0a0f1a;border-bottom:1px solid #1a2840;overflow-x:auto}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;padding:10px 6px;font-size:9px;font-weight:700;letter-spacing:.06em;text-align:center;white-space:nowrap;
+  background:none;border:none;font-family:'Space Mono',monospace;cursor:pointer;
+  color:#5a7a9a;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase}
+.tab.on{color:#7c6af7;background:#0d1220;border-bottom-color:#7c6af7}
+
+.panel{display:none;padding:12px 14px 16px;overflow-y:auto;max-height:340px}
+.panel.on{display:block}
+
+/* ── VECTOR CARDS (redesigned) ── */
+.vec-card{
+  margin-bottom:8px;border:1px solid #1e2d45;border-radius:12px;
+  overflow:hidden;background:#0d1220;border-left:3px solid transparent;
+  transition:border-color .2s;
+}
+.vec-card-header{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:#111827;
+}
+.vec-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.vec-name-input{
+  background:transparent;border:none;outline:none;
+  font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;
+  letter-spacing:.01em;width:44px;padding:0;
+}
+.vec-inputs{display:flex;gap:6px;padding:8px 12px 10px;background:#0d1220}
+.inp-group{display:flex;flex-direction:column;gap:4px;flex:1}
+.inp-group label{font-size:9px;font-weight:700;letter-spacing:.08em;text-align:center;font-family:'Space Mono',monospace}
+.inp-group input{
+  background:#111827;border:1px solid #1e2d45;border-radius:7px;
+  color:#e8f0fc;font-family:'Space Mono',monospace;font-size:13px;
+  padding:7px 6px;width:100%;box-sizing:border-box;text-align:center;
+  transition:border-color .15s;
+}
+.inp-group input:focus{outline:none;border-color:#7c6af7}
+.add-vec-btn{
+  display:block;width:100%;padding:11px;
+  background:rgba(124,106,247,.06);border:1px dashed rgba(124,106,247,.25);
+  border-radius:10px;color:#7c6af7;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:12px;letter-spacing:.04em;
+  cursor:pointer;transition:all .2s;margin-top:4px;
+}
+.add-vec-btn:hover{background:rgba(124,106,247,.14);border-style:solid}
+
 .badge{font-size:9px;font-family:'Space Mono',monospace;font-weight:700;
   padding:2px 7px;border-radius:4px;border:1px solid;cursor:pointer;transition:all .15s;letter-spacing:.04em}
-.badge-on{color:var(--green);border-color:var(--green);background:rgba(45,212,160,.08)}
-.badge-off{color:var(--text3);border-color:var(--border2)}
+.badge-on{background:rgba(124,106,247,.15);color:#a594ff;border:1px solid rgba(124,106,247,.35)}
+.badge-off{background:rgba(30,45,69,.5);color:#3a5a7a;border:1px solid #1e2d45}
 .badge-del{color:var(--red);border-color:rgba(255,85,114,.3);background:rgba(255,85,114,.06)}
-.vec-inputs{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap}
-.inp-group{flex:1;min-width:50px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.vec-inputs{display:flex;gap:6px;padding:8px 12px 10px;background:#080e1c}
+.inp-group{display:flex;flex-direction:column;gap:3px;flex:1}
 .inp-group label{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--text3);text-transform:uppercase}
 .inp-group input{width:100%;padding:7px 4px;background:var(--surface);border:1px solid var(--border);
   border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:14px;
   text-align:center;outline:none;-webkit-appearance:none;transition:all .2s}
 .inp-group input:focus{border-color:var(--accent);background:rgba(240,192,64,.04)}
-.add-vec-btn{width:100%;padding:10px;background:none;border:1px dashed var(--border2);border-radius:var(--r);
-  color:var(--text3);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
-  letter-spacing:.08em;cursor:pointer;transition:all .2s;text-transform:uppercase;margin-top:2px}
+.add-vec-btn{display:block;width:100%;padding:10px;background:rgba(124,106,247,.08);border:1px dashed rgba(124,106,247,.3);border-radius:10px;color:#7c6af7;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;letter-spacing:.04em}
 .add-vec-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 /* ── SECTION TITLES ── */
-.section-title{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.16em;
-  text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;
-  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
-.section-title::before{content:'';width:3px;height:12px;background:var(--accent);border-radius:2px}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:#7c6af7;
+  padding-bottom:5px;margin:0 0 10px;
+  border-bottom:1px solid rgba(124,106,247,.2);
+  display:flex;align-items:center;gap:6px}
+.section-title::before{content:'';width:3px;height:11px;background:#7c6af7;border-radius:2px;flex-shrink:0}
 
-/* ── MATH CARDS ── */
 .math-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
 .math-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px}
 .math-card.full{grid-column:span 2}
@@ -368,34 +488,225 @@ canvas:active{cursor:grabbing}
 #em-panel-tog-btn.on .sw-track{background:#4da6ff}
 #em-panel-tog-btn.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
 
-</style>
-</head>
+
+
+/* ══════ SUPER CALC v3.0.0 — DESIGN TOKENS ══════ */
+:root {
+  --al: #7c6af7; --al2: #a594ff;
+  --fi: #22d3ee; --fi2: #67e8f9;
+  --mat-accent: #7c6af7;
+  --ineq-accent: #f472b6;
+}
+
+/* ── LAUNCHER v3 ─────────────────────── */
+#launcher {
+  background: #080c14;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 0 24px; gap: 0;
+}
+.sc-logo { display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:40px; }
+.sc-logo-icon { font-size:52px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 0 24px rgba(124,106,247,.5)); }
+.sc-logo-name { font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;color:#e8f0fc; }
+.sc-logo-name .hi { color:#7c6af7; }
+.sc-logo-sub { font-family:'Space Mono',monospace;font-size:9px;color:#3a5a7a;letter-spacing:.18em;text-transform:uppercase;margin-top:2px; }
+.sc-logo-ver { font-family:'Space Mono',monospace;font-size:8px;color:#2a4a6a;letter-spacing:.06em; }
+
+.launcher-modules { display:flex;gap:14px;width:100%;max-width:440px; }
+.lmod-card {
+  flex:1;border:1px solid #1e2d45;border-radius:16px;padding:22px 14px 18px;
+  cursor:pointer;background:#0d1220;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  position:relative;overflow:hidden;transition:all .25s;
+}
+.lmod-card.al:hover { border-color:rgba(124,106,247,.5);box-shadow:0 8px 32px rgba(124,106,247,.12);transform:translateY(-3px); }
+.lmod-card.fi:hover { border-color:rgba(34,211,238,.5);box-shadow:0 8px 32px rgba(34,211,238,.12);transform:translateY(-3px); }
+.lmod-icon { font-size:34px;line-height:1; }
+.lmod-name { font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#e8f0fc;text-align:center; }
+.lmod-sub { font-family:'Space Mono',monospace;font-size:8px;color:#3a5a7a;letter-spacing:.04em;text-align:center;line-height:1.7; }
+.lmod-badge { font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.08em;padding:3px 9px;border-radius:20px; }
+.lmod-badge.al { background:rgba(124,106,247,.12);color:#7c6af7;border:1px solid rgba(124,106,247,.25); }
+.lmod-badge.fi { background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.25); }
+
+/* ── SUBMODULE SELECTOR ──────────────── */
+#submod-screen {
+  position:fixed;inset:0;z-index:999;background:#080c14;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 20px;
+  opacity:0;pointer-events:none;transform:translateX(40px);
+  transition:opacity .3s,transform .3s;
+}
+#submod-screen.visible { opacity:1;pointer-events:all;transform:translateX(0); }
+.submod-header { display:flex;align-items:center;gap:12px;margin-bottom:28px;width:100%;max-width:440px; }
+.submod-back {
+  background:none;border:1px solid #1e2d45;border-radius:8px;
+  color:#5a7a9a;font-size:11px;font-family:'Space Mono',monospace;
+  padding:6px 11px;cursor:pointer;transition:all .2s;
+}
+.submod-back:hover { border-color:#7c6af7;color:#7c6af7; }
+.submod-title { font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#e8f0fc; }
+.submod-title span.al-c { color:#7c6af7; }
+.submod-title span.fi-c { color:#22d3ee; }
+.submod-cards { display:flex;flex-direction:column;gap:10px;width:100%;max-width:440px; }
+.submod-card {
+  border:1px solid #1e2d45;border-radius:14px;padding:15px 18px;
+  cursor:pointer;background:#0d1220;
+  display:flex;align-items:center;gap:14px;transition:all .2s;
+}
+.submod-card.al-sub:hover { border-color:rgba(124,106,247,.4);transform:translateX(4px);box-shadow:0 4px 20px rgba(124,106,247,.08); }
+.submod-card.fi-sub:hover { border-color:rgba(34,211,238,.4);transform:translateX(4px);box-shadow:0 4px 20px rgba(34,211,238,.08); }
+.submod-icon { font-size:24px;flex-shrink:0; }
+.submod-info { flex:1; }
+.submod-name { font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#e8f0fc; }
+.submod-desc { font-family:'Space Mono',monospace;font-size:9px;color:#3a5a7a;margin-top:3px;letter-spacing:.03em; }
+.submod-arrow { color:#3a5a7a;font-size:14px; }
+
+/* ── SHARED MODULE HEADER ────────────── */
+.mod-header {
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:#0d1220;border-bottom:1px solid #1e2d45;flex-shrink:0;
+}
+.mod-back { background:none;border:1px solid #1e2d45;border-radius:8px;color:#5a7a9a;font-size:11px;font-family:'Space Mono',monospace;padding:5px 10px;cursor:pointer;transition:all .2s; }
+.mod-back.al:hover { border-color:#7c6af7;color:#7c6af7; }
+.mod-back.fi:hover { border-color:#22d3ee;color:#22d3ee; }
+.mod-logo-text { font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:#e8f0fc; }
+.mod-logo-text .al-c { color:#7c6af7; }
+.mod-logo-text .fi-c { color:#22d3ee; }
+.mod-logo-ver { font-size:9px;color:#3a5a7a;font-family:'Space Mono',monospace;letter-spacing:.06em; }
+
+/* ── MATRICES MODULE ─────────────────── */
+#mat-app {
+  position:fixed;inset:0;z-index:997;background:#080c14;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transform:translateX(40px);
+  transition:opacity .3s,transform .3s;
+}
+#mat-app.visible { opacity:1;pointer-events:all;transform:translateX(0); }
+
+.mat-tabs { display:flex;background:#0d1220;border-bottom:1px solid #1e2d45;overflow-x:auto;flex-shrink:0; }
+.mat-tabs::-webkit-scrollbar { display:none; }
+.mat-tab { flex-shrink:0;padding:10px 11px;font-size:9px;font-weight:700;letter-spacing:.05em;color:#5a7a9a;background:none;border:none;font-family:'Space Mono',monospace;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase; }
+.mat-tab.on { color:#7c6af7;border-bottom-color:#7c6af7; }
+.mat-body { flex:1;overflow:hidden;display:flex;flex-direction:column; }
+.mat-panel { display:none;padding:14px;overflow-y:auto;flex:1; }
+.mat-panel.on { display:block; }
+
+.mat-sec { font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7c6af7;padding-bottom:5px;margin:0 0 10px;border-bottom:1px solid rgba(124,106,247,.2);display:flex;align-items:center;gap:6px; }
+.mat-sec::before { content:'';width:3px;height:11px;background:#7c6af7;border-radius:2px;flex-shrink:0; }
+
+.mat-row { display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap; }
+.mat-row label { font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;white-space:nowrap; }
+.mat-inp { background:#111827;border:1px solid #1e2d45;border-radius:6px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:12px;padding:5px 8px;width:52px;text-align:center;box-sizing:border-box; }
+.mat-inp:focus { outline:none;border-color:#7c6af7; }
+.mat-inp.wide { width:80px; }
+.mat-sel { background:#111827;border:1px solid #1e2d45;border-radius:6px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:11px;padding:5px 8px; }
+
+.mat-grid-wrap { overflow-x:auto;margin-bottom:10px; }
+.mat-grid { display:inline-grid;gap:4px; }
+.mat-cell { background:#111827;border:1px solid #1e2d45;border-radius:5px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:12px;padding:6px 4px;text-align:center;width:54px;box-sizing:border-box;transition:border-color .15s; }
+.mat-cell:focus { outline:none;border-color:#7c6af7; }
+.mat-cell.rhs { border-color:rgba(240,192,64,.25);background:rgba(240,192,64,.04); }
+.mat-cell.rhs:focus { border-color:#f0c040; }
+
+.mat-btn { padding:8px 16px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.3);border-radius:8px;color:#7c6af7;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;letter-spacing:.04em;margin:3px 4px 3px 0; }
+.mat-btn:hover { background:rgba(124,106,247,.2); }
+.mat-btn.sec { color:#a0b4cc;border-color:#1e2d45;background:none; }
+.mat-btn.sec:hover { border-color:#2a3f5f; }
+.mat-btn.danger { color:#ff5572;border-color:rgba(255,85,114,.3);background:rgba(255,85,114,.05); }
+
+.mat-res { background:#0d1220;border:1px solid #1e2d45;border-radius:10px;padding:12px 14px;margin-top:10px; }
+.mat-res-lbl { font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase; }
+.mat-res-val { font-size:12px;font-family:'Space Mono',monospace;color:#7c6af7;font-weight:700;line-height:2; }
+.mat-step { background:#111827;border-left:2px solid #7c6af7;border-radius:0 7px 7px 0;padding:7px 11px;margin-bottom:5px;font-family:'Space Mono',monospace;font-size:10px;color:#a0b4cc;line-height:1.7; }
+.mat-ok { color:#2dd4a0;font-size:10px;margin-top:4px;font-style:italic; }
+.mat-err { color:#ff5572;font-size:10px;margin-top:4px;font-style:italic; }
+.mat-eigen-pair { background:#111827;border:1px solid rgba(124,106,247,.2);border-radius:8px;padding:10px 12px;margin-bottom:8px; }
+.mat-eigen-lbl { font-size:9px;color:#5a7a9a;font-family:'Space Mono',monospace;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em; }
+.mat-eigen-val { font-size:14px;font-family:'Space Mono',monospace;color:#a594ff;font-weight:700; }
+.mat-eigen-vec { font-size:11px;font-family:'Space Mono',monospace;color:#a0b4cc;margin-top:4px;line-height:1.8; }
+
+/* ── INECUACIONES MODULE ─────────────── */
+#ineq-app {
+  position:fixed;inset:0;z-index:997;background:#080c14;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transform:translateX(40px);
+  transition:opacity .3s,transform .3s;
+}
+#ineq-app.visible { opacity:1;pointer-events:all;transform:translateX(0); }
+
+.ineq-pick { padding:14px;overflow-y:auto; }
+.ineq-pick-title { font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f472b6;margin-bottom:14px;display:flex;align-items:center;gap:6px; }
+.ineq-pick-title::before { content:'';width:3px;height:11px;background:#f472b6;border-radius:2px; }
+.ineq-type-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.ineq-type-card { border:1px solid #1e2d45;border-radius:12px;padding:16px 12px;cursor:pointer;background:#0d1220;transition:all .2s;text-align:center; }
+.ineq-type-card:hover, .ineq-type-card.sel { border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.06);transform:translateY(-2px); }
+.ineq-type-icon { font-size:24px;margin-bottom:6px; }
+.ineq-type-name { font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:#e8f0fc; }
+.ineq-type-desc { font-family:'Space Mono',monospace;font-size:8px;color:#3a5a7a;margin-top:3px;line-height:1.5; }
+
+.ineq-solver { display:none;flex:1;flex-direction:column;overflow:hidden; }
+.ineq-solver.on { display:flex; }
+.ineq-solver-body { flex:1;overflow-y:auto;padding:14px; }
+.ineq-row { display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap; }
+.ineq-row label { font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;white-space:nowrap; }
+.ineq-inp { background:#111827;border:1px solid #1e2d45;border-radius:6px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:13px;padding:7px 8px;width:62px;text-align:center;box-sizing:border-box; }
+.ineq-inp:focus { outline:none;border-color:#f472b6; }
+.ineq-sym-btn { background:#111827;border:1px solid #1e2d45;border-radius:6px;color:#f472b6;font-size:14px;font-family:'Space Mono',monospace;font-weight:700;padding:6px 10px;cursor:pointer;transition:all .2s;min-width:38px;text-align:center; }
+.ineq-sym-btn.on { background:rgba(244,114,182,.15);border-color:#f472b6; }
+.ineq-btn { padding:8px 16px;background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.3);border-radius:8px;color:#f472b6;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;margin:3px 4px 3px 0; }
+.ineq-btn:hover { background:rgba(244,114,182,.2); }
+.ineq-btn.sec { color:#a0b4cc;border-color:#1e2d45;background:none; }
+.ineq-res { background:#0d1220;border:1px solid #1e2d45;border-radius:10px;padding:13px 14px;margin-top:10px; }
+.ineq-res-expr { font-size:16px;font-family:'Space Mono',monospace;color:#f472b6;font-weight:700;margin-bottom:6px; }
+.ineq-res-interval { font-size:12px;font-family:'Space Mono',monospace;color:#2dd4a0;margin-bottom:6px; }
+.ineq-res-step { background:#111827;border-left:2px solid #f472b6;border-radius:0 7px 7px 0;padding:6px 10px;margin-bottom:4px;font-family:'Space Mono',monospace;font-size:10px;color:#a0b4cc;line-height:1.7; }
+#ineq-numline { width:100%;height:72px;border-radius:8px;margin-top:10px;display:block; }
+
+  </style>
 <body>
-<!-- LAUNCHER -->
+<!-- LAUNCHER v3 — Super Calc -->
 <div id="launcher">
-  <div class="launcher-title">Selecciona un módulo</div>
-  <div class="launcher-cards">
-    <div class="launcher-card al" onclick="launchModule('al')">
-      <div class="lcard-icon">⟶</div>
-      <div class="lcard-name">Álgebra<br>Lineal</div>
-      <div class="lcard-sub">Vectores · Espacios<br>Transformaciones</div>
-      <div class="lcard-badge al">R² · R³</div>
+  <div class="sc-logo">
+    <div class="sc-logo-icon">∑</div>
+    <div class="sc-logo-name">Super<span class="hi">Calc</span></div>
+    <div class="sc-logo-sub">Super Calculator</div>
+    <div class="sc-logo-ver">v 3.0.0</div>
+  </div>
+  <div class="launcher-modules">
+    <div class="lmod-card al" onclick="openSubmod('al')">
+      <div class="lmod-icon">𝑨</div>
+      <div class="lmod-name">Álgebra<br>Lineal</div>
+      <div class="lmod-sub">Vectores · Matrices<br>Inecuaciones</div>
+      <div class="lmod-badge al">AL</div>
     </div>
-    <div class="launcher-card em" onclick="launchModule('em')">
-      <div class="lcard-icon">⚡</div>
-      <div class="lcard-name">Electro-<br>magnetismo</div>
-      <div class="lcard-sub">Campos · Fuerzas<br>Ecuaciones de Maxwell</div>
-      <div class="lcard-badge em">UNIVERSITARIO</div>
+    <div class="lmod-card fi" onclick="openSubmod('fi')">
+      <div class="lmod-icon">⚛</div>
+      <div class="lmod-name">Física</div>
+      <div class="lmod-sub">Electromagnetismo<br>+ más próximamente</div>
+      <div class="lmod-badge fi">FÍS</div>
     </div>
   </div>
-  <div class="launcher-version">v 2.1.8</div>
 </div>
 
-<div id="app">
+<!-- SUBMODULE SELECTOR -->
+<div id="submod-screen">
+  <div class="submod-header">
+    <button class="submod-back" onclick="closeSubmod()">← Inicio</button>
+    <div class="submod-title" id="submod-title"></div>
+  </div>
+  <div class="submod-cards" id="submod-cards"></div>
+</div>
+
+
+<div id="app" style="display:none">
   <header>
+    <button class="mod-back al" onclick="closeModule('vectors')" style="flex-shrink:0">← AL</button>
     <div class="logo">
       <div class="logo-icon">⟶</div>
-      <div class="logo-inner" onclick="goHome()" style="cursor:pointer" title="Inicio"><div class="logo-text">Vector<span>3D</span></div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:.06em">v 2.1.8</div></div>
+      <div class="logo-inner">
+        <div class="logo-text">Vector<span>3D</span></div>
+        <div style="font-size:8px;color:#3a5a7a;font-family:'Space Mono',monospace;letter-spacing:.06em">v 3.0.0</div>
+      </div>
     </div>
     <div class="header-controls">
       <!-- DEC/FRAC -->
@@ -445,11 +756,13 @@ canvas:active{cursor:grabbing}
 </div>
 
 <script>
+
+
 // ── SERVICE WORKER (GitHub Pages) ───────────────────
 let deferredPrompt=null;
 if('serviceWorker' in navigator){
   const swCode=[
-    "const CACHE='vector3d-2.1.8';",
+    "const CACHE='supercalc-3.0.0';",
     "self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.add(self.location.href.split('?')[0])).then(()=>self.skipWaiting()));});",
     "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});",
     "self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const cl=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,cl));}return res;}).catch(()=>caches.match(e.request))));});"
@@ -480,40 +793,47 @@ function showInstallBanner(){
   b.innerHTML='<div style="font-size:13px;color:#e2eaf8;font-weight:600">📲 Añadir <span style="color:#f0c040">Vector3D</span> a inicio</div><div style="display:flex;gap:8px"><button onclick="installApp()" style="padding:7px 16px;background:#f0c040;color:#0a0f1a;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Instalar</button><button onclick="dismissInstall()" style="padding:7px 12px;background:none;border:1px solid #1e3356;color:#8ba3cc;border-radius:8px;font-size:12px;cursor:pointer">Ahora no</button></div>';
   document.body.appendChild(b);
 }
-function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;dismissInstall();});}
-function dismissInstall(){const b=document.getElementById('install-banner');if(b)b.remove();}
-
-function showUpdateBanner(){
-  if(document.getElementById('update-banner'))return;
-  const b=document.createElement('div');
-  b.id='update-banner';
-  b.style.cssText='position:fixed;top:0;left:0;right:0;background:#0f1729;border-bottom:2px solid #2dd4a0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:Space Grotesk,sans-serif';
-  b.innerHTML='<div style="font-size:12px;color:#2dd4a0;font-weight:600">✓ Nueva versión disponible</div><button onclick="location.reload()" style="padding:6px 14px;background:#2dd4a0;color:#0a0f1a;border:none;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer">Actualizar</button>';
-  document.body.appendChild(b);
+function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{
+  deferredPrompt=null;dismissInstall();});
 }
 
-// ── INLINE MANIFEST ──────────────────────
-(function(){
-  const icon="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAADFElEQVR42u3dwanrQBQFwVl7o72icegOSRlIMVhgC27XhU5gdAr+4uO3lnPOOeceuNe2n17BjRnzv/LaLjF0MJzBA+EMHghn9DA4o4fBGT4IzvBBcEYPgzN8EJzhg2D8gsDwBYLhCwTjFwSGLxCMXxAYvkAwfkFg/ILA8AWC8QsC4xcExi8IjF8QGL8gMH5BYPyCwPgFgfELAuMXBMYvCIxfEBi/IDB+QQCAADB+QWD8SiPwkZRG4AMpC8DHURaBj6I0Ah9EWQA+hrIIfASlEfgAygLw+Eoj8PDKAvDoyiLw2Eoj8NDKAvDISiPwwMoC8LhKI/CwAkAqAvCoSiPwoMoC8JhKI/CQygLwiEoj8IACQCoC8HhKI/BwAkAqAvBoMzo+b+9wB4EHmwMAAgDyACAAIA+gDsH4AYAAAADKEAAAII0AAADSEIwfAAgAAKAMAQAA0ggAACANAQAA0ggAACANwfgBgGAKgF98YM2HAIDSCABQGgIASiMAQGkIACiNAAClIQCgNAIAlIYAgNIIAFAaAgBKIxjzH+EMCYQ0AgMyfP8EkvEDIMMHQMYPgAwfABk/ADJ8AGT8AMjwAZDxAyC/CgGA/C6QX4bzy3B+GQ4CAIwfAAD8OjQAAPj7AAAA4C/EGA4A/kaYmgAKb+JPpQJg/AAA4C/FA5AHUHsPAABIDv8rABDMBmD8ACQB1N8CgDAAbwFAFoB3uAEAAqXHD4AA8HAqA4BA6fEDIAA8oMoAIFB6/AAoDwACpccPgPIAIFB6/AAIAA+rMgAIlB4/AMoDgEDp8QOgPAAIlB4/BMqPHwDlAUCg9PgBUB4ABEqPHwLlxw+A8gAgUHr8ECg/fgCUBwCB0uOHQPnxQ6D8+AFQHgAESo8fAuXHD4Hy44dA+fFDoPz4IVB+/BAoP34IlB8/BMqPHwItB4HxOwiM30Fg/A4C43cgGL6DwPgdBMbvQDB8B4HxOxAM30Fg/A4Ew3cgGL6DwPgdCIbvQDB8B4PROxAM34Fg+A4Go3cwGL1LgvD1XAqEr+MSMLy2G4PGKzjnHrkLom5CN/nQwUcAAAAASUVORK5CYII=";
-  const m={name:'Vector 3D',short_name:'Vector3D',start_url:location.pathname,display:'standalone',background_color:'#0a0f1a',theme_color:'#0a0f1a',icons:[{src:icon,sizes:'192x192',type:'image/png'},{src:icon,sizes:'512x512',type:'image/png'}]};
+// ── PALETTE ───────────────────────────────────────────
+// ── PWA MANIFEST (SuperCalc branding) ──────────────
+(()=>{
+  const sz=512,cv2=document.createElement('canvas');
+  cv2.width=sz;cv2.height=sz;
+  const cx=cv2.getContext('2d');
+  const g=cx.createLinearGradient(0,0,sz,sz);
+  g.addColorStop(0,'#0d0b1f');g.addColorStop(1,'#1a1040');
+  cx.fillStyle=g;
+  if(cx.roundRect){cx.beginPath();cx.roundRect(0,0,sz,sz,sz*.2);cx.fill();}
+  else{cx.fillRect(0,0,sz,sz);}
+  const gr=cx.createRadialGradient(sz*.5,sz*.45,0,sz*.5,sz*.45,sz*.45);
+  gr.addColorStop(0,'rgba(124,106,247,.4)');gr.addColorStop(1,'rgba(124,106,247,0)');
+  cx.fillStyle=gr;cx.beginPath();cx.arc(sz*.5,sz*.45,sz*.45,0,Math.PI*2);cx.fill();
+  cx.font='bold 300px Georgia,serif';
+  cx.textAlign='center';cx.textBaseline='middle';
+  cx.fillStyle='#a594ff';cx.shadowColor='#7c6af7';cx.shadowBlur=40;
+  cx.fillText('Σ',sz*.5,sz*.52);cx.shadowBlur=0;
+  const icon=cv2.toDataURL('image/png');
+  const m={name:'SuperCalc',short_name:'SuperCalc',start_url:location.pathname,
+    display:'standalone',background_color:'#080c14',theme_color:'#7c6af7',
+    icons:[{src:icon,sizes:'192x192',type:'image/png'},{src:icon,sizes:'512x512',type:'image/png'}]};
   const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
   document.head.appendChild(l);
 })();
 
-// ── PALETTE ───────────────────────────────────────────
+
 const PAL=['#f0c040','#ff6eb4','#4da6ff','#ff8c42','#2dd4a0','#ff5572','#b084fc','#34d4c8','#facc15','#a3e635'];
 function vc(i){ return PAL[i%PAL.length]; }
 const RC='#b084fc', SC='#2dd4a0';
 
 // ── STATE ─────────────────────────────────────────────
 let mode=3, fracMode=false, showFigure=false;
-let vecs=[
-  {id:0,on:true,nm:'A',vx:3,vy:2,vz:1,cl:PAL[0]},
-  {id:1,on:true,nm:'B',vx:-2,vy:4,vz:3,cl:PAL[1]},
-];
-let palIdx=2; // next palette index to assign
-let nid=2, rV=null, sR=null, unkR=null;
+let vecs=[];
+let palIdx=0;
+let nid=0, rV=null, sR=null, unkR=null;
 let rotX=22, rotY=-38, scl=1, drag=null, lp=null;
 let opS='+', opI=[];
 let unkOp='·', unkTarget='0';
@@ -1255,7 +1575,17 @@ cv.addEventListener('wheel',e=>{
   draw();
 },{passive:false});
 
-renderVecs();resize();
+// AL vectors init — called when module opens
+function initVectorsApp(){
+  if(!window._alInitDone){
+    window._alInitDone=true;
+    vecs=[]; palIdx=0; nid=0;
+    renderVecs();
+  }
+  // Double resize to ensure canvas fills correctly after mount
+  setTimeout(()=>{ resize(); }, 30);
+  setTimeout(()=>{ resize(); draw(); }, 120);
+}
 
 
 // ══════════════════════════════════════════════════════
@@ -1277,12 +1607,7 @@ function launchModule(mod){
     },400);
   }
 }
-function goHome(){
-  document.getElementById('em-app').classList.remove('visible');
-  const launcher = document.getElementById('launcher');
-  launcher.style.display='flex';
-  requestAnimationFrame(()=>{ launcher.classList.remove('hidden'); });
-}
+
 
 // ══════════════════════════════════════════════════════
 // EM MODULE
@@ -1703,7 +2028,7 @@ function emCalcGauss(){
   } else if(geo==='cylinder'){
     area = 2*Math.PI*r*L;
     E = Q/(2*Math.PI*EM_EPS0*r*L);
-    note = 'E radial: E⃗ = (λ/2πε₀ρ) ρ̂  |  λ = Q/L';
+    note = 'E radial: E⃗ = (lambda/2πε₀ρ) ρ̂  |  lambda = Q/L';
     emObjects=[{type:'charge',x:0,y:0,z:0,q:Q,label:'Q'}];
   } else {
     // infinite plane: σ = Q/A (we treat r as half-spacing)
@@ -1863,8 +2188,8 @@ function emCalcLorentz(){
   const sc=2/Math.max(vmag,Emag,Bmag,Fmag,1e-20);
   emObjects=[
     {type:'vector',ox:0,oy:0,oz:0,vx:vx*sc,vy:vy*sc,vz:vz*sc,color:'#2dd4a0',label:'v⃗'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:Ex*sc,vy:Ey*sc,vz:Ez*sc,color:'#f0c040',label:'E⃗'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:Bx*sc,vy:By*sc,vz:Bz*sc,color:'#4da6ff',label:'B⃗'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:Ex*sc,vy:Ey*sc,vz:Ez*sc,color:'#f0c040',label:'E'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:Bx*sc,vy:By*sc,vz:Bz*sc,color:'#4da6ff',label:'B'},
     {type:'vector',ox:0,oy:0,oz:0,vx:Fx*sc,vy:Fy*sc,vz:Fz*sc,color:'#ff5572',label:'F⃗'},
   ];
   emDraw();
@@ -1930,7 +2255,7 @@ function emCalcFaraday(){
 
   // Vector B on canvas
   emObjects=[
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:B*3,vz:0,color:'#4da6ff',label:'B⃗'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:B*3,vz:0,color:'#4da6ff',label:'B'},
   ];
   emDraw();
 
@@ -2001,54 +2326,869 @@ function emCalcMaxwell(){
 
   // Draw E and B vectors orthogonal
   emObjects=[
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:3,vz:0,color:'#f0c040',label:'E⃗'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:0,vz:3,color:'#4da6ff',label:'B⃗'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:3,vy:0,vz:0,color:'#ff5572',label:'S⃗'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:3,vz:0,color:'#f0c040',label:'E'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:0,vz:3,color:'#4da6ff',label:'B'},
+    {type:'vector',ox:0,oy:0,oz:0,vx:3,vy:0,vz:0,color:'#ff5572',label:'S'},
   ];
   emDraw();
 
   document.getElementById('em-res-maxwell').innerHTML=`
   <div class="em-math-grid" style="margin-top:10px">
     <div class="em-math-card">
-      <div class="em-math-label">c = 1/√(μ₀ε₀)</div>
+      <div class="em-math-label">c = 1/&radic;(&mu;0&epsilon;0)</div>
       <div class="em-math-value">${emFmt(c,0)} m/s</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">B₀ = E₀/c</div>
+      <div class="em-math-label">B0 = E0/c</div>
       <div class="em-math-value">${emFmt(B0)} T</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">Longitud de onda λ</div>
+      <div class="em-math-label">Long. de onda &lambda;</div>
       <div class="em-math-value">${emFmt(lambda)} m</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">Vector Poynting |S⃗|</div>
-      <div class="em-math-value">${emFmt(S)} W/m²</div>
+      <div class="em-math-label">Poynting |S|</div>
+      <div class="em-math-value">${emFmt(S)} W/m&sup2;</div>
     </div>
     <div class="em-math-card">
       <div class="em-math-label">u_E (densidad)</div>
-      <div class="em-math-value">${emFmt(uE)} J/m³</div>
+      <div class="em-math-value">${emFmt(uE)} J/m&sup3;</div>
     </div>
     <div class="em-math-card">
       <div class="em-math-label">u_B (densidad)</div>
-      <div class="em-math-value">${emFmt(uB)} J/m³</div>
+      <div class="em-math-value">${emFmt(uB)} J/m&sup3;</div>
     </div>
     <div class="em-math-card full">
-      <div class="em-math-label">k = ω/c (número de onda)</div>
+      <div class="em-math-label">k = &omega;/c (n&uacute;m. de onda)</div>
       <div class="em-math-value">${emFmt(k)} rad/m</div>
     </div>
   </div>`;
 }
 
+
+
+
+
+
+
+// ═══════════════════════════════════════════════════════
+// SUPER CALC v3.0.0 — NAVIGATION
+// ═══════════════════════════════════════════════════════
+const SUBMOD_CONFIG = {
+  al: {
+    title: '<span class="al-c">Álgebra</span> Lineal',
+    cards: [
+      { icon:'⟶', name:'Vectores 3D', desc:'Operaciones, graficación y cálculo vectorial', id:'vectors', cls:'al-sub' },
+      { icon:'▦',  name:'Matrices & Ec. Lineales', desc:'Operaciones, sistemas, determinantes, eigenvalores', id:'mat', cls:'al-sub' },
+      { icon:'≠',  name:'Inecuaciones', desc:'Lineal, cuadrática, sistemas, valor absoluto', id:'ineq', cls:'al-sub' },
+    ]
+  },
+  fi: {
+    title: '<span class="fi-c">Física</span>',
+    cards: [
+      { icon:'⚡', name:'Electromagnetismo', desc:'Coulomb, Gauss, Lorentz, Faraday, Maxwell', id:'em', cls:'fi-sub' },
+      { icon:'🔜', name:'Más próximamente', desc:'Mecánica, Termodinámica, Óptica...', id:'soon', cls:'fi-sub', disabled:true },
+    ]
+  }
+};
+
+let currentParent = null;
+
+function openSubmod(parent) {
+  currentParent = parent;
+  const cfg = SUBMOD_CONFIG[parent];
+  document.getElementById('submod-title').innerHTML = cfg.title;
+  const cardsEl = document.getElementById('submod-cards');
+  cardsEl.innerHTML = cfg.cards.map(c => `
+    <div class="submod-card ${c.cls} ${c.disabled?'disabled':''}" onclick="${c.disabled?'':'launchSubmod(\''+c.id+'\')'}" style="${c.disabled?'opacity:.4;cursor:default':''}">
+      <div class="submod-icon">${c.icon}</div>
+      <div class="submod-info">
+        <div class="submod-name">${c.name}</div>
+        <div class="submod-desc">${c.desc}</div>
+      </div>
+      <div class="submod-arrow">${c.disabled?'':'›'}</div>
+    </div>`).join('');
+  const launcher = document.getElementById('launcher');
+  launcher.classList.add('hidden');
+  setTimeout(() => {
+    launcher.style.display = 'none';
+    document.getElementById('submod-screen').classList.add('visible');
+  }, 300);
+}
+
+function closeSubmod() {
+  document.getElementById('submod-screen').classList.remove('visible');
+  const launcher = document.getElementById('launcher');
+  launcher.style.display = 'flex';
+  launcher.style.opacity = '0';
+  setTimeout(() => {
+    launcher.classList.remove('hidden');
+    launcher.style.opacity = '';
+  }, 50);
+}
+
+function launchSubmod(id) {
+  if (id === 'vectors') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('app').style.display = 'flex';
+      initVectorsApp();
+    }, 300);
+  } else if (id === 'em') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('em-app').classList.add('visible');
+      emInit();
+      setTimeout(() => emResizeCanvas(), 50);
+      setTimeout(() => emResizeCanvas(), 350);
+    }, 300);
+  } else if (id === 'mat') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('mat-app').classList.add('visible');
+      matInit();
+    }, 300);
+  } else if (id === 'ineq') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('ineq-app').classList.add('visible');
+    }, 300);
+  }
+}
+
+function closeModule(id) {
+  if (id === 'vectors') {
+    document.getElementById('app').style.display = 'none';
+  } else if (id === 'em') {
+    document.getElementById('em-app').classList.remove('visible');
+  } else if (id === 'mat') {
+    document.getElementById('mat-app').classList.remove('visible');
+  } else if (id === 'ineq') {
+    document.getElementById('ineq-app').classList.remove('visible');
+    setTimeout(() => ineqBack(), 350);
+  }
+  // Re-show submod screen (brief delay for transition)
+  setTimeout(() => {
+    document.getElementById('submod-screen').classList.add('visible');
+  }, 50);
+}
+
+// Legacy goHome — now goes to submod screen
+function goHome() {
+  closeModule('em');
+}
+
+// ═══════════════════════════════════════════════════════
+// MATRICES MODULE
+// ═══════════════════════════════════════════════════════
+let matCurrentTab = 'ops';
+
+function matTab(id) {
+  document.querySelectorAll('.mat-tab').forEach((t,i) => {
+    t.classList.toggle('on', ['ops','det','sis','eig'][i] === id);
+  });
+  ['Ops','Det','Sis','Eig'].forEach(p => {
+    const el = document.getElementById('mat-p'+p);
+    if(el) el.classList.toggle('on', p.toLowerCase() === id);
+  });
+  matCurrentTab = id;
+}
+
+function matInit() {
+  matOpsRenderControls();
+  matOpsRenderGrids();
+  matBuildDet();
+  matBuildSis();
+  matBuildEig();
+}
+
+// ── Helpers ──
+function matGetGrid(prefix, rows, cols) {
+  const vals = [];
+  for(let r=0;r<rows;r++){
+    const row=[];
+    for(let c=0;c<cols;c++){
+      const el=document.getElementById(`${prefix}-${r}-${c}`);
+      row.push(el ? parseFloat(el.value)||0 : 0);
+    }
+    vals.push(row);
+  }
+  return vals;
+}
+function matMakeGrid(prefix, rows, cols, extraClass='') {
+  let html=`<div class="mat-grid-wrap"><div class="mat-grid" style="grid-template-columns:repeat(${cols},58px)">`;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    html+=`<input class="mat-cell ${extraClass}" id="${prefix}-${r}-${c}" value="0" type="number" step="any">`;
+  }
+  return html+'</div></div>';
+}
+function matFmtNum(n,d=4) {
+  if(isNaN(n)||!isFinite(n)) return '—';
+  const r=parseFloat(n.toFixed(d));
+  return r===0?'0':String(r);
+}
+function matFmtMatrix(M,label='') {
+  const rows=M.length,cols=M[0].length;
+  let h=label?`<div class="mat-res-lbl">${label}</div>`:'' ;
+  h+=`<div class="mat-res-val">`;
+  for(let r=0;r<rows;r++){
+    h+='[ '+M[r].map(v=>matFmtNum(v).padStart(9)).join('  ')+' ]<br>';
+  }
+  return h+'</div>';
+}
+
+// ── Matrix math ──
+function matMul(A,B) {
+  const r=A.length,k=A[0].length,c=B[0].length;
+  if(k!==B.length) return null;
+  return Array.from({length:r},(_,i)=>Array.from({length:c},(_,j)=>A[i].reduce((s,_,p)=>s+A[i][p]*B[p][j],0)));
+}
+function matAdd(A,B,sign=1) {
+  if(A.length!==B.length||A[0].length!==B[0].length) return null;
+  return A.map((row,i)=>row.map((v,j)=>v+sign*B[i][j]));
+}
+function matScale(A,k) { return A.map(row=>row.map(v=>v*k)); }
+function matTranspose(A) { return A[0].map((_,j)=>A.map(r=>r[j])); }
+function matDet(M) {
+  const n=M.length;
+  if(n===1) return M[0][0];
+  if(n===2) return M[0][0]*M[1][1]-M[0][1]*M[1][0];
+  let det=0;
+  for(let c=0;c<n;c++){
+    const minor=M.slice(1).map(row=>[...row.slice(0,c),...row.slice(c+1)]);
+    det+=((c%2===0)?1:-1)*M[0][c]*matDet(minor);
+  }
+  return det;
+}
+function matInv(M) {
+  const n=M.length, aug=M.map((row,i)=>[...row,...Array.from({length:n},(_,j)=>i===j?1:0)]);
+  for(let col=0;col<n;col++){
+    let maxR=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(aug[r][col])>Math.abs(aug[maxR][col])) maxR=r;
+    [aug[col],aug[maxR]]=[aug[maxR],aug[col]];
+    const piv=aug[col][col];
+    if(Math.abs(piv)<1e-12) return null;
+    for(let j=0;j<2*n;j++) aug[col][j]/=piv;
+    for(let r=0;r<n;r++) if(r!==col){
+      const f=aug[r][col];
+      for(let j=0;j<2*n;j++) aug[r][j]-=f*aug[col][j];
+    }
+  }
+  return aug.map(row=>row.slice(n));
+}
+function matGauss(A,b) {
+  const n=A.length;
+  const aug=A.map((row,i)=>[...row,b[i]]);
+  const steps=[];
+  for(let col=0;col<n;col++){
+    let maxR=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(aug[r][col])>Math.abs(aug[maxR][col])) maxR=r;
+    if(maxR!==col){ [aug[col],aug[maxR]]=[aug[maxR],aug[col]]; steps.push(`Swap F${col+1} ↔ F${maxR+1}`); }
+    const piv=aug[col][col];
+    if(Math.abs(piv)<1e-12) return {sol:null,steps,inconsistent:true};
+    for(let r=0;r<n;r++) if(r!==col){
+      const f=aug[r][col]/piv;
+      if(Math.abs(f)<1e-12) continue;
+      for(let j=col;j<=n;j++) aug[r][j]-=f*aug[col][j];
+      steps.push(`F${r+1} ← F${r+1} − (${matFmtNum(f)})·F${col+1}`);
+    }
+    steps.push(`Pivote col ${col+1}: ${matFmtNum(piv)}`);
+  }
+  const sol=aug.map((row,i)=>row[n]/row[i]);
+  return {sol,steps,inconsistent:false};
+}
+function matCramer(A,b) {
+  const n=A.length,detA=matDet(A);
+  if(Math.abs(detA)<1e-12) return null;
+  return b.map((_,i)=>{
+    const Ai=A.map((row,r)=>row.map((v,c)=>c===i?b[r]:v));
+    return matDet(Ai)/detA;
+  });
+}
+
+// Power iteration for dominant eigenvalue
+function matPowerIter(M,maxIter=200) {
+  const n=M.length;
+  let v=Array(n).fill(0).map(()=>Math.random()*2-1);
+  let norm=Math.sqrt(v.reduce((s,x)=>s+x*x,0));
+  v=v.map(x=>x/norm);
+  let lam=0;
+  for(let iter=0;iter<maxIter;iter++){
+    const Mv=M.map(row=>row.reduce((s,val,j)=>s+val*v[j],0));
+    const newNorm=Math.sqrt(Mv.reduce((s,x)=>s+x*x,0));
+    lam=Mv.reduce((s,x,i)=>s+x*v[i],0);
+    v=Mv.map(x=>x/newNorm);
+  }
+  return {lam,vec:v};
+}
+function matDeflate(M,lam,vec) {
+  const n=M.length;
+  const norm2=vec.reduce((s,x)=>s+x*x,0);
+  return M.map((row,i)=>row.map((v,j)=>v-lam*vec[i]*vec[j]/norm2));
+}
+function matEigenAll(M) {
+  const n=M.length;
+  const pairs=[];
+  let Mcur=M.map(r=>[...r]);
+  for(let k=0;k<n;k++){
+    const {lam,vec}=matPowerIter(Mcur);
+    pairs.push({lam,vec});
+    Mcur=matDeflate(Mcur,lam,vec);
+  }
+  return pairs;
+}
+
+// ── Ops panel — N matrices of arbitrary m×n ──────────
+// State: array of matrix definitions {rows, cols, id}
+let matOpsState = { op:'add', matrices:[{id:0,rows:2,cols:2},{id:1,rows:2,cols:2}], nextId:2, scalar:1 };
+
+function matOpsRebuild() {
+  matOpsState.op = document.getElementById('mat-op').value;
+  matOpsRenderControls();
+  matOpsRenderGrids();
+  document.getElementById('mat-res-ops').innerHTML = '';
+}
+
+function matOpsReset() {
+  matOpsState = { op: document.getElementById('mat-op').value, matrices:[{id:0,rows:2,cols:2},{id:1,rows:2,cols:2}], nextId:2, scalar:1 };
+  matOpsRenderControls();
+  matOpsRenderGrids();
+  document.getElementById('mat-res-ops').innerHTML = '';
+}
+
+function matOpsRenderControls() {
+  const op = matOpsState.op;
+  const isSca = op === 'sca';
+  const isTra = op === 'tra';
+  const isSingle = isSca || isTra;
+  // Ensure correct number of matrices
+  if (isSingle && matOpsState.matrices.length > 1) matOpsState.matrices = [matOpsState.matrices[0]];
+  if (!isSingle && matOpsState.matrices.length < 2) matOpsState.matrices.push({id:matOpsState.nextId++,rows:matOpsState.matrices[0].rows,cols:matOpsState.matrices[0].cols});
+
+  let h = '<div class="mat-row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">';
+  if (isSca) {
+    h += `<label>Escalar k:</label><input class="mat-inp wide" id="mat-sca-k" value="${matOpsState.scalar}" type="number" step="any" oninput="matOpsState.scalar=parseFloat(this.value)||1">`;
+  }
+  if (!isSingle) {
+    h += `<button class="mat-btn" style="padding:5px 10px;font-size:10px" onclick="matOpsAddMatrix()">+ Matriz</button>`;
+    if (matOpsState.matrices.length > 2) {
+      h += `<button class="mat-btn danger" style="padding:5px 10px;font-size:10px" onclick="matOpsRemoveMatrix()">− Última</button>`;
+    }
+  }
+  h += '</div>';
+  document.getElementById('mat-ops-controls').innerHTML = h;
+}
+
+function matOpsAddMatrix() {
+  const last = matOpsState.matrices[matOpsState.matrices.length-1];
+  matOpsState.matrices.push({id:matOpsState.nextId++, rows:last.rows, cols:last.cols});
+  matOpsRenderGrids();
+}
+
+function matOpsRemoveMatrix() {
+  if (matOpsState.matrices.length <= 2) return;
+  matOpsState.matrices.pop();
+  matOpsRenderGrids();
+}
+
+function matOpsSizeChange(id, dim, val) {
+  const m = matOpsState.matrices.find(m=>m.id===id);
+  if (!m) return;
+  m[dim] = Math.min(8, Math.max(1, parseInt(val)||1));
+  matOpsRenderGrids();
+}
+
+function matOpsRenderGrids() {
+  const op = matOpsState.op;
+  const letters = 'ABCDEFGHIJ';
+  let h = '';
+  matOpsState.matrices.forEach((m, i) => {
+    const lbl = letters[i] || `M${i}`;
+    const prefix = `mo-${m.id}`;
+    h += `<div style="margin-bottom:12px">
+      <div class="mat-sec" style="margin-top:0">${lbl} — 
+        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.rows}" min="1" max="8" type="number" onchange="matOpsSizeChange(${m.id},'rows',this.value)">
+        ×
+        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.cols}" min="1" max="8" type="number" onchange="matOpsSizeChange(${m.id},'cols',this.value)">
+      </div>`;
+    h += matMakeGrid(prefix, m.rows, m.cols);
+    h += '</div>';
+  });
+  document.getElementById('mat-ops-grids').innerHTML = h;
+}
+
+function matOpsGetMatrix(m) {
+  return matGetGrid(`mo-${m.id}`, m.rows, m.cols);
+}
+
+function matCalcOps() {
+  const op = matOpsState.op;
+  const ms = matOpsState.matrices;
+  const letters = 'ABCDEFGHIJ';
+  let result, title, err = '';
+
+  if (op === 'sca') {
+    const A = matOpsGetMatrix(ms[0]);
+    const k = matOpsState.scalar;
+    result = matScale(A, k);
+    title = `${k} × A`;
+  } else if (op === 'tra') {
+    const A = matOpsGetMatrix(ms[0]);
+    result = matTranspose(A);
+    title = 'Aᵀ';
+  } else if (op === 'add' || op === 'sub') {
+    // Check all same dimensions
+    const r0 = ms[0].rows, c0 = ms[0].cols;
+    const bad = ms.find(m => m.rows !== r0 || m.cols !== c0);
+    if (bad) { err = `Todas las matrices deben ser ${r0}×${c0} para suma/resta.`; }
+    else {
+      result = matOpsGetMatrix(ms[0]);
+      for (let i = 1; i < ms.length; i++) {
+        const B = matOpsGetMatrix(ms[i]);
+        result = matAdd(result, B, op === 'sub' ? -1 : 1);
+      }
+      title = ms.map((_,i)=>letters[i]).join(op==='add'?' + ':' − ');
+    }
+  } else if (op === 'mul') {
+    // Chain multiplication — check dimensional compatibility
+    result = matOpsGetMatrix(ms[0]);
+    for (let i = 1; i < ms.length; i++) {
+      const B = matOpsGetMatrix(ms[i]);
+      if (result[0].length !== B.length) {
+        err = `Columnas de ${letters[i-1]} (${result[0].length}) ≠ filas de ${letters[i]} (${B.length}). Dimensiones incompatibles.`;
+        result = null; break;
+      }
+      result = matMul(result, B);
+    }
+    if (result) title = ms.map((_,i)=>letters[i]).join(' × ');
+  }
+
+  if (err || !result) {
+    document.getElementById('mat-res-ops').innerHTML = `<div class="mat-res"><div class="mat-err">${err||'Error en el cálculo.'}</div></div>`;
+    return;
+  }
+  document.getElementById('mat-res-ops').innerHTML = `<div class="mat-res">${matFmtMatrix(result, title)}</div>`;
+}
+
+function matBuildGrids() { matOpsRenderControls(); matOpsRenderGrids(); } // compat alias
+function matClearOps() { matOpsReset(); }
+
+// ── Det & Inv panel ──
+function matBuildDet() {
+  const n=parseInt(document.getElementById('mat-dn')?.value)||2;
+  document.getElementById('mat-det-grid').innerHTML=matMakeGrid('md',n,n);
+  document.getElementById('mat-res-det').innerHTML='';
+}
+function matCalcDet() {
+  const n=parseInt(document.getElementById('mat-dn').value)||2;
+  const M=matGetGrid('md',n,n);
+  const d=matDet(M);
+  document.getElementById('mat-res-det').innerHTML=`<div class="mat-res">
+    <div class="mat-res-lbl">Determinante</div>
+    <div class="mat-res-val" style="font-size:20px">${matFmtNum(d,6)}</div>
+    <div class="${Math.abs(d)<1e-10?'mat-err':'mat-ok'}">${Math.abs(d)<1e-10?'Matriz singular (det ≈ 0)':'Matriz invertible'}</div>
+  </div>`;
+}
+function matCalcInv() {
+  const n=parseInt(document.getElementById('mat-dn').value)||2;
+  const M=matGetGrid('md',n,n);
+  const inv=matInv(M);
+  if(!inv){
+    document.getElementById('mat-res-det').innerHTML=`<div class="mat-res"><div class="mat-err">Matriz singular — no tiene inversa.</div></div>`;
+    return;
+  }
+  document.getElementById('mat-res-det').innerHTML=`<div class="mat-res">${matFmtMatrix(inv,'A⁻¹')}<div class="mat-ok">Verificar: A · A⁻¹ = I</div></div>`;
+}
+function matClearDet() { document.querySelectorAll('#mat-det-grid .mat-cell').forEach(el=>el.value=0); document.getElementById('mat-res-det').innerHTML=''; }
+
+// ── Sistemas panel ──
+function matBuildSis() {
+  const n=parseInt(document.getElementById('mat-sn')?.value)||2;
+  let html=`<div class="mat-grid-wrap"><div class="mat-grid" style="grid-template-columns:repeat(${n+1},58px)">`;
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++) html+=`<input class="mat-cell" id="ms-${r}-${c}" value="0" type="number" step="any">`;
+    html+=`<input class="mat-cell rhs" id="ms-${r}-${n}" value="0" type="number" step="any">`;
+  }
+  html+='</div></div>';
+  html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:8px">Las últimas columnas (doradas) son el vector b</div>`;
+  document.getElementById('mat-sis-grid').innerHTML=html;
+  document.getElementById('mat-res-sis').innerHTML='';
+}
+function matCalcSis() {
+  const n=parseInt(document.getElementById('mat-sn').value)||2;
+  const A=[],b=[];
+  for(let r=0;r<n;r++){
+    A.push(Array.from({length:n},(_,c)=>parseFloat(document.getElementById(`ms-${r}-${c}`)?.value||0)));
+    b.push(parseFloat(document.getElementById(`ms-${r}-${n}`)?.value||0));
+  }
+  const met=document.getElementById('mat-smet').value;
+  let html='<div class="mat-res">';
+  if(met==='gauss'){
+    const {sol,steps,inconsistent}=matGauss(A.map(r=>[...r]),b.map(v=>v));
+    html+=`<div class="mat-res-lbl">Gauss-Jordan — pasos:</div>`;
+    steps.forEach(s=>{ html+=`<div class="mat-step">${s}</div>`; });
+    if(inconsistent||!sol){ html+=`<div class="mat-err">Sistema sin solución o infinitas soluciones.</div>`; }
+    else {
+      html+=`<div class="mat-res-lbl" style="margin-top:8px">Solución:</div><div class="mat-res-val">`;
+      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${matFmtNum(v)}<br>`; });
+      html+='</div>';
+    }
+  } else {
+    const sol=matCramer(A,b);
+    if(!sol){ html+=`<div class="mat-err">det(A) = 0 — Cramer no aplicable.</div>`; }
+    else {
+      html+=`<div class="mat-res-lbl">Cramer — det(A) = ${matFmtNum(matDet(A))}</div>`;
+      html+=`<div class="mat-res-val">`;
+      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${matFmtNum(v)}<br>`; });
+      html+='</div>';
+    }
+  }
+  html+='</div>';
+  document.getElementById('mat-res-sis').innerHTML=html;
+}
+function matClearSis() { document.querySelectorAll('#mat-sis-grid .mat-cell').forEach(el=>el.value=0); document.getElementById('mat-res-sis').innerHTML=''; }
+
+// ── Eigenvalores panel ──
+function matBuildEig() {
+  const n=parseInt(document.getElementById('mat-en')?.value)||2;
+  document.getElementById('mat-eig-grid').innerHTML=matMakeGrid('me',n,n);
+  document.getElementById('mat-res-eig').innerHTML='';
+}
+function matCalcEig() {
+  const n=parseInt(document.getElementById('mat-en').value)||2;
+  const M=matGetGrid('me',n,n);
+  const pairs=matEigenAll(M);
+  let html='<div class="mat-res"><div class="mat-res-lbl">Valores &amp; Vectores Propios (iteración potencia)</div>';
+  pairs.forEach(({lam,vec},i)=>{
+    html+=`<div class="mat-eigen-pair">
+      <div class="mat-eigen-lbl">&lambda;<sub>${i+1}</sub></div>
+      <div class="mat-eigen-val">${matFmtNum(lam,5)}</div>
+      <div class="mat-eigen-vec">v = [ ${vec.map(v=>matFmtNum(v,4)).join(',  ')} ]</div>
+    </div>`;
+  });
+  html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-top:4px">* Método de iteración potencia — preciso para matrices diagonalizables</div>`;
+  html+='</div>';
+  document.getElementById('mat-res-eig').innerHTML=html;
+}
+function matClearEig() { document.querySelectorAll('#mat-eig-grid .mat-cell').forEach(el=>el.value=0); document.getElementById('mat-res-eig').innerHTML=''; }
+
+// ═══════════════════════════════════════════════════════
+// INECUACIONES MODULE
+// ═══════════════════════════════════════════════════════
+let ineqType = null;
+
+function ineqSetType(type) {
+  ineqType = type;
+  document.getElementById('ineq-pick-screen').style.display = 'none';
+  const solver = document.getElementById('ineq-solver');
+  solver.classList.add('on');
+  const titles = {linear:'Lineal: ax + b ⊳ c', quad:'Cuadrática: ax² + bx + c ⊳ 0', system:'Sistema de Inecuaciones', abs:'Valor Absoluto: |ax + b| ⊳ c'};
+  document.getElementById('ineq-solver-title').textContent = titles[type]||type;
+  buildIneqForm(type);
+}
+
+function ineqBack() {
+  ineqType = null;
+  document.getElementById('ineq-pick-screen').style.display = '';
+  const solver = document.getElementById('ineq-solver');
+  solver.classList.remove('on');
+}
+
+function ineqSymCycle(btnId, symbols) {
+  const btn = document.getElementById(btnId);
+  const cur = btn.textContent;
+  const idx = (symbols.indexOf(cur)+1) % symbols.length;
+  btn.textContent = symbols[idx];
+}
+
+function buildIneqForm(type) {
+  const body = document.getElementById('ineq-solver-body');
+  const syms = ['<', '≤', '>', '≥'];
+  if(type==='linear') {
+    body.innerHTML = `
+      <div class="mat-sec">Inecuación Lineal</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax + b  ⊳  c</div>
+      <div class="ineq-row">
+        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>
+        <span style="font-size:14px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="3" type="number" step="any"></div>
+        <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&gt;</button>
+        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="7" type="number" step="any"></div>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveLinear()">Resolver</button>
+      <div id="ineq-res"></div>
+      <canvas id="ineq-numline" height="72"></canvas>`;
+  } else if(type==='quad') {
+    body.innerHTML = `
+      <div class="mat-sec">Inecuación Cuadrática</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax² + bx + c  ⊳  0</div>
+      <div class="ineq-row">
+        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="1" type="number" step="any"></div>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x² +</span>
+        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-3" type="number" step="any"></div>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="2" type="number" step="any"></div>
+        <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">0</span>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveQuad()">Resolver</button>
+      <div id="ineq-res"></div>
+      <canvas id="ineq-numline" height="72"></canvas>`;
+  } else if(type==='system') {
+    body.innerHTML = `
+      <div class="mat-sec">Sistema de Inecuaciones</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">Dos inecuaciones lineales simultáneas</div>
+      <div class="ineq-row" style="margin-bottom:6px">
+        <div class="ineq-inp-grp"><label>a₁</label><input class="ineq-inp" id="iq-a1" value="1" type="number" step="any"></div>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <div class="ineq-inp-grp"><label>b₁</label><input class="ineq-inp" id="iq-b1" value="-2" type="number" step="any"></div>
+        <button class="ineq-sym-btn on" id="iq-s1" onclick="ineqSymCycle('iq-s1',['<','≤','>','≥'])">&gt;</button>
+        <div class="ineq-inp-grp"><label>c₁</label><input class="ineq-inp" id="iq-c1" value="-1" type="number" step="any"></div>
+      </div>
+      <div class="ineq-row">
+        <div class="ineq-inp-grp"><label>a₂</label><input class="ineq-inp" id="iq-a2" value="1" type="number" step="any"></div>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <div class="ineq-inp-grp"><label>b₂</label><input class="ineq-inp" id="iq-b2" value="3" type="number" step="any"></div>
+        <button class="ineq-sym-btn on" id="iq-s2" onclick="ineqSymCycle('iq-s2',['<','≤','>','≥'])">&lt;</button>
+        <div class="ineq-inp-grp"><label>c₂</label><input class="ineq-inp" id="iq-c2" value="10" type="number" step="any"></div>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveSystem()">Resolver</button>
+      <div id="ineq-res"></div>
+      <canvas id="ineq-numline" height="72"></canvas>`;
+  } else if(type==='abs') {
+    body.innerHTML = `
+      <div class="mat-sec">Valor Absoluto</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">|ax + b|  ⊳  c</div>
+      <div class="ineq-row">
+        <span style="font-size:16px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">|</span>
+        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>
+        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-1" type="number" step="any"></div>
+        <span style="font-size:16px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">|</span>
+        <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
+        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="5" type="number" step="any"></div>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveAbs()">Resolver</button>
+      <div id="ineq-res"></div>
+      <canvas id="ineq-numline" height="72"></canvas>`;
+  }
+  // Add missing CSS for ineq-inp-grp
+  if(!document.getElementById('ineq-inp-grp-style')){
+    const st=document.createElement('style');
+    st.id='ineq-inp-grp-style';
+    st.textContent=`.ineq-inp-grp{display:flex;flex-direction:column;gap:4px}.ineq-inp-grp label{font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;text-align:center}`;
+    document.head.appendChild(st);
+  }
+}
+
+function ineqShowResult(html, intervals, steps) {
+  let out=`<div class="ineq-res">`;
+  out+=`<div class="ineq-res-expr">${html}</div>`;
+  if(intervals) out+=`<div class="ineq-res-interval">Solución: ${intervals}</div>`;
+  if(steps) steps.forEach(s=>{ out+=`<div class="ineq-res-step">${s}</div>`; });
+  out+=`</div>`;
+  document.getElementById('ineq-res').innerHTML=out;
+}
+
+function ineqSolveLinear() {
+  const a=parseFloat(document.getElementById('iq-a').value)||0;
+  const b=parseFloat(document.getElementById('iq-b').value)||0;
+  const c=parseFloat(document.getElementById('iq-c').value)||0;
+  let sym=document.getElementById('iq-sym').textContent;
+  const steps=[];
+  steps.push(`${a}x + ${b} ${sym} ${c}`);
+  steps.push(`${a}x ${sym} ${c - b}`);
+  let sol, symFinal=sym;
+  const rhs=(c-b);
+  if(Math.abs(a)<1e-12){
+    const lhs=b;
+    const sat=checkIneq(lhs,sym,c);
+    sol=sat?'x ∈ ℝ (toda la recta real)':'No hay solución';
+    steps.push(sat?'Siempre verdadero':'Siempre falso');
+  } else {
+    let x=rhs/a;
+    if(a<0){ symFinal=flipSym(sym); steps.push(`÷ ${a} (negativo — invierte desigualdad)`); }
+    else steps.push(`÷ ${a}`);
+    steps.push(`x ${symFinal} ${matFmtNum(x)}`);
+    sol=ineqIntervalLinear(symFinal,x);
+    drawNumLine([{val:x,sym:symFinal,color:'#f472b6'}],[sol]);
+  }
+  ineqShowResult(`${a}x + ${b} ${sym} ${c}`, sol, steps);
+}
+
+function ineqSolveQuad() {
+  const a=parseFloat(document.getElementById('iq-a').value)||1;
+  const b=parseFloat(document.getElementById('iq-b').value)||0;
+  const c=parseFloat(document.getElementById('iq-c').value)||0;
+  const sym=document.getElementById('iq-sym').textContent;
+  const disc=b*b-4*a*c;
+  const steps=[`${a}x² + ${b}x + ${c} ${sym} 0`];
+  steps.push(`Discriminante: b²−4ac = ${matFmtNum(disc)}`);
+  let sol, roots=[];
+  if(disc<0){
+    const alwaysPos=a>0;
+    if((sym==='>'||sym==='≥')===alwaysPos){ sol='x ∈ ℝ'; steps.push('Sin raíces reales — parábola siempre '+(a>0?'positiva':'negativa')); }
+    else { sol='Sin solución'; steps.push('Sin raíces reales — no cumple la desigualdad'); }
+  } else if(Math.abs(disc)<1e-12){
+    const r=-b/(2*a);
+    roots=[r];
+    steps.push(`Raíz doble: x = ${matFmtNum(r)}`);
+    sol=sym==='<'?'Sin solución':sym==='≤'?`x = ${matFmtNum(r)}`:`x ∈ ℝ \\ {${matFmtNum(r)}}`;
+  } else {
+    const r1=(-b-Math.sqrt(disc))/(2*a), r2=(-b+Math.sqrt(disc))/(2*a);
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
+    roots=[lo,hi];
+    steps.push(`Raíces: x₁ = ${matFmtNum(lo)}, x₂ = ${matFmtNum(hi)}`);
+    const inside=(sym==='<'||sym==='≤');
+    const closed=(sym==='≤'||sym==='≥');
+    if((a>0&&inside)||(a<0&&!inside)){
+      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`; 
+      steps.push(`a${a>0?'>':'<'}0 → solución interior al intervalo`);
+    } else {
+      const br=closed?']':')';const bl=closed?'[':'(';
+      sol=`(-∞, ${matFmtNum(lo)}${br} ∪ ${bl}${matFmtNum(hi)}, +∞)`;
+      steps.push(`a${a>0?'>':'<'}0 → solución exterior al intervalo`);
+    }
+  }
+  ineqShowResult(`${a}x² + ${b}x + ${c} ${sym} 0`, sol, steps);
+  drawNumLine(roots.map(r=>({val:r,sym:'root',color:'#f472b6'})),[sol]);
+}
+
+function ineqSolveSystem() {
+  const a1=parseFloat(document.getElementById('iq-a1').value)||1;
+  const b1=parseFloat(document.getElementById('iq-b1').value)||0;
+  const c1=parseFloat(document.getElementById('iq-c1').value)||0;
+  const s1=document.getElementById('iq-s1').textContent;
+  const a2=parseFloat(document.getElementById('iq-a2').value)||1;
+  const b2=parseFloat(document.getElementById('iq-b2').value)||0;
+  const c2=parseFloat(document.getElementById('iq-c2').value)||0;
+  const s2=document.getElementById('iq-s2').textContent;
+  const steps=[`Inecuación 1: ${a1}x + ${b1} ${s1} ${c1}`,`Inecuación 2: ${a2}x + ${b2} ${s2} ${c2}`];
+  const solve1=ineqLinearBound(a1,b1,c1,s1);
+  const solve2=ineqLinearBound(a2,b2,c2,s2);
+  steps.push(`I1 → x ${solve1.sym} ${matFmtNum(solve1.val)}`);
+  steps.push(`I2 → x ${solve2.sym} ${matFmtNum(solve2.val)}`);
+  const inter=ineqIntersect(solve1,solve2);
+  const sol=inter||'Sin solución (intersección vacía)';
+  steps.push(`Intersección: ${sol}`);
+  ineqShowResult(`Sistema`,sol,steps);
+  drawNumLine([{val:solve1.val,sym:solve1.sym,color:'#7c6af7'},{val:solve2.val,sym:solve2.sym,color:'#22d3ee'}],[sol]);
+}
+
+function ineqSolveAbs() {
+  const a=parseFloat(document.getElementById('iq-a').value)||1;
+  const b=parseFloat(document.getElementById('iq-b').value)||0;
+  const c=parseFloat(document.getElementById('iq-c').value)||0;
+  const sym=document.getElementById('iq-sym').textContent;
+  const steps=[`|${a}x + ${b}| ${sym} ${c}`];
+  let sol;
+  if(c<0&&(sym==='<'||sym==='≤')){ sol='Sin solución (|·| ≥ 0)'; steps.push('El valor absoluto nunca es negativo'); }
+  else if(c<0&&(sym==='>'||sym==='≥')){ sol='x ∈ ℝ'; steps.push('|·| siempre ≥ 0 > c'); }
+  else {
+    const r1=(-b+c)/a, r2=(-b-c)/a;
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
+    const closed=(sym==='≤'||sym==='≥');
+    if(sym==='<'||sym==='≤'){
+      steps.push(`−${c} ${flipSym(sym)} ${a}x + ${b} ${sym} ${c}`);
+      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
+      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`;
+    } else {
+      steps.push(`${a}x + ${b} ${sym} ${c}  ó  ${a}x + ${b} ${flipSym(sym)} −${c}`);
+      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
+      const br=closed?']':')';const bl=closed?'[':'(';
+      sol=`(-∞, ${matFmtNum(lo)}${br} ∪ ${bl}${matFmtNum(hi)}, +∞)`;
+    }
+  }
+  ineqShowResult(`|${a}x + ${b}| ${sym} ${c}`,sol,steps);
+  drawNumLine([{val:(-b+c)/a,sym:'root',color:'#f472b6'},{val:(-b-c)/a,sym:'root',color:'#f472b6'}],[sol]);
+}
+
+// ── Ineq helpers ──
+function flipSym(s){ return {'>':'<','<':'>','≥':'≤','≤':'≥'}[s]||s; }
+function checkIneq(a,sym,b){ return {'>':a>b,'<':a<b,'≥':a>=b,'≤':a<=b}[sym]; }
+function ineqIntervalLinear(sym,x){
+  if(sym==='>') return `(${matFmtNum(x)}, +∞)`;
+  if(sym==='≥') return `[${matFmtNum(x)}, +∞)`;
+  if(sym==='<') return `(-∞, ${matFmtNum(x)})`;
+  if(sym==='≤') return `(-∞, ${matFmtNum(x)}]`;
+  return '';
+}
+function ineqLinearBound(a,b,c,sym){
+  const rhs=c-b; let x=rhs/(a||1), s=sym;
+  if(a<0) s=flipSym(sym);
+  return {val:x,sym:s};
+}
+function ineqIntersect(s1,s2){
+  // Both as intervals [lo,hi], compute intersection
+  const lo1=(s1.sym==='>'||s1.sym==='≥')?s1.val:-Infinity;
+  const hi1=(s1.sym==='<'||s1.sym==='≤')?s1.val:Infinity;
+  const lo2=(s2.sym==='>'||s2.sym==='≥')?s2.val:-Infinity;
+  const hi2=(s2.sym==='<'||s2.sym==='≤')?s2.val:Infinity;
+  const lo=Math.max(lo1,lo2), hi=Math.min(hi1,hi2);
+  if(lo>hi) return null;
+  const loS=isFinite(lo)?matFmtNum(lo):'-∞', hiS=isFinite(hi)?matFmtNum(hi):'+∞';
+  const loBr=(s1.sym==='≥'||s2.sym==='≥')?'[':'(';
+  const hiBr=(s1.sym==='≤'||s2.sym==='≤')?']':')';
+  return `${loBr}${loS}, ${hiS}${hiBr}`;
+}
+
+// ── Number line canvas ──
+function drawNumLine(points, solutionLabels) {
+  const canvas=document.getElementById('ineq-numline');
+  if(!canvas) return;
+  const W=canvas.offsetWidth||320; canvas.width=W; canvas.height=72;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,72);
+  // Background
+  ctx.fillStyle='#111827'; ctx.fillRect(0,0,W,72);
+  // Compute range
+  const vals=points.map(p=>p.val).filter(v=>isFinite(v));
+  if(!vals.length) return;
+  const ctr=(Math.min(...vals)+Math.max(...vals))/2;
+  const span=Math.max(Math.max(...vals)-Math.min(...vals),4)*1.6;
+  const lo=ctr-span/2, hi=ctr+span/2;
+  const toX=v=>16+(v-lo)/(hi-lo)*(W-32);
+  // Axis line
+  const ay=38;
+  ctx.strokeStyle='#1e2d45'; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(12,ay); ctx.lineTo(W-12,ay); ctx.stroke();
+  ctx.fillStyle='#3a5a7a';ctx.font='10px Space Mono';ctx.textAlign='center';
+  // Ticks
+  for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){
+    const x=toX(v);
+    ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,ay-4);ctx.lineTo(x,ay+4);ctx.stroke();
+    if((hi-lo)<20) ctx.fillText(v,x,ay+16);
+  }
+  // Points
+  points.forEach(({val,sym,color})=>{
+    if(!isFinite(val)) return;
+    const x=toX(val);
+    const filled=(sym==='≤'||sym==='≥'||sym==='root');
+    ctx.beginPath();ctx.arc(x,ay,7,0,Math.PI*2);
+    ctx.strokeStyle=color;ctx.lineWidth=2;
+    if(filled){ ctx.fillStyle=color;ctx.fill(); }
+    else { ctx.fillStyle='#111827';ctx.fill(); ctx.stroke(); }
+    ctx.stroke();
+    ctx.fillStyle=color;ctx.font='bold 10px Space Mono';ctx.textAlign='center';
+    ctx.fillText(matFmtNum(val),x,ay-14);
+  });
+  // Arrows for unbounded
+  ctx.strokeStyle='#f472b6';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+  // (simplified — just show colored region hint)
+  ctx.setLineDash([]);
+}
+
+
+
+
 </script>
 
-<!-- EM MODULE -->
 <div id="em-app">
   <div class="em-header">
-    <button class="em-back" onclick="goHome()">← Inicio</button>
+    <button class="em-back" onclick="closeModule('em')">← Inicio</button>
     <div class="em-logo">
       <div class="em-logo-text">Electro<span>Mag</span></div>
-      <div class="em-logo-ver">v 2.1.8</div>
+      <div class="em-logo-ver">v 3.0.0</div>
     </div>
     <div class="em-coord-pill">
       <button id="em-cart" class="on" onclick="emSetCoord('cart')">XYZ</button>
@@ -2085,6 +3225,132 @@ function emCalcMaxwell(){
     <div id="em-pLorentz"   class="em-panel"></div>
     <div id="em-pFaraday"   class="em-panel"></div>
     <div id="em-pMaxwell"   class="em-panel"></div>
+  </div>
+</div>
+
+<!-- MATRICES & ECUACIONES LINEALES -->
+<div id="mat-app">
+  <div class="mod-header">
+    <button class="mod-back al" onclick="closeModule('mat')">← AL</button>
+    <div style="flex:1">
+      <div class="mod-logo-text"><span class="al-c">Matrices</span> & Ec. Lineales</div>
+      <div class="mod-logo-ver">v 3.0.0</div>
+    </div>
+  </div>
+  <div class="mat-tabs">
+    <button class="mat-tab on"  onclick="matTab('ops')">Operaciones</button>
+    <button class="mat-tab"     onclick="matTab('det')">Det &amp; Inv</button>
+    <button class="mat-tab"     onclick="matTab('sis')">Sistemas</button>
+    <button class="mat-tab"     onclick="matTab('eig')">Eigenvalores</button>
+  </div>
+  <div class="mat-body">
+    <!-- OPERACIONES -->
+    <div id="mat-pOps" class="mat-panel on">
+      <div class="mat-sec">Operaciones entre matrices</div>
+      <div class="mat-row" style="flex-wrap:wrap;gap:6px">
+        <label>Operación:</label>
+        <select class="mat-sel" id="mat-op" onchange="matOpsRebuild()">
+          <option value="add">Suma A+B+...</option>
+          <option value="sub">Resta A−B−...</option>
+          <option value="mul">Producto A×B×...</option>
+          <option value="sca">Escalar k×A</option>
+          <option value="tra">Transpuesta Aᵀ</option>
+        </select>
+      </div>
+      <div id="mat-ops-controls"></div>
+      <div id="mat-ops-grids"></div>
+      <button class="mat-btn" onclick="matCalcOps()">Calcular</button>
+      <button class="mat-btn sec" onclick="matOpsReset()">Reset</button>
+      <div id="mat-res-ops"></div>
+    </div>
+    <!-- DETERMINANTE E INVERSA -->
+    <div id="mat-pDet" class="mat-panel">
+      <div class="mat-sec">Determinante e Inversa</div>
+      <div class="mat-row">
+        <label>Tamaño n×n:</label>
+        <input class="mat-inp" id="mat-dn" value="2" min="1" max="5" type="number" onchange="matBuildDet()">
+      </div>
+      <div id="mat-det-grid"></div>
+      <button class="mat-btn" onclick="matCalcDet()">Calcular Det</button>
+      <button class="mat-btn" onclick="matCalcInv()">Calcular Inv</button>
+      <button class="mat-btn sec" onclick="matClearDet()">Limpiar</button>
+      <div id="mat-res-det"></div>
+    </div>
+    <!-- SISTEMAS -->
+    <div id="mat-pSis" class="mat-panel">
+      <div class="mat-sec">Sistemas de Ecuaciones — Ax = b</div>
+      <div class="mat-row">
+        <label>Ecuaciones:</label>
+        <input class="mat-inp" id="mat-sn" value="2" min="2" max="6" type="number" onchange="matBuildSis()">
+        <label>Método:</label>
+        <select class="mat-sel" id="mat-smet">
+          <option value="gauss">Gauss-Jordan</option>
+          <option value="cramer">Cramer</option>
+        </select>
+      </div>
+      <div id="mat-sis-grid"></div>
+      <button class="mat-btn" onclick="matCalcSis()">Resolver</button>
+      <button class="mat-btn sec" onclick="matClearSis()">Limpiar</button>
+      <div id="mat-res-sis"></div>
+    </div>
+    <!-- EIGENVALORES -->
+    <div id="mat-pEig" class="mat-panel">
+      <div class="mat-sec">Valores &amp; Vectores Propios</div>
+      <div class="mat-row">
+        <label>Tamaño n×n:</label>
+        <input class="mat-inp" id="mat-en" value="2" min="2" max="4" type="number" onchange="matBuildEig()">
+      </div>
+      <div id="mat-eig-grid"></div>
+      <button class="mat-btn" onclick="matCalcEig()">Calcular</button>
+      <button class="mat-btn sec" onclick="matClearEig()">Limpiar</button>
+      <div id="mat-res-eig"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- INECUACIONES -->
+<div id="ineq-app">
+  <div class="mod-header">
+    <button class="mod-back al" onclick="closeModule('ineq')">← AL</button>
+    <div style="flex:1">
+      <div class="mod-logo-text"><span class="al-c">Inecuaciones</span></div>
+      <div class="mod-logo-ver">v 3.0.0</div>
+    </div>
+  </div>
+  <!-- TYPE PICKER -->
+  <div id="ineq-pick-screen" class="ineq-pick">
+    <div class="ineq-pick-title">Selecciona el tipo</div>
+    <div class="ineq-type-grid">
+      <div class="ineq-type-card" onclick="ineqSetType('linear')">
+        <div class="ineq-type-icon">📏</div>
+        <div class="ineq-type-name">Lineal</div>
+        <div class="ineq-type-desc">ax + b &gt; c</div>
+      </div>
+      <div class="ineq-type-card" onclick="ineqSetType('quad')">
+        <div class="ineq-type-icon">📐</div>
+        <div class="ineq-type-name">Cuadrática</div>
+        <div class="ineq-type-desc">ax² + bx + c &gt; 0</div>
+      </div>
+      <div class="ineq-type-card" onclick="ineqSetType('system')">
+        <div class="ineq-type-icon">🔗</div>
+        <div class="ineq-type-name">Sistema</div>
+        <div class="ineq-type-desc">2 inecuaciones lineales</div>
+      </div>
+      <div class="ineq-type-card" onclick="ineqSetType('abs')">
+        <div class="ineq-type-icon">| |</div>
+        <div class="ineq-type-name">Valor Absoluto</div>
+        <div class="ineq-type-desc">|ax + b| &gt; c</div>
+      </div>
+    </div>
+  </div>
+  <!-- SOLVER -->
+  <div id="ineq-solver" class="ineq-solver">
+    <div class="mod-header" style="background:#111827;border-top:1px solid #1e2d45;border-bottom:1px solid #1e2d45;padding:8px 14px;">
+      <button class="ineq-btn sec" onclick="ineqBack()" style="font-size:10px;padding:5px 10px;">← Tipos</button>
+      <span id="ineq-solver-title" style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#f472b6;margin-left:8px;"></span>
+    </div>
+    <div class="ineq-solver-body" id="ineq-solver-body"></div>
   </div>
 </div>
 
