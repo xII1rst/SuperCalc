@@ -1820,26 +1820,70 @@ function matInv(M) {
   }
   return aug.map(row=>row.slice(n));
 }
+// ── Fracción exacta helpers ──
+let sisFracMode=false;
+function matSisToggleFrac(){
+  sisFracMode=!sisFracMode;
+  const tog=document.getElementById('sis-frac-tog');
+  const lbl=document.getElementById('sis-frac-lbl');
+  if(tog) tog.classList.toggle('on',sisFracMode);
+  if(lbl) lbl.textContent=sisFracMode?'FRAC':'DEC';
+}
+function fGcd(a,b){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;}
+function fSimp([n,d]){if(d===0)return[n,d];const g=fGcd(Math.abs(n),Math.abs(d));const s=d<0?-1:1;return[s*n/g,s*d/g];}
+function fAdd([an,ad],[bn,bd]){return fSimp([an*bd+bn*ad,ad*bd]);}
+function fSub([an,ad],[bn,bd]){return fSimp([an*bd-bn*ad,ad*bd]);}
+function fMul([an,ad],[bn,bd]){return fSimp([an*bn,ad*bd]);}
+function fDiv([an,ad],[bn,bd]){return fSimp([an*bd,ad*bn]);}
+function fStr([n,d],useFrac){
+  if(d===0)return'∞';
+  const v=n/d;
+  if(!useFrac) return matFmtNum(v);
+  if(d===1)return`${n}`;
+  return`${n}/${d}`;
+}
+function toFrac2(x){
+  // convert float to exact fraction via continued fractions
+  if(!isFinite(x))return[x>0?1:-1,0];
+  const sign=x<0?-1:1;x=Math.abs(x);
+  const maxIter=20,eps=1e-9;
+  let [n0,d0,n1,d1]=[1,0,0,1];
+  let rem=x;
+  for(let i=0;i<maxIter;i++){
+    const a=Math.floor(rem);
+    [n0,n1]=[a*n0+n1,n0];
+    [d0,d1]=[a*d0+d1,d0];
+    const frac=rem-a;
+    if(frac<eps)break;
+    rem=1/frac;
+  }
+  return fSimp([sign*n0,d0]);
+}
 function matGauss(A,b) {
   const n=A.length;
-  const aug=A.map((row,i)=>[...row,b[i]]);
+  // Convert to fractions
+  const aug=A.map((row,i)=>[...row,b[i]].map(v=>toFrac2(v)));
   const steps=[];
   for(let col=0;col<n;col++){
+    // Partial pivot by absolute value of numerator/denominator
     let maxR=col;
-    for(let r=col+1;r<n;r++) if(Math.abs(aug[r][col])>Math.abs(aug[maxR][col])) maxR=r;
+    for(let r=col+1;r<n;r++){
+      const [an,ad]=aug[r][col],[bn,bd]=aug[maxR][col];
+      if(Math.abs(an/ad)>Math.abs(bn/bd)) maxR=r;
+    }
     if(maxR!==col){ [aug[col],aug[maxR]]=[aug[maxR],aug[col]]; steps.push(`Swap F${col+1} ↔ F${maxR+1}`); }
     const piv=aug[col][col];
-    if(Math.abs(piv)<1e-12) return {sol:null,steps,inconsistent:true};
+    if(Math.abs(piv[0]/piv[1])<1e-12) return {sol:null,steps,inconsistent:true};
     for(let r=0;r<n;r++) if(r!==col){
-      const f=aug[r][col]/piv;
-      if(Math.abs(f)<1e-12) continue;
-      for(let j=col;j<=n;j++) aug[r][j]-=f*aug[col][j];
-      steps.push(`F${r+1} ← F${r+1} − (${matFmtNum(f)})·F${col+1}`);
+      const f=fDiv(aug[r][col],piv);
+      if(Math.abs(f[0]/f[1])<1e-12) continue;
+      for(let j=col;j<=n;j++) aug[r][j]=fSub(aug[r][j],fMul(f,aug[col][j]));
+      steps.push(`F${r+1} ← F${r+1} − (${fStr(f,true)})·F${col+1}`);
     }
-    steps.push(`Pivote col ${col+1}: ${matFmtNum(piv)}`);
+    steps.push(`Pivote col ${col+1}: ${fStr(piv,true)}`);
   }
-  const sol=aug.map((row,i)=>row[n]/row[i]);
-  return {sol,steps,inconsistent:false};
+  const sol=aug.map((row,i)=>fDiv(row[n],row[i]));
+  return {sol,steps,inconsistent:false,isFrac:true};
 }
 function matCramer(A,b) {
   const n=A.length,detA=matDet(A);
@@ -2070,11 +2114,19 @@ function matCalcSis() {
   if(met==='gauss'){
     const {sol,steps,inconsistent}=matGauss(A.map(r=>[...r]),b.map(v=>v));
     html+=`<div class="mat-res-lbl">Gauss-Jordan — pasos:</div>`;
-    steps.forEach(s=>{ html+=`<div class="mat-step">${s}</div>`; });
+    steps.forEach(s=>{
+      // steps already contain fraction strings; reformat dec parts if not fracMode
+      let display=s;
+      if(!sisFracMode){
+        // replace any a/b fraction tokens with decimals
+        display=s.replace(/(-?\d+)\/(\d+)/g,(_,n,d)=>matFmtNum(parseInt(n)/parseInt(d)));
+      }
+      html+=`<div class="mat-step">${display}</div>`;
+    });
     if(inconsistent||!sol){ html+=`<div class="mat-err">Sistema sin solución o infinitas soluciones.</div>`; }
     else {
       html+=`<div class="mat-res-lbl" style="margin-top:8px">Solución:</div><div class="mat-res-val">`;
-      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${matFmtNum(v)}<br>`; });
+      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${fStr(v,sisFracMode)}<br>`; });
       html+='</div>';
     }
   } else {
@@ -2083,7 +2135,7 @@ function matCalcSis() {
     else {
       html+=`<div class="mat-res-lbl">Cramer — det(A) = ${matFmtNum(matDet(A))}</div>`;
       html+=`<div class="mat-res-val">`;
-      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${matFmtNum(v)}<br>`; });
+      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${sisFracMode?fStr(toFrac2(v),true):matFmtNum(v)}<br>`; });
       html+='</div>';
     }
   }

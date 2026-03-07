@@ -209,8 +209,14 @@
         </select>
       </div>
       <div id="mat-sis-grid"></div>
-      <button class="mat-btn" onclick="matCalcSis()">Resolver</button>
-      <button class="mat-btn sec" onclick="matClearSis()">Limpiar</button>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="mat-btn" onclick="matCalcSis()">Resolver</button>
+        <button class="mat-btn sec" onclick="matClearSis()">Limpiar</button>
+        <div class="icon-tog" id="sis-frac-tog" onclick="matSisToggleFrac()" style="margin-left:auto">
+          <span class="tog-lbl" id="sis-frac-lbl">DEC</span>
+          <div class="sw"><div class="sw-track"></div><div class="sw-knob"></div></div>
+        </div>
+      </div>
       <div id="mat-res-sis"></div>
     </div>
     <!-- EIGENVALORES -->
