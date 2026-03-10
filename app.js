@@ -41,6 +41,7 @@ function showInstallBanner(){
 function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{
   deferredPrompt=null;dismissInstall();});
 }
+function dismissInstall(){const b=document.getElementById('install-banner');if(b)b.remove();}
 
 // ── PALETTE ───────────────────────────────────────────
 // ── PWA MANIFEST (SuperCalc branding) ──────────────
