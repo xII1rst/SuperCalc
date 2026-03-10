@@ -300,6 +300,7 @@
     <button class="calc-tab"     onclick="calcTab('int')">∫ Integral</button>
     <button class="calc-tab"     onclick="calcTab('mul')">∇ Multivariable</button>
     <button class="calc-tab"     onclick="calcTab('edo')">dy/dx Ec. Dif.</button>
+    <button class="calc-tab"     onclick="calcTab('graf')">📈 Graficar</button>
   </div>
   <div class="calc-body">
 
@@ -561,6 +562,71 @@
         <button class="calc-btn" onclick="calcEDO2nd()">Resolver</button>
         <button class="calc-btn sec" onclick="calcClear('edo-2do')">Limpiar</button>
         <div id="edo-2do-res"></div>
+
+      </div>
+    </div>
+
+    <!-- ══ GRAFICACIÓN ══ -->
+    <div class="calc-panel" id="calc-pGraf">
+      <div class="calc-scroll">
+
+        <div class="calc-sec">Tipo de función</div>
+        <div class="graf-type-grid">
+          <div class="graf-type-card sel" id="gtype-lin" onclick="grafSetType('lin')">
+            <div class="graf-type-icon">📏</div>
+            <div class="graf-type-name">Lineal</div>
+            <div class="graf-type-form">y = mx + b</div>
+          </div>
+          <div class="graf-type-card" id="gtype-quad" onclick="grafSetType('quad')">
+            <div class="graf-type-icon">∪</div>
+            <div class="graf-type-name">Cuadrática</div>
+            <div class="graf-type-form">y = ax² + bx + c</div>
+          </div>
+          <div class="graf-type-card" id="gtype-abs" onclick="grafSetType('abs')">
+            <div class="graf-type-icon">|x|</div>
+            <div class="graf-type-name">Valor absoluto</div>
+            <div class="graf-type-form">y = a|x + h| + k</div>
+          </div>
+          <div class="graf-type-card" id="gtype-exp" onclick="grafSetType('exp')">
+            <div class="graf-type-icon">eˣ</div>
+            <div class="graf-type-name">Exponencial</div>
+            <div class="graf-type-form">y = a · bˣ</div>
+          </div>
+        </div>
+
+        <!-- Coeficientes dinámicos -->
+        <div class="graf-inputs" id="graf-inputs-wrap">
+          <div class="graf-inputs-title" id="graf-inputs-title">Coeficientes — Lineal</div>
+          <div id="graf-coef-fields"><!-- generado por JS --></div>
+          <div class="graf-formula-preview" id="graf-formula-preview">y = x</div>
+        </div>
+
+        <!-- Puntos -->
+        <div class="graf-pts-row">
+          <label>Puntos a calcular (cada lado de 0):</label>
+          <select class="graf-pts-sel" id="graf-pts-n" onchange="grafUpdate()">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+
+        <button class="calc-btn" onclick="grafDraw()">Graficar</button>
+        <button class="calc-btn sec" onclick="grafClear()">Limpiar</button>
+
+        <!-- Canvas -->
+        <div class="graf-canvas-wrap" id="graf-canvas-wrap" style="display:none">
+          <canvas id="graf-cv" height="300"></canvas>
+          <div class="graf-table-overlay" id="graf-table"></div>
+        </div>
+
+        <!-- Pasos -->
+        <div id="graf-steps-wrap" style="display:none">
+          <div class="graf-steps-title">Cálculo de puntos</div>
+          <div id="graf-steps"></div>
+        </div>
 
       </div>
     </div>

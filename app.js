@@ -2503,13 +2503,14 @@ function calcSetActiveInput(el) { calcActiveInput = el; }
 // ── Navegación ──
 function calcTab(id) {
   document.querySelectorAll('.calc-tab').forEach((t,i) => {
-    t.classList.toggle('on', ['dif','int','mul','edo'][i] === id);
+    t.classList.toggle('on', ['dif','int','mul','edo','graf'][i] === id);
   });
-  ['Dif','Int','Mul','Edo'].forEach(p => {
+  ['Dif','Int','Mul','Edo','Graf'].forEach(p => {
     const el = document.getElementById('calc-p'+p);
     if(el) el.classList.toggle('on', p.toLowerCase() === id);
   });
   calcCurrentTab = id;
+  if(id==='graf') grafInitFields();
 }
 
 // ── Teclado tipo C ──
@@ -3099,7 +3100,7 @@ function calcPartial() {
   resEl.innerHTML = calcResHTML(
     `∂${ord>1?ord:''}f/∂${varName}${ord>1?ord:''} [${fxyStr}]`,
     steps,
-    `Ver tabla de valores (evaluación numérica)`
+    `Ver tabla de valores (evaluación numérica)`,
   );
 }
 
@@ -3137,11 +3138,7 @@ function calcGradient() {
   const dfx = (calcEval(fn,x+h,y)-calcEval(fn,x-h,y))/(2*h);
   const dfy = (calcEval(fn,x,y+h)-calcEval(fn,x,y-h))/(2*h);
 
-  resEl.innerHTML = calcResHTML(
-    `∇f(${x0Str||'x'},${y0Str||'y'})`,
-    steps,
-    `(${cFmt(dfx)}, ${cFmt(dfy)})`
-  );
+  resEl.innerHTML = calcResHTML(`∇f(${x0Str||'x'},${y0Str||'y'})`, steps, `(${cFmt(dfx)}, ${cFmt(dfy)})`);
 }
 
 function calcDoubleIntegral() {
@@ -3234,7 +3231,7 @@ function calcEDOSep() {
   steps.push(`  y(${cFmt(xs[xs.length-1])}) ≈ ${cFmt(ys[ys.length-1])}`);
 
   resEl.innerHTML=calcResHTML(`dy/dx = ${rhsStr}, y(${x0})=${y0}`, steps,
-    `y(${cFmt(x0+5)}) ≈ ${cFmt(ys[ys.length-1])}`);
+    `y(${cFmt(x0+5)}) ≈ ${cFmt(ys[ys.length-1])}}`);
 }
 
 function calcEDOLinear() {
@@ -3348,7 +3345,27 @@ function calcEDO2nd() {
     });
   }
 
-  resEl.innerHTML=calcResHTML(`${cFmt(a)}y''+${cFmt(b)}y'+${cFmt(c)}y=0`, steps, sol);
+  // build plot points for 2nd order solution
+  const _edo2pts=[];
+  for(let _xi=0;_xi<=30;_xi++){
+    const _x=_xi*0.2;
+    let _yv=NaN;
+    const _disc=b*b-4*a*c;
+    if(_disc>1e-9){
+      const _r1=(-b+Math.sqrt(_disc))/(2*a),_r2=(-b-Math.sqrt(_disc))/(2*a);
+      const _det=_r1-_r2,_C1=(dy0-_r2*y0)/_det,_C2=(_r1*y0-dy0)/_det;
+      _yv=_C1*Math.exp(_r1*_x)+_C2*Math.exp(_r2*_x);
+    } else if(Math.abs(_disc)<1e-9){
+      const _r=-b/(2*a),_C1=y0,_C2=dy0-_r*y0;
+      _yv=(_C1+_C2*_x)*Math.exp(_r*_x);
+    } else {
+      const _al=-b/(2*a),_be=Math.sqrt(-_disc)/(2*a);
+      const _C1=y0,_C2=(dy0-_al*y0)/_be;
+      _yv=Math.exp(_al*_x)*(_C1*Math.cos(_be*_x)+_C2*Math.sin(_be*_x));
+    }
+    if(isFinite(_yv)) _edo2pts.push([_x,_yv]);
+  }
+  resEl.innerHTML=calcResHTML(`${cFmt(a)}y''+${cFmt(b)}y'+${cFmt(c)}y=0`, steps, sol, {type:'ode',pts:_edo2pts,xMin:0,xMax:6});
 }
 
 // ── HTML renderer para resultados ──
@@ -3362,8 +3379,344 @@ function calcResHTML(expr, steps, result) {
   </div>`;
 }
 
+
 // ── Init al abrir módulo ──
 function calcInit() {
   calcInitKBs();
   calcTab('dif');
+}
+
+// ═══════════════════════════════════════════════════════
+// GRAFICACIÓN MODULE
+// ═══════════════════════════════════════════════════════
+
+let grafType = 'lin';
+
+// Definición de cada tipo: coeficientes, fórmula, evaluador, pasos
+const GRAF_TYPES = {
+  lin: {
+    title: 'Coeficientes — Lineal',
+    coefs: [
+      { id:'gm', label:'m =', placeholder:'1', default:'1' },
+      { id:'gb', label:'b =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const m=v.gm, b=v.gb;
+      const mStr = m==='1'?'':m==='-1'?'-':m;
+      const bPart = parseFloat(b)===0?'':(parseFloat(b)>0?` + ${b}`:` - ${Math.abs(parseFloat(b))}`);
+      return `y = ${mStr}x${bPart}` || 'y = x';
+    },
+    eval: (x,v) => parseFloat(v.gm)*x + parseFloat(v.gb),
+    steps: (x,v,y) => {
+      const m=parseFloat(v.gm), b=parseFloat(v.gb);
+      return [
+        `<span class="gs-op">y = m·x + b</span>`,
+        `<span class="gs-op">y = ${m}·(<span class="gs-x">${x}</span>) + ${b}</span>`,
+        `<span class="gs-op">y = ${m*x} + ${b}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+  quad: {
+    title: 'Coeficientes — Cuadrática',
+    coefs: [
+      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'gb', label:'b =', placeholder:'0', default:'0' },
+      { id:'gc', label:'c =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const a=v.ga, b=v.gb, c=v.gc;
+      const bPart = parseFloat(b)===0?'':(parseFloat(b)>0?` + ${b}x`:` - ${Math.abs(parseFloat(b))}x`);
+      const cPart = parseFloat(c)===0?'':(parseFloat(c)>0?` + ${c}`:` - ${Math.abs(parseFloat(c))}`);
+      return `y = ${a}x²${bPart}${cPart}`;
+    },
+    eval: (x,v) => parseFloat(v.ga)*x*x + parseFloat(v.gb)*x + parseFloat(v.gc),
+    steps: (x,v,y) => {
+      const a=parseFloat(v.ga), b=parseFloat(v.gb), c=parseFloat(v.gc);
+      return [
+        `<span class="gs-op">y = a·x² + b·x + c</span>`,
+        `<span class="gs-op">y = ${a}·(<span class="gs-x">${x}</span>)² + ${b}·(<span class="gs-x">${x}</span>) + ${c}</span>`,
+        `<span class="gs-op">y = ${a}·${x*x} + ${b*x} + ${c}</span>`,
+        `<span class="gs-op">y = ${a*x*x} + ${b*x} + ${c}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+  abs: {
+    title: 'Coeficientes — Valor Absoluto',
+    coefs: [
+      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'gh', label:'h =', placeholder:'0', default:'0' },
+      { id:'gk', label:'k =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const a=v.ga, h=parseFloat(v.gh), k=parseFloat(v.gk);
+      const hPart = h===0?'x':(h>0?`x + ${h}`:`x - ${Math.abs(h)}`);
+      const kPart = k===0?'':(k>0?` + ${k}`:` - ${Math.abs(k)}`);
+      return `y = ${a}|${hPart}|${kPart}`;
+    },
+    eval: (x,v) => parseFloat(v.ga)*Math.abs(x + parseFloat(v.gh)) + parseFloat(v.gk),
+    steps: (x,v,y) => {
+      const a=parseFloat(v.ga), h=parseFloat(v.gh), k=parseFloat(v.gk);
+      const inner = x+h;
+      return [
+        `<span class="gs-op">y = a·|x + h| + k</span>`,
+        `<span class="gs-op">y = ${a}·|(<span class="gs-x">${x}</span>) + ${h}| + ${k}</span>`,
+        `<span class="gs-op">y = ${a}·|${inner}| + ${k}</span>`,
+        `<span class="gs-op">y = ${a}·${Math.abs(inner)} + ${k}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+  exp: {
+    title: 'Coeficientes — Exponencial',
+    coefs: [
+      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'gbas', label:'b =', placeholder:'2', default:'2' },
+    ],
+    preview: (v) => `y = ${v.ga}·${v.gbas}ˣ`,
+    eval: (x,v) => parseFloat(v.ga)*Math.pow(parseFloat(v.gbas), x),
+    steps: (x,v,y) => {
+      const a=parseFloat(v.ga), b=parseFloat(v.gbas);
+      return [
+        `<span class="gs-op">y = a · bˣ</span>`,
+        `<span class="gs-op">y = ${a} · ${b}<span class="gs-x">^${x}</span></span>`,
+        `<span class="gs-op">y = ${a} · ${Math.pow(b,x).toFixed(4)}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+};
+
+function grafSetType(type) {
+  grafType = type;
+  document.querySelectorAll('.graf-type-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById('gtype-'+type).classList.add('sel');
+  grafInitFields();
+}
+
+function grafInitFields() {
+  const def = GRAF_TYPES[grafType];
+  if(!def) return;
+  document.getElementById('graf-inputs-title').textContent = def.title;
+  const wrap = document.getElementById('graf-coef-fields');
+  wrap.innerHTML = def.coefs.map(c => `
+    <div class="graf-coef-row">
+      <label>${c.label}</label>
+      <input class="graf-coef" id="${c.id}" placeholder="${c.placeholder}" value="${c.default}" oninput="grafPreview()"/>
+    </div>`).join('');
+  grafPreview();
+}
+
+function grafGetVals() {
+  const def = GRAF_TYPES[grafType];
+  const v = {};
+  def.coefs.forEach(c => {
+    const el = document.getElementById(c.id);
+    v[c.id] = el ? (el.value.trim()||c.default) : c.default;
+  });
+  return v;
+}
+
+function grafPreview() {
+  const def = GRAF_TYPES[grafType];
+  if(!def) return;
+  try {
+    const v = grafGetVals();
+    document.getElementById('graf-formula-preview').textContent = def.preview(v);
+  } catch(e) {}
+}
+
+function grafFmt(n) {
+  if(!isFinite(n)) return '—';
+  const r = Math.round(n*10000)/10000;
+  return r % 1 === 0 ? r.toString() : parseFloat(r.toFixed(4)).toString();
+}
+
+function grafDraw() {
+  const def = GRAF_TYPES[grafType];
+  if(!def) return;
+  const v   = grafGetVals();
+  const N   = parseInt(document.getElementById('graf-pts-n').value)||3;
+  const fn  = (x) => def.eval(x, v);
+
+  // Generar puntos: -N ... 0 ... +N (enteros)
+  const xs = [];
+  for(let i=-N; i<=N; i++) xs.push(i);
+  const pts = xs.map(x => ({ x, y: fn(x) }));
+
+  // Calcular rango del canvas con padding
+  const ys = pts.map(p=>p.y).filter(isFinite);
+  const xMin = -N-1, xMax = N+1;
+  let yMin = Math.min(...ys, 0)-1;
+  let yMax = Math.max(...ys, 0)+1;
+  // padding visual
+  const yPad = (yMax-yMin)*0.15;
+  yMin -= yPad; yMax += yPad;
+
+  // Mostrar canvas
+  const wrap = document.getElementById('graf-canvas-wrap');
+  wrap.style.display = 'block';
+
+  const cv = document.getElementById('graf-cv');
+  const dpr = window.devicePixelRatio||1;
+  const W = cv.offsetWidth||300;
+  const H = 300;
+  cv.width  = W*dpr;
+  cv.height = H*dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const toX = wx => (wx-xMin)/(xMax-xMin)*W;
+  const toY = wy => (1-(wy-yMin)/(yMax-yMin))*H;
+
+  // ── Fondo blanco como la referencia ──
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,W,H);
+
+  // ── Grid fino ──
+  ctx.strokeStyle = '#e0e8f0';
+  ctx.lineWidth = 0.5;
+  // verticales cada 1 unidad
+  for(let x=Math.ceil(xMin); x<=xMax; x++) {
+    const px=toX(x);
+    ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke();
+  }
+  // horizontales cada unidad entera
+  const yStep = grafGridStep(yMax-yMin, 7);
+  const y0g = Math.ceil(yMin/yStep)*yStep;
+  for(let y=y0g; y<=yMax; y+=yStep) {
+    const py=toY(y);
+    ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(W,py); ctx.stroke();
+  }
+
+  // ── Ejes en negro ──
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1.5;
+  // eje X
+  const axisY = toY(0);
+  ctx.beginPath(); ctx.moveTo(0,axisY); ctx.lineTo(W,axisY); ctx.stroke();
+  // eje Y
+  const axisX = toX(0);
+  ctx.beginPath(); ctx.moveTo(axisX,0); ctx.lineTo(axisX,H); ctx.stroke();
+
+  // ── Flechas en los ejes ──
+  const arr = 7;
+  ctx.fillStyle = '#000000';
+  // flecha derecha eje X
+  ctx.beginPath(); ctx.moveTo(W,axisY); ctx.lineTo(W-arr,axisY-arr/2); ctx.lineTo(W-arr,axisY+arr/2); ctx.closePath(); ctx.fill();
+  // flecha arriba eje Y
+  ctx.beginPath(); ctx.moveTo(axisX,0); ctx.lineTo(axisX-arr/2,arr); ctx.lineTo(axisX+arr/2,arr); ctx.closePath(); ctx.fill();
+
+  // ── Marcas y números en los ejes ──
+  ctx.fillStyle = '#333333';
+  ctx.font = `${10}px Space Mono, monospace`;
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  // eje X: números
+  for(let x=Math.ceil(xMin); x<=Math.floor(xMax); x++) {
+    if(x===0) continue;
+    const px=toX(x);
+    ctx.beginPath(); ctx.moveTo(px, axisY-3); ctx.lineTo(px, axisY+3); ctx.stroke();
+    ctx.textAlign='center';
+    ctx.fillText(x, px, axisY+(axisY<H-20?16:-8));
+  }
+  // eje Y: números
+  for(let y=y0g; y<=yMax; y+=yStep) {
+    if(Math.abs(y)<yStep*0.01) continue;
+    const py=toY(y);
+    ctx.beginPath(); ctx.moveTo(axisX-3,py); ctx.lineTo(axisX+3,py); ctx.stroke();
+    ctx.textAlign='right';
+    ctx.fillText(grafFmt(y), axisX-6, py+3);
+  }
+  // origen
+  ctx.textAlign='right';
+  ctx.fillText('0', axisX-5, axisY+12);
+
+  // ── Curva continua ──
+  const STEPS = W*2;
+  ctx.strokeStyle = '#2563eb';  // azul como la referencia
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let penDown = false;
+  let prevPy = null;
+  for(let i=0; i<=STEPS; i++) {
+    const wx = xMin + (xMax-xMin)*i/STEPS;
+    const wy = fn(wx);
+    if(!isFinite(wy)) { penDown=false; prevPy=null; continue; }
+    const px=toX(wx), py=toY(wy);
+    // discontinuidad (tan, etc.)
+    if(prevPy!==null && Math.abs(py-prevPy)>H*1.2) { penDown=false; }
+    if(!penDown) { ctx.moveTo(px,py); penDown=true; }
+    else ctx.lineTo(px,py);
+    prevPy=py;
+  }
+  ctx.stroke();
+
+  // ── Puntos rojos ──
+  pts.forEach(({x,y}) => {
+    if(!isFinite(y)) return;
+    const px=toX(x), py=toY(y);
+    if(py<-10||py>H+10) return;
+    ctx.fillStyle = '#ef4444';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // ── Tabla de valores (overlay) ──
+  const tableEl = document.getElementById('graf-table');
+  tableEl.innerHTML = `<table>
+    <tr><th>x</th><th>y</th></tr>
+    ${pts.map(({x,y})=>`
+      <tr class="${x===0?'zero-row':''}">
+        <td>${x}</td>
+        <td>${grafFmt(y)}</td>
+      </tr>`).join('')}
+  </table>`;
+
+  // ── Pasos de cálculo ──
+  const stepsWrap = document.getElementById('graf-steps-wrap');
+  const stepsEl   = document.getElementById('graf-steps');
+  stepsWrap.style.display = 'block';
+  stepsEl.innerHTML = pts.map(({x,y}) => {
+    if(!isFinite(y)) return '';
+    const lines = def.steps(x, v, grafFmt(y));
+    return `<div class="graf-step-block">
+      <div style="color:#f0c040;font-weight:700;margin-bottom:4px">x = ${x}</div>
+      ${lines.map(l=>`<div>${l}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function grafClear() {
+  document.getElementById('graf-canvas-wrap').style.display='none';
+  document.getElementById('graf-steps-wrap').style.display='none';
+  document.getElementById('graf-steps').innerHTML='';
+  document.getElementById('graf-table').innerHTML='';
+  // reset coefs a defaults
+  grafInitFields();
+}
+
+function grafUpdate() {
+  // si ya hay una gráfica visible, redibujar con los nuevos parámetros
+  if(document.getElementById('graf-canvas-wrap').style.display!=='none') {
+    grafDraw();
+  }
+}
+
+function grafGridStep(range, targetDivs) {
+  const raw = range/targetDivs;
+  const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw,1e-10))));
+  const norm = raw/mag;
+  let step;
+  if(norm<1.5) step=1;
+  else if(norm<3.5) step=2;
+  else if(norm<7.5) step=5;
+  else step=10;
+  return step*mag;
 }

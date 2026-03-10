@@ -771,3 +771,72 @@ canvas:active{cursor:grabbing}
 
 /* ── SUBSECTION SEPARATOR ── */
 .calc-sub-sep { height:1px;background:#1e2d45;margin:18px 0; }
+
+/* ══════ GRAFICACIÓN MODULE ══════ */
+.graf-type-grid {
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;
+}
+.graf-type-card {
+  border:1px solid #1e2d45;border-radius:10px;padding:12px 10px;
+  cursor:pointer;background:#0d1220;transition:all .2s;text-align:center;
+}
+.graf-type-card:hover { border-color:rgba(16,185,129,.4);transform:translateY(-2px); }
+.graf-type-card.sel { border-color:#10b981;background:rgba(16,185,129,.08); }
+.graf-type-icon { font-size:22px;margin-bottom:4px; }
+.graf-type-name { font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:#e8f0fc; }
+.graf-type-form { font-family:'Space Mono',monospace;font-size:8px;color:#3a5a7a;margin-top:2px; }
+
+.graf-inputs { background:#0d1220;border:1px solid #1e2d45;border-radius:10px;padding:13px 14px;margin-bottom:12px; }
+.graf-inputs-title { font-family:'Space Mono',monospace;font-size:9px;color:#10b981;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px; }
+.graf-coef-row { display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap; }
+.graf-coef-row label { font-family:'Space Mono',monospace;font-size:11px;color:#a0b4cc;white-space:nowrap; }
+.graf-coef { background:#111827;border:1.5px solid #1e2d45;border-radius:7px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:13px;padding:7px 9px;width:60px;text-align:center;outline:none;transition:border-color .2s;box-sizing:border-box; }
+.graf-coef:focus { border-color:#10b981; }
+.graf-coef.wide { width:100px; }
+.graf-formula-preview { font-family:'Space Mono',monospace;font-size:13px;color:#34d399;background:#111827;border:1px solid rgba(16,185,129,.2);border-radius:7px;padding:8px 12px;margin-top:8px;min-height:32px;letter-spacing:.02em; }
+
+.graf-pts-row { display:flex;align-items:center;gap:10px;margin-bottom:14px; }
+.graf-pts-row label { font-family:'Space Mono',monospace;font-size:10px;color:#5a7a9a; }
+.graf-pts-sel { background:#111827;border:1px solid #1e2d45;border-radius:7px;color:#e8f0fc;font-family:'Space Mono',monospace;font-size:12px;padding:7px 10px;outline:none; }
+.graf-pts-sel:focus { border-color:#10b981; }
+
+/* Canvas wrapper */
+.graf-canvas-wrap {
+  position:relative;border:1px solid #1e2d45;border-radius:10px;
+  overflow:hidden;background:#fff;margin-bottom:14px;
+}
+.graf-canvas-wrap canvas { display:block;width:100%;touch-action:none; }
+
+/* Tabla de valores flotante sobre el canvas */
+.graf-table-overlay {
+  position:absolute;top:8px;right:8px;
+  background:rgba(8,12,20,.88);border:1px solid #1e2d45;
+  border-radius:8px;padding:6px 8px;backdrop-filter:blur(4px);
+}
+.graf-table-overlay table { border-collapse:collapse; }
+.graf-table-overlay th {
+  font-family:'Space Mono',monospace;font-size:8px;color:#10b981;
+  letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;
+  border-bottom:1px solid #1e2d45;text-align:center;
+}
+.graf-table-overlay td {
+  font-family:'Space Mono',monospace;font-size:9px;color:#e8f0fc;
+  padding:2px 8px;text-align:center;
+}
+.graf-table-overlay tr.zero-row td { color:#10b981;font-weight:700; }
+
+/* Pasos de cálculo */
+.graf-steps-title {
+  font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:#10b981;
+  margin:0 0 8px;display:flex;align-items:center;gap:6px;
+}
+.graf-steps-title::before { content:'';width:3px;height:11px;background:#10b981;border-radius:2px; }
+.graf-step-block {
+  background:#111827;border-left:2px solid #10b981;
+  border-radius:0 7px 7px 0;padding:8px 12px;margin-bottom:6px;
+  font-family:'Space Mono',monospace;font-size:10px;color:#a0b4cc;line-height:1.8;
+}
+.graf-step-block .gs-x { color:#f0c040;font-weight:700; }
+.graf-step-block .gs-y { color:#34d399;font-weight:700; }
+.graf-step-block .gs-op { color:#a594ff; }
