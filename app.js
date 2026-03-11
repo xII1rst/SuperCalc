@@ -128,8 +128,8 @@ function openAllSections(){
 }
 
 function togglePanel(){
+  if(window.innerWidth>=700) return; // en desktop el panel siempre visible
   const bot=document.getElementById('bottom');
-  const wrap=document.getElementById('panel-tog-wrap');
   const btn=document.getElementById('panel-tog-btn');
   const collapsed=bot.classList.toggle('collapsed');
   btn.classList.toggle('on',!collapsed);

@@ -31,8 +31,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 header{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 14px;background:#0d1220;
-  border-bottom:1px solid #1e2d45;flex-shrink:0;gap:8px;
+  border-bottom:1px solid #1e2d45;flex-shrink:0;gap:8px;flex-wrap:wrap;
 }
+.header-controls{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 
 .logo{display:flex;align-items:center;gap:10px;cursor:pointer}
 .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#7c6af7,#a594ff);border-radius:8px;
@@ -62,6 +63,7 @@ header{
 .icon-tog.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
 
 /* ── CANVAS ── */
+#app-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 #cw{flex:1;position:relative;overflow:hidden;touch-action:none;min-height:0}
 canvas{display:block;width:100%;height:100%;cursor:grab}
 canvas:active{cursor:grabbing}
@@ -76,7 +78,7 @@ canvas:active{cursor:grabbing}
   padding:6px 12px;cursor:pointer;letter-spacing:.04em;transition:all .2s}
 #btn-reset:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ── BOTTOM PANEL ── */
+/* ── BOTTOM PANEL — mobile ── */
 #bottom{background:#0d1220;border-top:1px solid #1e2d45;flex-shrink:0;transition:all .25s}
 #bottom.collapsed{display:none}
 #panel-tog-wrap{display:flex;justify-content:flex-end;align-items:center;
@@ -99,6 +101,40 @@ canvas:active{cursor:grabbing}
 
 .panel{display:none;padding:12px 14px 16px;overflow-y:auto;max-height:340px}
 .panel.on{display:block}
+
+/* ── RESPONSIVE DESKTOP (≥700px) ── */
+@media (min-width:700px){
+  #app{flex-direction:column}
+
+  /* Header: switches siempre en una fila sin wrapping */
+  header{flex-wrap:nowrap;padding:10px 20px}
+  .header-controls{gap:8px;flex-wrap:nowrap}
+
+  /* Layout principal: canvas izquierda, panel derecha */
+  #app-body{
+    flex-direction:row;
+  }
+  #cw{
+    flex:1;min-width:0;border-right:1px solid #1e2d45;
+  }
+  #panel-tog-wrap{display:none} /* ocultar el toggle de panel en desktop */
+  #bottom{
+    width:380px;flex-shrink:0;
+    border-top:none;border-left:1px solid #1e2d45;
+    display:flex;flex-direction:column;overflow:hidden;
+    max-height:none;
+  }
+  #bottom.collapsed{display:flex} /* en desktop siempre visible */
+  .panel{max-height:none;flex:1}
+  .tabs{flex-shrink:0}
+}
+
+@media (min-width:1000px){
+  #bottom{width:440px}
+}
+@media (min-width:1400px){
+  #bottom{width:520px}
+}
 
 /* ── VECTOR CARDS (redesigned) ── */
 .vec-card{
@@ -155,13 +191,6 @@ canvas:active{cursor:grabbing}
 .icon-tog.on .sw-track{background:var(--accent)}
 .icon-tog.on .sw-knob{transform:translateX(14px);background:#0a0f1a}
 
-/* ── CANVAS ── */
-#cw{flex:1;position:relative;overflow:hidden;touch-action:none;min-height:0}
-canvas{display:block;width:100%;height:100%;cursor:grab}
-canvas:active{cursor:grabbing}
-#legend{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:52vw}
-.leg-item{display:flex;align-items:center;gap:6px;
-  background:rgba(10,15,26,.82);padding:3px 9px;border-radius:6px;border-left:3px solid transparent}
 .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .leg-text{font-size:10px;font-family:'Space Mono',monospace;color:var(--text);white-space:nowrap}
 #btn-reset{position:absolute;top:10px;right:10px;background:rgba(10,15,26,.85);
