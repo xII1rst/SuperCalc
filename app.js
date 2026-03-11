@@ -3407,9 +3407,9 @@ const GRAF_TYPES = {
       const bPart = parseFloat(b)===0?'':(parseFloat(b)>0?` + ${b}`:` - ${Math.abs(parseFloat(b))}`);
       return `y = ${mStr}x${bPart}` || 'y = x';
     },
-    eval: (x,v) => parseFloat(v.gm)*x + parseFloat(v.gb),
+    eval: (x,v) => grafParseCoef(v.gm)*x + grafParseCoef(v.gb),
     steps: (x,v,y) => {
-      const m=parseFloat(v.gm), b=parseFloat(v.gb);
+      const m=grafParseCoef(v.gm), b=grafParseCoef(v.gb);
       return [
         `<span class="gs-op">y = m·x + b</span>`,
         `<span class="gs-op">y = ${m}·(<span class="gs-x">${x}</span>) + ${b}</span>`,
@@ -3431,9 +3431,9 @@ const GRAF_TYPES = {
       const cPart = parseFloat(c)===0?'':(parseFloat(c)>0?` + ${c}`:` - ${Math.abs(parseFloat(c))}`);
       return `y = ${a}x²${bPart}${cPart}`;
     },
-    eval: (x,v) => parseFloat(v.ga)*x*x + parseFloat(v.gb)*x + parseFloat(v.gc),
+    eval: (x,v) => grafParseCoef(v.ga)*x*x + grafParseCoef(v.gb)*x + grafParseCoef(v.gc),
     steps: (x,v,y) => {
-      const a=parseFloat(v.ga), b=parseFloat(v.gb), c=parseFloat(v.gc);
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gb), c=grafParseCoef(v.gc);
       return [
         `<span class="gs-op">y = a·x² + b·x + c</span>`,
         `<span class="gs-op">y = ${a}·(<span class="gs-x">${x}</span>)² + ${b}·(<span class="gs-x">${x}</span>) + ${c}</span>`,
@@ -3451,14 +3451,14 @@ const GRAF_TYPES = {
       { id:'gk', label:'k =', placeholder:'0', default:'0' },
     ],
     preview: (v) => {
-      const a=v.ga, h=parseFloat(v.gh), k=parseFloat(v.gk);
+      const a=v.ga, h=grafParseCoef(v.gh), k=grafParseCoef(v.gk);
       const hPart = h===0?'x':(h>0?`x + ${h}`:`x - ${Math.abs(h)}`);
       const kPart = k===0?'':(k>0?` + ${k}`:` - ${Math.abs(k)}`);
       return `y = ${a}|${hPart}|${kPart}`;
     },
-    eval: (x,v) => parseFloat(v.ga)*Math.abs(x + parseFloat(v.gh)) + parseFloat(v.gk),
+    eval: (x,v) => grafParseCoef(v.ga)*Math.abs(x + grafParseCoef(v.gh)) + grafParseCoef(v.gk),
     steps: (x,v,y) => {
-      const a=parseFloat(v.ga), h=parseFloat(v.gh), k=parseFloat(v.gk);
+      const a=grafParseCoef(v.ga), h=grafParseCoef(v.gh), k=grafParseCoef(v.gk);
       const inner = x+h;
       return [
         `<span class="gs-op">y = a·|x + h| + k</span>`,
@@ -3476,9 +3476,9 @@ const GRAF_TYPES = {
       { id:'gbas', label:'b =', placeholder:'2', default:'2' },
     ],
     preview: (v) => `y = ${v.ga}·${v.gbas}ˣ`,
-    eval: (x,v) => parseFloat(v.ga)*Math.pow(parseFloat(v.gbas), x),
+    eval: (x,v) => grafParseCoef(v.ga)*Math.pow(grafParseCoef(v.gbas), x),
     steps: (x,v,y) => {
-      const a=parseFloat(v.ga), b=parseFloat(v.gbas);
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gbas);
       return [
         `<span class="gs-op">y = a · bˣ</span>`,
         `<span class="gs-op">y = ${a} · ${b}<span class="gs-x">^${x}</span></span>`,
@@ -3507,6 +3507,20 @@ function grafInitFields() {
       <input class="graf-coef" id="${c.id}" placeholder="${c.placeholder}" value="${c.default}" oninput="grafPreview()"/>
     </div>`).join('');
   grafPreview();
+}
+
+// Parsea un coeficiente admitiendo: números, e, π, pi, expresiones simples
+function grafParseCoef(str) {
+  if(!str || str.trim()==='') return NaN;
+  let s = str.trim()
+    .replace(/π/g, String(Math.PI))
+    .replace(/\bpi\b/gi, String(Math.PI))
+    .replace(/\be\b/g, String(Math.E))
+    .replace(/\^/g, '**');
+  try {
+    const v = Function('"use strict"; return (' + s + ')')();
+    return isFinite(v) ? v : NaN;
+  } catch(e) { return NaN; }
 }
 
 function grafGetVals() {
