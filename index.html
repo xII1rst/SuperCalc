@@ -102,12 +102,53 @@
       <button class="tab" onclick="showTab('O')">Operaciones</button>
       <button class="tab" onclick="showTab('E')">Ecuación</button>
       <button class="tab" onclick="showTab('I')">Incógnita</button>
+      <button class="tab" onclick="showTab('T')">Triángulo</button>
     </div>
     <div id="pV" class="panel on"></div>
     <div id="pM" class="panel"></div>
     <div id="pO" class="panel"></div>
     <div id="pE" class="panel"></div>
     <div id="pI" class="panel"></div>
+    <div id="pT" class="panel">
+      <div style="padding:14px">
+        <div class="section-title">Triángulo en el espacio R³</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-bottom:14px;line-height:1.7">
+          Ingresa las coordenadas de los 3 vértices.<br>Se calcularán lados, ángulos internos y se graficará.
+        </div>
+
+        <!-- Punto P -->
+        <div style="margin-bottom:10px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:#f0c040;margin-bottom:6px;letter-spacing:.04em">Punto P</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div class="inp-group"><label>x</label><input type="number" id="tri-px" value="2" step="any"/></div>
+            <div class="inp-group"><label>y</label><input type="number" id="tri-py" value="5" step="any"/></div>
+            <div class="inp-group"><label>z</label><input type="number" id="tri-pz" value="8" step="any"/></div>
+          </div>
+        </div>
+        <!-- Punto Q -->
+        <div style="margin-bottom:10px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:#4da6ff;margin-bottom:6px;letter-spacing:.04em">Punto Q</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div class="inp-group"><label>x</label><input type="number" id="tri-qx" value="5" step="any"/></div>
+            <div class="inp-group"><label>y</label><input type="number" id="tri-qy" value="-3" step="any"/></div>
+            <div class="inp-group"><label>z</label><input type="number" id="tri-qz" value="6" step="any"/></div>
+          </div>
+        </div>
+        <!-- Punto R -->
+        <div style="margin-bottom:14px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:#2dd4a0;margin-bottom:6px;letter-spacing:.04em">Punto R</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div class="inp-group"><label>x</label><input type="number" id="tri-rx" value="3" step="any"/></div>
+            <div class="inp-group"><label>y</label><input type="number" id="tri-ry" value="2" step="any"/></div>
+            <div class="inp-group"><label>z</label><input type="number" id="tri-rz" value="-3" step="any"/></div>
+          </div>
+        </div>
+
+        <button class="action-btn" onclick="triCalc()">Calcular y graficar</button>
+        <button class="action-btn" style="background:none;border:1px solid var(--border);color:var(--text3);margin-top:4px" onclick="triClear()">Limpiar</button>
+        <div id="tri-res" style="margin-top:12px"></div>
+      </div>
+    </div>
   </div>
 </div>
 

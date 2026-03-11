@@ -175,7 +175,7 @@ function setMode(m){
 }
 function resetView(){rotX=22;rotY=-38;scl=1;draw();}
 function showTab(t){
-  ['V','M','O','E','I'].forEach((x,i)=>{
+  ['V','M','O','E','I','T'].forEach((x,i)=>{
     document.querySelectorAll('.tab')[i].classList.toggle('on',x===t);
     document.getElementById('p'+x).classList.toggle('on',x===t);
   });
@@ -3798,4 +3798,194 @@ function grafGridStep(range, targetDivs) {
   else if(norm<7.5) step=5;
   else step=10;
   return step*mag;
+}
+
+// ═══════════════════════════════════════════════════════
+// TRIÁNGULO 3D
+// ═══════════════════════════════════════════════════════
+
+function triGet(id){ return parseFloat(document.getElementById(id).value)||0; }
+
+function triClear(){
+  document.getElementById('tri-res').innerHTML='';
+  ['px','py','pz','qx','qy','qz','rx','ry','rz'].forEach(k=>{
+    const el=document.getElementById('tri-'+k);
+    if(el) el.value='0';
+  });
+}
+
+function triCalc(){
+  const P={x:triGet('tri-px'),y:triGet('tri-py'),z:triGet('tri-pz')};
+  const Q={x:triGet('tri-qx'),y:triGet('tri-qy'),z:triGet('tri-qz')};
+  const R={x:triGet('tri-rx'),y:triGet('tri-ry'),z:triGet('tri-rz')};
+
+  // ── Vectores lado ──
+  // PQ = Q - P, QR = R - Q, PR = R - P
+  const PQ={x:Q.x-P.x, y:Q.y-P.y, z:Q.z-P.z};
+  const QR={x:R.x-Q.x, y:R.y-Q.y, z:R.z-Q.z};
+  const PR={x:R.x-P.x, y:R.y-P.y, z:R.z-P.z};
+  const QP={x:-PQ.x,   y:-PQ.y,   z:-PQ.z};
+  const RP={x:-PR.x,   y:-PR.y,   z:-PR.z};
+  const RQ={x:-QR.x,   y:-QR.y,   z:-QR.z};
+
+  const mag3=v=>Math.sqrt(v.x**2+v.y**2+v.z**2);
+  const dot3=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+  const angle3=(a,b)=>{
+    const ma=mag3(a),mb=mag3(b);
+    if(!ma||!mb) return 0;
+    return Math.acos(Math.max(-1,Math.min(1,dot3(a,b)/(ma*mb))))*180/Math.PI;
+  };
+  const fmt=v=>fN(v,4);
+
+  const dPQ=mag3(PQ), dQR=mag3(QR), dPR=mag3(PR);
+
+  // Ángulos internos
+  const angP=angle3(PQ,PR);   // en P: vectores PQ y PR
+  const angQ=angle3(QP,QR);   // en Q: vectores QP y QR
+  const angR=angle3(RP,RQ);   // en R: vectores RP y RQ
+  const sumAng=angP+angQ+angR;
+
+  // Perímetro y área (producto cruz de dos lados)
+  const cross=(a,b)=>({
+    x:a.y*b.z-a.z*b.y,
+    y:a.z*b.x-a.x*b.z,
+    z:a.x*b.y-a.y*b.x
+  });
+  const cr=cross(PQ,PR);
+  const area=mag3(cr)/2;
+
+  // ── Construir HTML de resultados ──
+  const mkStepCard=(title,color,steps)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:${color};margin-bottom:8px;letter-spacing:.04em">${title}</div>
+      ${steps.map(s=>`<div style="font-family:'Space Mono',monospace;font-size:10px;color:#a0b4cc;line-height:1.9;padding:1px 0">${s}</div>`).join('')}
+    </div>`;
+
+  const mkResult=(label,value,color='var(--accent)')=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;flex:1;min-width:0">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">${label}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:13px;color:${color};font-weight:700">${value}</div>
+    </div>`;
+
+  // Pasos lado PQ
+  const stepsPQ=[
+    `<b style="color:#f0c040">PQ</b> = Q − P`,
+    `= (${Q.x}−${P.x}, ${Q.y}−${P.y}, ${Q.z}−${P.z})`,
+    `= <b>(${fmt(PQ.x)}, ${fmt(PQ.y)}, ${fmt(PQ.z)})</b>`,
+    `|<b>PQ</b>| = √(${fmt(PQ.x)}² + ${fmt(PQ.y)}² + ${fmt(PQ.z)}²)`,
+    `= √(${fmt(PQ.x**2)} + ${fmt(PQ.y**2)} + ${fmt(PQ.z**2)})`,
+    `= √${fmt(PQ.x**2+PQ.y**2+PQ.z**2)} = <b>${fmt(dPQ)}</b>`,
+  ];
+  const stepsQR=[
+    `<b style="color:#4da6ff">QR</b> = R − Q`,
+    `= (${R.x}−${Q.x}, ${R.y}−${Q.y}, ${R.z}−${Q.z})`,
+    `= <b>(${fmt(QR.x)}, ${fmt(QR.y)}, ${fmt(QR.z)})</b>`,
+    `|<b>QR</b>| = √(${fmt(QR.x)}² + ${fmt(QR.y)}² + ${fmt(QR.z)}²)`,
+    `= √${fmt(QR.x**2+QR.y**2+QR.z**2)} = <b>${fmt(dQR)}</b>`,
+  ];
+  const stepsPR=[
+    `<b style="color:#2dd4a0">PR</b> = R − P`,
+    `= (${R.x}−${P.x}, ${R.y}−${P.y}, ${R.z}−${P.z})`,
+    `= <b>(${fmt(PR.x)}, ${fmt(PR.y)}, ${fmt(PR.z)})</b>`,
+    `|<b>PR</b>| = √(${fmt(PR.x)}² + ${fmt(PR.y)}² + ${fmt(PR.z)}²)`,
+    `= √${fmt(PR.x**2+PR.y**2+PR.z**2)} = <b>${fmt(dPR)}</b>`,
+  ];
+
+  // Pasos ángulo P
+  const dotPQPR=dot3(PQ,PR);
+  const stepsAngP=[
+    `cos P = (<b>PQ · PR</b>) / (|PQ|·|PR|)`,
+    `<b>PQ · PR</b> = (${fmt(PQ.x)})(${fmt(PR.x)}) + (${fmt(PQ.y)})(${fmt(PR.y)}) + (${fmt(PQ.z)})(${fmt(PR.z)})`,
+    `= ${fmt(PQ.x*PR.x)} + ${fmt(PQ.y*PR.y)} + ${fmt(PQ.z*PR.z)} = <b>${fmt(dotPQPR)}</b>`,
+    `cos P = ${fmt(dotPQPR)} / (${fmt(dPQ)} × ${fmt(dPR)})`,
+    `cos P = ${fmt(dotPQPR)} / ${fmt(dPQ*dPR)} = ${fmt(dotPQPR/(dPQ*dPR))}`,
+    `P = cos⁻¹(${fmt(dotPQPR/(dPQ*dPR))}) = <b>${fmt(angP)}°</b>`,
+  ];
+  const dotQPQR=dot3(QP,QR);
+  const stepsAngQ=[
+    `cos Q = (<b>QP · QR</b>) / (|QP|·|QR|)`,
+    `<b>QP · QR</b> = (${fmt(QP.x)})(${fmt(QR.x)}) + (${fmt(QP.y)})(${fmt(QR.y)}) + (${fmt(QP.z)})(${fmt(QR.z)})`,
+    `= ${fmt(QP.x*QR.x)} + ${fmt(QP.y*QR.y)} + ${fmt(QP.z*QR.z)} = <b>${fmt(dotQPQR)}</b>`,
+    `cos Q = ${fmt(dotQPQR)} / (${fmt(dPQ)} × ${fmt(dQR)})`,
+    `cos Q = ${fmt(dotQPQR)} / ${fmt(dPQ*dQR)} = ${fmt(dotQPQR/(dPQ*dQR))}`,
+    `Q = cos⁻¹(${fmt(dotQPQR/(dPQ*dQR))}) = <b>${fmt(angQ)}°</b>`,
+  ];
+  const dotRPRQ=dot3(RP,RQ);
+  const stepsAngR=[
+    `cos R = (<b>RP · RQ</b>) / (|RP|·|RQ|)`,
+    `<b>RP · RQ</b> = (${fmt(RP.x)})(${fmt(RQ.x)}) + (${fmt(RP.y)})(${fmt(RQ.y)}) + (${fmt(RP.z)})(${fmt(RQ.z)})`,
+    `= ${fmt(RP.x*RQ.x)} + ${fmt(RP.y*RQ.y)} + ${fmt(RP.z*RQ.z)} = <b>${fmt(dotRPRQ)}</b>`,
+    `cos R = ${fmt(dotRPRQ)} / (${fmt(dPR)} × ${fmt(dQR)})`,
+    `cos R = ${fmt(dotRPRQ)} / ${fmt(dPR*dQR)} = ${fmt(dotRPRQ/(dPR*dQR))}`,
+    `R = cos⁻¹(${fmt(dotRPRQ/(dPR*dQR))}) = <b>${fmt(angR)}°</b>`,
+  ];
+
+  // Pasos área
+  const stepsArea=[
+    `<b>PQ × PR</b> — producto vectorial`,
+    `i: (${fmt(PQ.y)})(${fmt(PR.z)}) − (${fmt(PQ.z)})(${fmt(PR.y)}) = <b>${fmt(cr.x)}</b>`,
+    `j: (${fmt(PQ.z)})(${fmt(PR.x)}) − (${fmt(PQ.x)})(${fmt(PR.z)}) = <b>${fmt(cr.y)}</b>`,
+    `k: (${fmt(PQ.x)})(${fmt(PR.y)}) − (${fmt(PQ.y)})(${fmt(PR.x)}) = <b>${fmt(cr.z)}</b>`,
+    `|<b>PQ × PR</b>| = √(${fmt(cr.x)}² + ${fmt(cr.y)}² + ${fmt(cr.z)}²) = ${fmt(mag3(cr))}`,
+    `Área = |PQ × PR| / 2 = ${fmt(mag3(cr))} / 2 = <b>${fmt(area)}</b>`,
+  ];
+
+  const verif=Math.abs(sumAng-180)<0.01
+    ?`<span style="color:var(--green)">✓ ${fmt(angP)}° + ${fmt(angQ)}° + ${fmt(angR)}° = ${fmt(sumAng)}° ≈ 180°</span>`
+    :`<span style="color:var(--red)">⚠ Suma = ${fmt(sumAng)}° (revisar datos)</span>`;
+
+  document.getElementById('tri-res').innerHTML=`
+    <!-- Resumen superior -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      ${mkResult('Lado PQ', fmt(dPQ), '#f0c040')}
+      ${mkResult('Lado QR', fmt(dQR), '#4da6ff')}
+      ${mkResult('Lado PR', fmt(dPR), '#2dd4a0')}
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      ${mkResult('Ángulo P', fmt(angP)+'°', '#f0c040')}
+      ${mkResult('Ángulo Q', fmt(angQ)+'°', '#4da6ff')}
+      ${mkResult('Ángulo R', fmt(angR)+'°', '#2dd4a0')}
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      ${mkResult('Perímetro', fmt(dPQ+dQR+dPR))}
+      ${mkResult('Área', fmt(area))}
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;margin-bottom:14px;padding:7px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">${verif}</div>
+
+    <!-- Pasos colapsables -->
+    <div class="section-title" style="margin-bottom:8px">A) Lados del triángulo</div>
+    ${mkStepCard('Lado PQ = Q − P', '#f0c040', stepsPQ)}
+    ${mkStepCard('Lado QR = R − Q', '#4da6ff', stepsQR)}
+    ${mkStepCard('Lado PR = R − P', '#2dd4a0', stepsPR)}
+
+    <div class="section-title" style="margin-top:14px;margin-bottom:8px">C) Ángulos internos</div>
+    ${mkStepCard('Ángulo en P', '#f0c040', stepsAngP)}
+    ${mkStepCard('Ángulo en Q', '#4da6ff', stepsAngQ)}
+    ${mkStepCard('Ángulo en R', '#2dd4a0', stepsAngR)}
+
+    <div class="section-title" style="margin-top:14px;margin-bottom:8px">Área del triángulo</div>
+    ${mkStepCard('Producto vectorial PQ × PR', '#a594ff', stepsArea)}
+  `;
+
+  // ── Graficar en el canvas 3D ──
+  // Añadir los 3 puntos como vectores temporales y dibujar
+  triDrawCanvas(P, Q, R);
+}
+
+function triDrawCanvas(P, Q, R){
+  // Cambiar a tab Vectores y dibujar el triángulo
+  showTab('V');
+  // Guardar vecs actuales y reemplazar temporalmente
+  const triVecsBackup = [...vecs];
+  vecs = [
+    {id:901,nm:'P',vx:P.x,vy:P.y,vz:P.z,cl:'#f0c040'},
+    {id:902,nm:'Q',vx:Q.x,vy:Q.y,vz:Q.z,cl:'#4da6ff'},
+    {id:903,nm:'R',vx:R.x,vy:R.y,vz:R.z,cl:'#2dd4a0'},
+  ];
+  renderVecs();
+  draw();
+  // Restaurar vecs originales pero mantener canvas hasta que el usuario cambie tab
+  vecs = triVecsBackup;
+  // Volver al tab triángulo para ver resultados
+  setTimeout(()=>showTab('T'), 50);
 }
