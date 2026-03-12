@@ -66,7 +66,7 @@
 
     for(let i = 0; i < count; i++){
       const text  = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
-      const size  = 8 + Math.random() * 8;
+      const size  = 9 + Math.random() * 11;
       const angle = (Math.random() - 0.5) * 0.5;
       measure.font = `${size}px "Space Mono", monospace`;
       const tw = measure.measureText(text).width;
@@ -91,7 +91,7 @@
             text,
             x, y,
             size,
-            opacity: 0.025 + Math.random() * 0.05,
+            opacity: 0.045 + Math.random() * 0.09,
             angle,
             color: COLORS[Math.floor(Math.random() * COLORS.length)],
           });
