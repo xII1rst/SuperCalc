@@ -737,6 +737,28 @@ canvas:active{cursor:grabbing}
 
 .lmod-card.ca:hover { border-color:rgba(16,185,129,.5);box-shadow:0 8px 32px rgba(16,185,129,.12);transform:translateY(-3px); }
 .lmod-badge.ca { background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.25); }
+
+/* ── Botones tipo figura ── */
+.fig-type-btn {
+  font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
+  letter-spacing:.05em; padding:4px 10px; border-radius:20px; cursor:pointer;
+  background:rgba(124,106,247,.08); border:1px solid rgba(124,106,247,.2);
+  color:#6a5ad0; transition:all .18s;
+}
+.fig-type-btn.on {
+  background:rgba(124,106,247,.22); border-color:rgba(124,106,247,.55);
+  color:#a594ff;
+}
+.em-fig-type-btn {
+  font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
+  letter-spacing:.05em; padding:3px 8px; border-radius:20px; cursor:pointer;
+  background:rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.2);
+  color:#1a9db0; transition:all .18s;
+}
+.em-fig-type-btn.on {
+  background:rgba(34,211,238,.22); border-color:rgba(34,211,238,.55);
+  color:#22d3ee;
+}
 .submod-title span.ca-c { color:#10b981; }
 .submod-card.ca-sub:hover { border-color:rgba(16,185,129,.4);transform:translateX(4px);box-shadow:0 4px 20px rgba(16,185,129,.08); }
 .mod-back.ca:hover { border-color:#10b981;color:#10b981; }

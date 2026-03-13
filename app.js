@@ -415,11 +415,12 @@ function setMode(m){
 }
 function resetView(){rotX=22;rotY=-38;scl=1;draw();}
 function showTab(t){
-  ['V','M','O','E','I','T'].forEach((x,i)=>{
+  ['V','M','O','E','I','T','F'].forEach((x,i)=>{
     document.querySelectorAll('.tab')[i].classList.toggle('on',x===t);
     document.getElementById('p'+x).classList.toggle('on',x===t);
   });
   if(t==='M')rM();if(t==='O')rO();if(t==='E')rE();if(t==='I')rI();
+  if(t==='F')figInitPanel();
 }
 
 // ── VECTOR PANEL ──────────────────────────────────────
@@ -1021,6 +1022,8 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.f
     });
     if(rV&&!rV.scalar){const po=p3(0,0,0,cx,cy,s),pt=p3(rV.vx,rV.vy,rV.vz,cx,cy,s);drawArrow(po.sx,po.sy,pt.sx,pt.sy,RC,3.5);}
     if(sR&&!sR.err){const po=p3(0,0,0,cx,cy,s),pt=p3(sR.vx,sR.vy,sR.vz||0,cx,cy,s);drawArrow(po.sx,po.sy,pt.sx,pt.sy,SC,3.5);}
+    // Figura geométrica 3D
+    if(figState) renderFigure(ctx, (x,y,z)=>{const pp=p3(x,y,z,cx,cy,s);return{sx:pp.sx,sy:pp.sy,z2:pp.z2??(-z)};}, figState);
   } else {
     // R2 grid — sub dots every 1 unit, main dots every 2 units
     for(let i=-16;i<=16;i++) for(let j=-16;j<=16;j++){
@@ -1218,7 +1221,7 @@ function emInit(){
     emDraw();
   },{passive:false});
 
-  emRenderAllPanels();
+  emForceRenderAllPanels(); // primera carga: renderizar todos los paneles
   // Double resize to ensure canvas fills correctly after mount
   requestAnimationFrame(()=>{
     emResizeCanvas();
@@ -1364,6 +1367,8 @@ function emDraw(){
       ctx.fillText(obj.label||'q',pp.sx,pp.sy+13);ctx.globalAlpha=1;
     }
   });
+  // Figura geométrica EM
+  if(emFigState) renderFigure(emCtx, (x,y,z)=>{ const p=emP3(x,y,z); return {sx:p.sx,sy:p.sy,z2:p.z2}; }, emFigState);
 }
 
 // ── COORD SYSTEM ──────────────────────────────────────
@@ -1372,7 +1377,8 @@ function emSetCoord(c){
   ['cart','cyl','sph'].forEach(id=>{
     document.getElementById('em-'+id).classList.toggle('on',id===c);
   });
-  emRenderAllPanels();
+  // Solo actualizar labels de coordenadas — no destruir resultados
+  emRefreshCoordLabels();
 }
 
 function emResetView(){
@@ -1398,13 +1404,31 @@ function emShowTab(tab){
 }
 
 // ── PANEL RENDERERS ───────────────────────────────────
+// Renderiza todos los paneles solo si están vacíos (primera carga)
 function emRenderAllPanels(){
-  emRenderCoulomb();
-  emRenderGauss();
-  emRenderPotential();
-  emRenderLorentz();
-  emRenderFaraday();
-  emRenderMaxwell();
+  if(!document.getElementById('em-pCoulomb')?.innerHTML?.trim()) emRenderCoulomb();
+  if(!document.getElementById('em-pGauss')?.innerHTML?.trim())   emRenderGauss();
+  if(!document.getElementById('em-pPotential')?.innerHTML?.trim()) emRenderPotential();
+  if(!document.getElementById('em-pLorentz')?.innerHTML?.trim()) emRenderLorentz();
+  if(!document.getElementById('em-pFaraday')?.innerHTML?.trim()) emRenderFaraday();
+  if(!document.getElementById('em-pMaxwell')?.innerHTML?.trim()) emRenderMaxwell();
+}
+
+// Forzar re-render de todos los paneles (solo al abrir el módulo por 1a vez)
+function emForceRenderAllPanels(){
+  emRenderCoulomb(); emRenderGauss(); emRenderPotential();
+  emRenderLorentz(); emRenderFaraday(); emRenderMaxwell();
+}
+
+// Al cambiar coordenadas: solo actualiza labels sin destruir resultados
+function emRefreshCoordLabels(){
+  const cl = emCoord==='cart'?['x','y','z']:emCoord==='cyl'?['ρ','φ°','z']:['r','θ°','φ°'];
+  ['q1','q2'].forEach(qid=>{
+    ['x','y','z'].forEach((ax,i)=>{
+      const inp=document.getElementById('em-'+qid+ax);
+      if(inp?.previousElementSibling) inp.previousElementSibling.textContent=cl[i];
+    });
+  });
 }
 
 // helper — format scientific notation
@@ -1431,7 +1455,6 @@ function emRenderCoulomb(){
   <div class="em-input-row">
     <div class="em-input-group"><label>q₁ (C)</label><input id="em-q1" value="1e-6" placeholder="1e-6"></div>
     <div class="em-input-group"><label>q₂ (C)</label><input id="em-q2" value="-2e-6" placeholder="-2e-6"></div>
-    <div class="em-input-group"><label>r (m)</label><input id="em-r-c" value="0.05" placeholder="0.05"></div>
   </div>
   <div class="em-section-title" style="margin-top:10px">Posici&oacute;n de q<sub>1</sub> (${l1},${l2},${l3})</div>
   <div class="em-input-row">
@@ -1464,7 +1487,6 @@ function emToCart(a,b,c){
 function emCalcCoulomb(){
   const q1=parseFloat(document.getElementById('em-q1').value)||0;
   const q2=parseFloat(document.getElementById('em-q2').value)||0;
-  const r=parseFloat(document.getElementById('em-r-c').value)||1;
 
   const [x1,y1,z1]=emToCart(
     parseFloat(document.getElementById('em-q1x').value)||0,
@@ -1477,27 +1499,43 @@ function emCalcCoulomb(){
     parseFloat(document.getElementById('em-q2z').value)||0
   );
 
-  const dx=x2-x1,dy=y2-y1,dz=z2-z1;
-  const dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||r;
+  const dx=x2-x1, dy=y2-y1, dz=z2-z1;
+  const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+
+  // Validar que las cargas no estén en el mismo punto
+  if(dist<1e-10){
+    document.getElementById('em-res-coulomb').innerHTML=
+      '<div class="em-result-hint" style="color:#ff5572;margin-top:10px">⚠ Las posiciones de q₁ y q₂ son iguales — la distancia es indefinida.</div>';
+    return;
+  }
+
   const F=EM_K*Math.abs(q1)*Math.abs(q2)/(dist*dist);
-  const attract=q1*q2<0;
   const sign=q1*q2<0?'Atractiva':'Repulsiva';
+  const attract=q1*q2<0;
 
-  // Unit vector
-  const ux=dx/dist,uy=dy/dist,uz=dz/dist;
-  // Force vector on q2 from q1 (sign based on charges)
+  // Vector unitario q1→q2
+  const ux=dx/dist, uy=dy/dist, uz=dz/dist;
+  // Signo de la fuerza sobre q2: repulsiva (+) si mismo signo, atractiva (−)
   const fSign=q1*q2>0?1:-1;
-  const Fvec={vx:fSign*F*ux*1e6,vy:fSign*F*uy*1e6,vz:fSign*F*uz*1e6}; // scaled for display
 
-  // Electric field at q2 due to q1
+  // Campo eléctrico en q2 debido a q1
   const E=EM_K*Math.abs(q1)/(dist*dist);
-  const Esx=q1>0?ux:-ux,Esy=q1>0?uy:-uy,Esz=q1>0?uz:-uz;
+  // Dirección del campo: desde q1 si q1>0, hacia q1 si q1<0
+  const eDir=q1>0?1:-1;
 
-  // Update canvas objects
+  // Escala visual: normalizar a longitud 2.5 unidades en canvas
+  const sc=2.5;
   emObjects=[
     {type:'charge',x:x1,y:y1,z:z1,q:q1,label:'q₁'},
     {type:'charge',x:x2,y:y2,z:z2,q:q2,label:'q₂'},
-    {type:'vector',ox:x2,oy:y2,oz:z2,vx:Esx*2,vy:Esy*2,vz:Esz*2,color:'#ff8c42',label:'F'},
+    // Vector fuerza sobre q2
+    {type:'vector',ox:x2,oy:y2,oz:z2,
+      vx:fSign*ux*sc, vy:fSign*uy*sc, vz:fSign*uz*sc,
+      color:'#ff8c42',label:'F'},
+    // Campo eléctrico en q2 (dirección desde q1)
+    {type:'vector',ox:x2,oy:y2,oz:z2,
+      vx:eDir*ux*sc*0.6, vy:eDir*uy*sc*0.6, vz:eDir*uz*sc*0.6,
+      color:'#f0c040',label:'E'},
   ];
   emDraw();
 
@@ -1509,7 +1547,7 @@ function emCalcCoulomb(){
       <div class="em-result-hint">${sign} — ${attract?'Las cargas se atraen':'Las cargas se repelen'}</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">Distancia r</div>
+      <div class="em-math-label">Distancia r (calculada)</div>
       <div class="em-math-value">${emFmt(dist)} m</div>
     </div>
     <div class="em-math-card">
@@ -1734,14 +1772,18 @@ function emCalcLorentz(){
   const Emag=Math.sqrt(Ex*Ex+Ey*Ey+Ez*Ez);
   const Bmag=Math.sqrt(Bx*Bx+By*By+Bz*Bz);
 
-  // Scale for visualization
-  const sc=2/Math.max(vmag,Emag,Bmag,Fmag,1e-20);
-  emObjects=[
-    {type:'vector',ox:0,oy:0,oz:0,vx:vx*sc,vy:vy*sc,vz:vz*sc,color:'#2dd4a0',label:'v⃗'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:Ex*sc,vy:Ey*sc,vz:Ez*sc,color:'#f0c040',label:'E'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:Bx*sc,vy:By*sc,vz:Bz*sc,color:'#4da6ff',label:'B'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:Fx*sc,vy:Fy*sc,vz:Fz*sc,color:'#ff5572',label:'F⃗'},
-  ];
+  // Escala visual: cada vector se normaliza a 2.5 unidades para que siempre sea visible
+  function scaleVec(x,y,z,len=2.5){
+    const m=Math.sqrt(x*x+y*y+z*z);
+    if(m<1e-30) return {vx:0,vy:0,vz:0};
+    return {vx:x/m*len, vy:y/m*len, vz:z/m*len};
+  }
+  const sv=scaleVec(vx,vy,vz), sE=scaleVec(Ex,Ey,Ez), sB=scaleVec(Bx,By,Bz), sF=scaleVec(Fx,Fy,Fz);
+  emObjects=[];
+  if(vmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sv,color:'#2dd4a0',label:'v⃗'});
+  if(Emag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sE,color:'#f0c040',label:'E'});
+  if(Bmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sB,color:'#4da6ff',label:'B'});
+  if(Fmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sF,color:'#ff5572',label:'F⃗'});
   emDraw();
 
   document.getElementById('em-res-lorentz').innerHTML=`
@@ -4051,6 +4093,277 @@ function grafGridStep(range, targetDivs) {
 
 function triGet(id){ return parseFloat(document.getElementById(id).value)||0; }
 
+// ══════════════════════════════════════════════════════
+// ── FIGURAS GEOMÉTRICAS 3D ─────────────────────────────
+// Motor compartido: genera puntos de malla para cada figura
+// ══════════════════════════════════════════════════════
+
+// Estado figuras AL
+let figState = null; // { type, params, color, opacity }
+
+// Estado figuras EM
+let emFigState = null;
+let emFigPanelOpen = false;
+
+// ── PARÁMETROS POR FIGURA ──────────────────────────────
+const FIG_PARAMS = {
+  sphere:   [{ id:'r',   label:'Radio',    def:'3' }],
+  cylinder: [{ id:'r',   label:'Radio',    def:'2' }, { id:'h', label:'Altura', def:'4' }],
+  cone:     [{ id:'r',   label:'Radio base', def:'2' }, { id:'h', label:'Altura', def:'4' }],
+  plane:    [{ id:'nx',  label:'Normal x', def:'0' }, { id:'ny', label:'Normal y', def:'0' }, { id:'nz', label:'Normal z', def:'1' }, { id:'size', label:'Tamaño', def:'4' }],
+  torus:    [{ id:'R',   label:'R (mayor)',def:'3' }, { id:'r', label:'r (tubo)',  def:'1' }],
+};
+
+function figParamsHTML(prefix, type, vals={}){
+  const ps = FIG_PARAMS[type] || [];
+  if(!ps.length) return '';
+  return `<div style="margin-bottom:8px">
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;letter-spacing:.04em">Parámetros</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${ps.map(p=>`<div class="inp-group"><label>${p.label}</label><input type="number" id="${prefix}${p.id}" value="${vals[p.id]??p.def}" step="any" min="0.1"/></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── GENERADORES DE MALLA ───────────────────────────────
+// Devuelven array de polígonos: cada polígono es array de {x,y,z}
+
+function genSphere(cx,cy,cz, r, segs=18){
+  const polys=[];
+  for(let i=0;i<segs;i++){
+    const t0=Math.PI*i/segs, t1=Math.PI*(i+1)/segs;
+    for(let j=0;j<segs*2;j++){
+      const p0=Math.PI*2*j/(segs*2), p1=Math.PI*2*(j+1)/(segs*2);
+      polys.push([
+        {x:cx+r*Math.sin(t0)*Math.cos(p0), y:cy+r*Math.cos(t0), z:cz+r*Math.sin(t0)*Math.sin(p0)},
+        {x:cx+r*Math.sin(t0)*Math.cos(p1), y:cy+r*Math.cos(t0), z:cz+r*Math.sin(t0)*Math.sin(p1)},
+        {x:cx+r*Math.sin(t1)*Math.cos(p1), y:cy+r*Math.cos(t1), z:cz+r*Math.sin(t1)*Math.sin(p1)},
+        {x:cx+r*Math.sin(t1)*Math.cos(p0), y:cy+r*Math.cos(t1), z:cz+r*Math.sin(t1)*Math.sin(p0)},
+      ]);
+    }
+  }
+  return polys;
+}
+
+function genCylinder(cx,cy,cz, r, h, segs=24){
+  const polys=[], y0=cy-h/2, y1=cy+h/2;
+  for(let j=0;j<segs;j++){
+    const a0=Math.PI*2*j/segs, a1=Math.PI*2*(j+1)/segs;
+    // Lateral
+    polys.push([
+      {x:cx+r*Math.cos(a0),y:y0,z:cz+r*Math.sin(a0)},
+      {x:cx+r*Math.cos(a1),y:y0,z:cz+r*Math.sin(a1)},
+      {x:cx+r*Math.cos(a1),y:y1,z:cz+r*Math.sin(a1)},
+      {x:cx+r*Math.cos(a0),y:y1,z:cz+r*Math.sin(a0)},
+    ]);
+    // Tapas
+    polys.push([{x:cx,y:y0,z:cz},{x:cx+r*Math.cos(a0),y:y0,z:cz+r*Math.sin(a0)},{x:cx+r*Math.cos(a1),y:y0,z:cz+r*Math.sin(a1)}]);
+    polys.push([{x:cx,y:y1,z:cz},{x:cx+r*Math.cos(a0),y:y1,z:cz+r*Math.sin(a0)},{x:cx+r*Math.cos(a1),y:y1,z:cz+r*Math.sin(a1)}]);
+  }
+  return polys;
+}
+
+function genCone(cx,cy,cz, r, h, segs=24){
+  const polys=[], yBase=cy, yTip=cy+h;
+  for(let j=0;j<segs;j++){
+    const a0=Math.PI*2*j/segs, a1=Math.PI*2*(j+1)/segs;
+    polys.push([
+      {x:cx+r*Math.cos(a0),y:yBase,z:cz+r*Math.sin(a0)},
+      {x:cx+r*Math.cos(a1),y:yBase,z:cz+r*Math.sin(a1)},
+      {x:cx,y:yTip,z:cz},
+    ]);
+    polys.push([{x:cx,y:yBase,z:cz},{x:cx+r*Math.cos(a0),y:yBase,z:cz+r*Math.sin(a0)},{x:cx+r*Math.cos(a1),y:yBase,z:cz+r*Math.sin(a1)}]);
+  }
+  return polys;
+}
+
+function genPlane(cx,cy,cz, nx,ny,nz, size){
+  // Plano perpendicular a la normal (nx,ny,nz) centrado en (cx,cy,cz)
+  const len=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+  const n=[nx/len,ny/len,nz/len];
+  // Buscar vector no paralelo a n
+  const up=Math.abs(n[1])<0.9?[0,1,0]:[1,0,0];
+  const u=cross(n,up); const uL=Math.sqrt(u[0]**2+u[1]**2+u[2]**2);
+  const uu=[u[0]/uL,u[1]/uL,u[2]/uL];
+  const v=cross(uu,n);
+  const s=size;
+  const corners=[
+    [cx+uu[0]*s+v[0]*s, cy+uu[1]*s+v[1]*s, cz+uu[2]*s+v[2]*s],
+    [cx-uu[0]*s+v[0]*s, cy-uu[1]*s+v[1]*s, cz-uu[2]*s+v[2]*s],
+    [cx-uu[0]*s-v[0]*s, cy-uu[1]*s-v[1]*s, cz-uu[2]*s-v[2]*s],
+    [cx+uu[0]*s-v[0]*s, cy+uu[1]*s-v[1]*s, cz+uu[2]*s-v[2]*s],
+  ];
+  return [corners.map(c=>({x:c[0],y:c[1],z:c[2]}))];
+}
+
+function genTorus(cx,cy,cz, R, r, segs=20){
+  const polys=[];
+  for(let i=0;i<segs;i++){
+    const u0=Math.PI*2*i/segs, u1=Math.PI*2*(i+1)/segs;
+    for(let j=0;j<segs;j++){
+      const v0=Math.PI*2*j/segs, v1=Math.PI*2*(j+1)/segs;
+      const pt=(u,v)=>({
+        x:cx+(R+r*Math.cos(v))*Math.cos(u),
+        y:cy+r*Math.sin(v),
+        z:cz+(R+r*Math.cos(v))*Math.sin(u),
+      });
+      polys.push([pt(u0,v0),pt(u1,v0),pt(u1,v1),pt(u0,v1)]);
+    }
+  }
+  return polys;
+}
+
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+
+// ── RENDERER GENÉRICO ──────────────────────────────────
+// projectFn: función (x,y,z) -> {sx,sy}  (p3 o emP3)
+// ctx: contexto canvas
+// state: { type, params, cx,cy,cz, color, opacity }
+
+function renderFigure(ctx, projectFn, state){
+  if(!state) return;
+  const {type, params, cx:ox, cy:oy, cz:oz, color, opacity} = state;
+  let polys=[];
+  if(type==='sphere')   polys=genSphere(ox,oy,oz, params.r);
+  else if(type==='cylinder') polys=genCylinder(ox,oy,oz, params.r, params.h);
+  else if(type==='cone')     polys=genCone(ox,oy,oz, params.r, params.h);
+  else if(type==='plane')    polys=genPlane(ox,oy,oz, params.nx,params.ny,params.nz, params.size);
+  else if(type==='torus')    polys=genTorus(ox,oy,oz, params.R, params.r);
+
+  // Painter's algorithm — ordenar por z media
+  const projected = polys.map(poly=>{
+    const pts = poly.map(p=>projectFn(p.x,p.y,p.z));
+    const zAvg = pts.reduce((s,p)=>s+(p.z2??0),0)/pts.length;
+    return {pts, zAvg};
+  });
+  projected.sort((a,b)=>a.zAvg-b.zAvg);
+
+  const alpha = opacity/100;
+  ctx.save();
+  projected.forEach(({pts})=>{
+    if(pts.length<2) return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].sx, pts[0].sy);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].sx, pts[i].sy);
+    ctx.closePath();
+    ctx.globalAlpha = alpha * 0.55;
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = Math.min(alpha * 1.8, 0.75);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// ── AL: TAB FIGURAS ────────────────────────────────────
+let figCurrentType = 'sphere';
+
+function figInitPanel(){
+  figSetType(figCurrentType);
+  const opEl=document.getElementById('fig-opacity');
+  const opVal=document.getElementById('fig-opacity-val');
+  if(opEl && opVal){
+    opEl.oninput=()=>{ opVal.textContent=opEl.value+'%'; };
+  }
+}
+
+function figSetType(type){
+  figCurrentType = type;
+  document.querySelectorAll('.fig-type-btn').forEach(b=>{
+    b.classList.toggle('on', b.textContent.toLowerCase()===
+      ({sphere:'esfera',cylinder:'cilindro',cone:'cono',plane:'plano',torus:'toro'}[type]));
+  });
+  const vals = figState && figState.type===type ? figState.params : {};
+  document.getElementById('fig-params').innerHTML = figParamsHTML('fig-p-', type, vals);
+}
+
+function figGetParams(){
+  const ps = FIG_PARAMS[figCurrentType]||[];
+  const out={};
+  ps.forEach(p=>{ out[p.id]=parseFloat(document.getElementById('fig-p-'+p.id)?.value||p.def)||parseFloat(p.def); });
+  return out;
+}
+
+function figDraw(){
+  const cx=parseFloat(document.getElementById('fig-cx').value)||0;
+  const cy=parseFloat(document.getElementById('fig-cy').value)||0;
+  const cz=parseFloat(document.getElementById('fig-cz').value)||0;
+  const color=document.getElementById('fig-color').value;
+  const opacity=parseInt(document.getElementById('fig-opacity').value)||22;
+  figState={ type:figCurrentType, params:figGetParams(), cx, cy, cz, color, opacity };
+  // Forzar redraw del canvas AL
+  draw();
+  document.getElementById('fig-res').textContent='✓ Figura graficada en el canvas.';
+}
+
+function figClear(){
+  figState=null;
+  draw();
+  document.getElementById('fig-res').textContent='';
+}
+
+// ── EM: PANEL FLOTANTE FIGURAS ─────────────────────────
+let emFigCurrentType = 'sphere';
+
+function emFigToggle(){
+  emFigPanelOpen = !emFigPanelOpen;
+  const panel=document.getElementById('em-fig-panel');
+  const btn=document.getElementById('em-fig-btn');
+  panel.style.display = emFigPanelOpen ? 'block' : 'none';
+  btn.style.background = emFigPanelOpen ? 'rgba(124,106,247,.25)' : 'rgba(124,106,247,.1)';
+  if(emFigPanelOpen) emFigSetType(emFigCurrentType);
+  // Cerrar al clic fuera
+  if(emFigPanelOpen){
+    setTimeout(()=>{ document.addEventListener('click', emFigOutside, {once:true}); },100);
+  }
+}
+
+function emFigOutside(e){
+  const panel=document.getElementById('em-fig-panel');
+  const btn=document.getElementById('em-fig-btn');
+  if(panel && !panel.contains(e.target) && !btn.contains(e.target)){
+    emFigPanelOpen=false;
+    panel.style.display='none';
+    btn.style.background='rgba(124,106,247,.1)';
+  }
+}
+
+function emFigSetType(type){
+  emFigCurrentType=type;
+  document.querySelectorAll('.em-fig-type-btn').forEach(b=>{
+    b.classList.toggle('on', b.textContent.toLowerCase()===
+      ({sphere:'esfera',cylinder:'cilindro',cone:'cono',plane:'plano',torus:'toro'}[type]));
+  });
+  const vals = emFigState && emFigState.type===type ? emFigState.params : {};
+  document.getElementById('em-fig-params').innerHTML = figParamsHTML('em-fig-p-', type, vals);
+  const opEl=document.getElementById('em-fig-opacity');
+  const opVal=document.getElementById('em-fig-opacity-val');
+  if(opEl && opVal) opEl.oninput=()=>{ opVal.textContent=opEl.value+'%'; };
+}
+
+function emFigGetParams(){
+  const ps=FIG_PARAMS[emFigCurrentType]||[];
+  const out={};
+  ps.forEach(p=>{ out[p.id]=parseFloat(document.getElementById('em-fig-p-'+p.id)?.value||p.def)||parseFloat(p.def); });
+  return out;
+}
+
+function emFigDraw(){
+  const color=document.getElementById('em-fig-color').value;
+  const opacity=parseInt(document.getElementById('em-fig-opacity').value)||20;
+  emFigState={ type:emFigCurrentType, params:emFigGetParams(), cx:0, cy:0, cz:0, color, opacity };
+  emDraw();
+}
+
+function emFigClear(){
+  emFigState=null;
+  emDraw();
+}
+
+// ══════════════════════════════════════════════════════
 function triClear(){
   document.getElementById('tri-res').innerHTML='';
   ['px','py','pz','qx','qy','qz','rx','ry','rz'].forEach(k=>{
