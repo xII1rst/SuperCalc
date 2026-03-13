@@ -80,7 +80,7 @@
     </svg>
     <div class="sc-logo-name">Super<span class="hi">Calc</span></div>
     <div class="sc-logo-sub">Super Calculator</div>
-    <div class="sc-logo-ver">v 1.9.4</div>
+    <div class="sc-logo-ver">v 1.9.5</div>
   </div>
   <div class="launcher-modules" style="flex-wrap:wrap;justify-content:center">
     <div class="lmod-card al" onclick="openSubmod('al')">
@@ -118,7 +118,7 @@
       <div class="logo-icon">⟶</div>
       <div class="logo-inner">
         <div class="logo-text">Vector<span>3D</span></div>
-        <div style="font-size:8px;color:#3a5a7a;font-family:'Space Mono',monospace;letter-spacing:.06em">v 1.9.4</div>
+        <div style="font-size:8px;color:#3a5a7a;font-family:'Space Mono',monospace;letter-spacing:.06em">v 1.9.5</div>
       </div>
     </div>
     <div class="header-controls">
@@ -268,7 +268,7 @@
     <button class="em-back" onclick="closeModule('em')">← Inicio</button>
     <div class="em-logo">
       <div class="em-logo-text">Electro<span>Mag</span></div>
-      <div class="em-logo-ver">v 1.9.4</div>
+      <div class="em-logo-ver">v 1.9.5</div>
     </div>
     <div class="em-coord-pill">
       <button id="em-cart" class="on" onclick="emSetCoord('cart')">XYZ</button>
@@ -337,7 +337,7 @@
     <button class="mod-back al" onclick="closeModule('mat')">← AL</button>
     <div style="flex:1">
       <div class="mod-logo-text"><span class="al-c">Matrices</span> & Ec. Lineales</div>
-      <div class="mod-logo-ver">v 1.9.4</div>
+      <div class="mod-logo-ver">v 1.9.5</div>
     </div>
   </div>
   <div class="mat-tabs">
@@ -424,7 +424,7 @@
     <button class="mod-back al" onclick="closeModule('ineq')">← AL</button>
     <div style="flex:1">
       <div class="mod-logo-text"><span class="al-c">Inecuaciones</span></div>
-      <div class="mod-logo-ver">v 1.9.4</div>
+      <div class="mod-logo-ver">v 1.9.5</div>
     </div>
   </div>
   <!-- TYPE PICKER -->
@@ -466,349 +466,509 @@
 <!-- CÁLCULO MODULE -->
 <div id="calc-app">
   <div class="mod-header">
-    <button class="mod-back ca" onclick="closeModule('calc')">← CAL</button>
-    <div>
-      <div class="mod-logo-text"><span class="ca-c">Cálculo</span></div>
-      <div class="mod-logo-ver">v 1.9.4</div>
+    <button class="mod-back-btn" onclick="closeModule('calc')">← Atrás</button>
+    <div class="mod-header-title">Cálculo</div>
+    <div style="width:60px"></div>
+  </div>
+<div class="calc-tabs">
+  <button class="calc-tab on"  onclick="calcTab('dif')">∂ Diferencial</button>
+  <button class="calc-tab"     onclick="calcTab('int')">∫ Integral</button>
+  <button class="calc-tab"     onclick="calcTab('mul')">∇ Multivariable</button>
+  <button class="calc-tab"     onclick="calcTab('edo')">dy/dx Ec. Dif.</button>
+  <button class="calc-tab"     onclick="calcTab('graf')">📈 Graficar</button>
+</div>
+
+<!-- ══ DIFERENCIAL ══ -->
+<div class="calc-panel on" id="calc-pDif">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-dif"></div>
+
+    <!-- Límites -->
+    <div class="calc-card" id="card-lim">
+      <div class="calc-card-header" onclick="toggleCard('lim')">
+        <div class="calc-card-icon">lim</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Límites</div>
+          <div class="calc-card-desc">lim f(x) cuando x → a</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-lim">›</div>
+      </div>
+      <div class="calc-card-body" id="body-lim">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-lim-fx" placeholder="ej: sin(x)/x"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x →</label>
+            <input class="calc-inp calc-inp-sm" id="dif-lim-a" placeholder="0"/>
+            <label>Lado:</label>
+            <select class="mat-sel" id="dif-lim-side">
+              <option value="both">Bilateral</option>
+              <option value="right">Derecho (+)</option>
+              <option value="left">Izquierdo (−)</option>
+            </select>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcLimit()">Calcular límite</button>
+            <button class="calc-btn sec" onclick="clearCard('lim')">Limpiar</button>
+          </div>
+          <div id="res-lim" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derivada explícita -->
+    <div class="calc-card" id="card-der">
+      <div class="calc-card-header" onclick="toggleCard('der')">
+        <div class="calc-card-icon">d/dx</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Derivada Explícita</div>
+          <div class="calc-card-desc">f'(x) simbólica — reglas de derivación</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-der">›</div>
+      </div>
+      <div class="calc-card-body" id="body-der">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-der-fx" placeholder="ej: 2*x^25"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Orden:</label>
+            <select class="mat-sel" id="dif-der-ord">
+              <option value="1">Primera (f')</option>
+              <option value="2">Segunda (f'')</option>
+              <option value="3">Tercera (f''')</option>
+            </select>
+            <label>Evaluar en x =</label>
+            <input class="calc-inp calc-inp-sm" id="dif-der-pt" placeholder="opcional"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcDerivative()">Derivar</button>
+            <button class="calc-btn sec" onclick="clearCard('der')">Limpiar</button>
+          </div>
+          <div id="res-der" class="calc-res"></div>
+
+          <!-- Sub-panel aplicaciones -->
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <button class="calc-btn sec" style="width:100%;font-size:9px" onclick="toggleApps()">
+              ⚙ Aplicaciones de Derivadas
+            </button>
+            <div id="apps-panel" style="display:none;margin-top:10px">
+              <div class="app-panel">
+                <div class="app-panel-title">Modo Aplicaciones</div>
+                <div class="app-sel-grid">
+                  <div class="app-sel-btn on" id="app-btn-opt" onclick="setApp('opt')">
+                    <div class="app-sel-icon">📐</div>
+                    <div class="app-sel-name">Optimización</div>
+                    <div class="app-sel-form">max/min de f(x)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-pob" onclick="setApp('pob')">
+                    <div class="app-sel-icon">📈</div>
+                    <div class="app-sel-name">Crecimiento</div>
+                    <div class="app-sel-form">P(t) = P₀·eᵏᵗ</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-vel" onclick="setApp('vel')">
+                    <div class="app-sel-icon">🚀</div>
+                    <div class="app-sel-name">Movimiento</div>
+                    <div class="app-sel-form">v = s'(t), a = v'(t)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-tan" onclick="setApp('tan')">
+                    <div class="app-sel-icon">📏</div>
+                    <div class="app-sel-name">Recta Tangente</div>
+                    <div class="app-sel-form">y = f'(x₀)(x−x₀) + f(x₀)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-rel" onclick="setApp('rel')">
+                    <div class="app-sel-icon">🔗</div>
+                    <div class="app-sel-name">Tasas Relacionadas</div>
+                    <div class="app-sel-form">dV/dt, dA/dt, etc.</div>
+                  </div>
+                </div>
+                <div id="app-form-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derivada implícita -->
+    <div class="calc-card" id="card-imp">
+      <div class="calc-card-header" onclick="toggleCard('imp')">
+        <div class="calc-card-icon">∂y</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Derivada Implícita</div>
+          <div class="calc-card-desc">F(x,y) = 0  →  dy/dx = −Fx/Fy</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-imp">›</div>
+      </div>
+      <div class="calc-card-body" id="body-imp">
+        <div class="calc-card-inner">
+          <div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:10px;line-height:1.8">
+            Ingresa F(x,y) tal que F(x,y) = 0<br>
+            Ej: x² + y² − 25 &nbsp;→&nbsp; círculo de r=5
+          </div>
+          <div class="calc-field-row">
+            <label>F(x,y) =</label>
+            <input class="calc-inp" id="dif-imp-fxy" placeholder="ej: x^2 + y^2 - 25"/>
+          </div>
+          <div class="calc-field-row">
+            <label>en (x₀,y₀):</label>
+            <input class="calc-inp calc-inp-sm" id="dif-imp-x0" placeholder="x₀"/>
+            <input class="calc-inp calc-inp-sm" id="dif-imp-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcImplicit()">Calcular dy/dx</button>
+            <button class="calc-btn sec" onclick="clearCard('imp')">Limpiar</button>
+          </div>
+          <div id="res-imp" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Análisis -->
+    <div class="calc-card" id="card-ana">
+      <div class="calc-card-header" onclick="toggleCard('ana')">
+        <div class="calc-card-icon">📊</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Análisis de Función</div>
+          <div class="calc-card-desc">Monotonía, extremos, concavidad, inflexiones</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-ana">›</div>
+      </div>
+      <div class="calc-card-body" id="body-ana">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-ana-fx" placeholder="ej: x^3 - 3*x"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcAnalysis()">Analizar</button>
+            <button class="calc-btn sec" onclick="clearCard('ana')">Limpiar</button>
+          </div>
+          <div id="res-ana" class="calc-res"></div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="calc-tabs">
-    <button class="calc-tab on"  onclick="calcTab('dif')">∂ Diferencial</button>
-    <button class="calc-tab"     onclick="calcTab('int')">∫ Integral</button>
-    <button class="calc-tab"     onclick="calcTab('mul')">∇ Multivariable</button>
-    <button class="calc-tab"     onclick="calcTab('edo')">dy/dx Ec. Dif.</button>
-    <button class="calc-tab"     onclick="calcTab('graf')">📈 Graficar</button>
+</div>
+
+<!-- ══ INTEGRAL ══ -->
+<div class="calc-panel" id="calc-pInt">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-int"></div>
+
+    <div class="calc-card" id="card-indef">
+      <div class="calc-card-header" onclick="toggleCard('indef')">
+        <div class="calc-card-icon">∫</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral Indefinida</div>
+          <div class="calc-card-desc">∫ f(x) dx — reglas básicas + verificación</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-indef">›</div>
+      </div>
+      <div class="calc-card-body" id="body-indef">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-indef-fx" placeholder="ej: 3*x^2 + cos(x)"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcIntegralIndef()">∫ f(x) dx</button>
+            <button class="calc-btn sec" onclick="clearCard('indef')">Limpiar</button>
+          </div>
+          <div id="res-indef" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-def">
+      <div class="calc-card-header" onclick="toggleCard('def')">
+        <div class="calc-card-icon">∫ₐᵇ</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral Definida</div>
+          <div class="calc-card-desc">∫ₐᵇ f(x) dx — Simpson con n=1000</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-def">›</div>
+      </div>
+      <div class="calc-card-body" id="body-def">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-def-fx" placeholder="ej: x^2"/>
+          </div>
+          <div class="calc-field-row">
+            <label>a =</label>
+            <input class="calc-inp calc-inp-sm" id="int-def-a" placeholder="0"/>
+            <label>b =</label>
+            <input class="calc-inp calc-inp-sm" id="int-def-b" placeholder="1"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcIntegralDef()">∫ₐᵇ f(x) dx</button>
+            <button class="calc-btn sec" onclick="clearCard('def')">Limpiar</button>
+          </div>
+          <div id="res-def" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-taylor">
+      <div class="calc-card-header" onclick="toggleCard('taylor')">
+        <div class="calc-card-icon">Σ</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Serie de Taylor / Maclaurin</div>
+          <div class="calc-card-desc">Expansión en serie de potencias alrededor de a</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-taylor">›</div>
+      </div>
+      <div class="calc-card-body" id="body-taylor">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-taylor-fx" placeholder="ej: e^x, sin(x)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Centro a =</label>
+            <input class="calc-inp calc-inp-sm" id="int-taylor-a" placeholder="0"/>
+            <label>Términos:</label>
+            <input class="calc-inp calc-inp-sm" id="int-taylor-n" placeholder="5" style="width:50px"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcTaylor()">Expandir</button>
+            <button class="calc-btn sec" onclick="clearCard('taylor')">Limpiar</button>
+          </div>
+          <div id="res-taylor" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="calc-body">
+</div>
 
-    <!-- ══ CÁLCULO DIFERENCIAL ══ -->
-    <div class="calc-panel on" id="calc-pDif">
-      <div class="calc-scroll">
+<!-- ══ MULTIVARIABLE ══ -->
+<div class="calc-panel" id="calc-pMul">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-mul"></div>
 
-        <!-- Teclado -->
-        <div class="calc-keyboard" id="calc-kb-dif"></div>
-
-        <!-- Límites -->
-        <div class="calc-sec">Límites</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="dif-lim-fx" placeholder="ej: sin(x)/x" oninput="calcSetActiveInput(this)"/>
+    <div class="calc-card" id="card-par">
+      <div class="calc-card-header" onclick="toggleCard('par')">
+        <div class="calc-card-icon">∂/∂</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Derivadas Parciales</div>
+          <div class="calc-card-desc">∂f/∂x, ∂f/∂y — 1er y 2do orden</div>
         </div>
-        <div class="calc-field-row">
-          <label>x →</label>
-          <input class="calc-inp calc-inp-sm" id="dif-lim-a" placeholder="0" oninput="calcSetActiveInput(this)"/>
-          <label>Lado:</label>
-          <select class="mat-sel" id="dif-lim-side">
-            <option value="both">Bilateral</option>
-            <option value="right">Derecho (+)</option>
-            <option value="left">Izquierdo (−)</option>
-          </select>
-        </div>
-        <button class="calc-btn" onclick="calcLimit()">Calcular límite</button>
-        <button class="calc-btn sec" onclick="calcClear('dif-lim')">Limpiar</button>
-        <div id="dif-lim-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Derivadas -->
-        <div class="calc-sec">Derivadas</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="dif-der-fx" placeholder="ej: x^3 + sin(x)" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>Orden:</label>
-          <select class="mat-sel" id="dif-der-ord">
-            <option value="1">Primera (f')</option>
-            <option value="2">Segunda (f'')</option>
-            <option value="3">Tercera (f''')</option>
-          </select>
-          <label>en x =</label>
-          <input class="calc-inp calc-inp-sm" id="dif-der-pt" placeholder="—"/>
-        </div>
-        <button class="calc-btn" onclick="calcDerivative()">Derivar</button>
-        <button class="calc-btn sec" onclick="calcClear('dif-der')">Limpiar</button>
-        <div id="dif-der-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Análisis de función -->
-        <div class="calc-sec">Análisis de función</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="dif-ana-fx" placeholder="ej: x^3 - 3x" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <button class="calc-btn" onclick="calcAnalysis()">Analizar</button>
-        <button class="calc-btn sec" onclick="calcClear('dif-ana')">Limpiar</button>
-        <div id="dif-ana-res"></div>
-
+        <div class="calc-card-arrow" id="arr-par">›</div>
       </div>
-    </div>
-
-    <!-- ══ CÁLCULO INTEGRAL ══ -->
-    <div class="calc-panel" id="calc-pInt">
-      <div class="calc-scroll">
-
-        <div class="calc-keyboard" id="calc-kb-int"></div>
-
-        <!-- Integral indefinida -->
-        <div class="calc-sec">Integral Indefinida</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="int-indef-fx" placeholder="ej: 3x^2 + cos(x)" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <button class="calc-btn" onclick="calcIntegralIndef()">∫ f(x) dx</button>
-        <button class="calc-btn sec" onclick="calcClear('int-indef')">Limpiar</button>
-        <div id="int-indef-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Integral definida -->
-        <div class="calc-sec">Integral Definida</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="int-def-fx" placeholder="ej: x^2" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>de a =</label>
-          <input class="calc-inp calc-inp-sm" id="int-def-a" placeholder="0"/>
-          <label>a b =</label>
-          <input class="calc-inp calc-inp-sm" id="int-def-b" placeholder="1"/>
-        </div>
-        <button class="calc-btn" onclick="calcIntegralDef()">∫ₐᵇ f(x) dx</button>
-        <button class="calc-btn sec" onclick="calcClear('int-def')">Limpiar</button>
-        <div id="int-def-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Serie de Taylor -->
-        <div class="calc-sec">Serie de Taylor / Maclaurin</div>
-        <div class="calc-field-row">
-          <label>f(x) =</label>
-          <input class="calc-inp" id="int-taylor-fx" placeholder="ej: e^x, sin(x), cos(x)" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>Centro a =</label>
-          <input class="calc-inp calc-inp-sm" id="int-taylor-a" placeholder="0"/>
-          <label>Términos:</label>
-          <input class="calc-inp calc-inp-sm" id="int-taylor-n" placeholder="5" style="width:50px"/>
-        </div>
-        <button class="calc-btn" onclick="calcTaylor()">Expandir</button>
-        <button class="calc-btn sec" onclick="calcClear('int-taylor')">Limpiar</button>
-        <div id="int-taylor-res"></div>
-
-      </div>
-    </div>
-
-    <!-- ══ CÁLCULO MULTIVARIABLE ══ -->
-    <div class="calc-panel" id="calc-pMul">
-      <div class="calc-scroll">
-
-        <div class="calc-keyboard" id="calc-kb-mul"></div>
-
-        <!-- Derivadas parciales -->
-        <div class="calc-sec">Derivadas Parciales</div>
-        <div class="calc-field-row">
-          <label>f(x,y) =</label>
-          <input class="calc-inp" id="mul-par-fxy" placeholder="ej: x^2*y + sin(x*y)" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>Respecto a:</label>
-          <select class="mat-sel" id="mul-par-var">
-            <option value="x">x (∂f/∂x)</option>
-            <option value="y">y (∂f/∂y)</option>
-          </select>
-          <label>Orden:</label>
-          <select class="mat-sel" id="mul-par-ord">
-            <option value="1">1°</option>
-            <option value="2">2°</option>
-          </select>
-        </div>
-        <button class="calc-btn" onclick="calcPartial()">Derivar</button>
-        <button class="calc-btn sec" onclick="calcClear('mul-par')">Limpiar</button>
-        <div id="mul-par-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Gradiente -->
-        <div class="calc-sec">Gradiente ∇f</div>
-        <div class="calc-field-row">
-          <label>f(x,y) =</label>
-          <input class="calc-inp" id="mul-grad-fxy" placeholder="ej: x^2 + y^2" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>en (x₀,y₀):</label>
-          <input class="calc-inp calc-inp-sm" id="mul-grad-x0" placeholder="x₀"/>
-          <input class="calc-inp calc-inp-sm" id="mul-grad-y0" placeholder="y₀"/>
-        </div>
-        <button class="calc-btn" onclick="calcGradient()">Calcular ∇f</button>
-        <button class="calc-btn sec" onclick="calcClear('mul-grad')">Limpiar</button>
-        <div id="mul-grad-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- Integral doble -->
-        <div class="calc-sec">Integral Doble ∬</div>
-        <div class="calc-field-row">
-          <label>f(x,y) =</label>
-          <input class="calc-inp" id="mul-dint-fxy" placeholder="ej: x*y, x^2+y^2" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>x: [</label>
-          <input class="calc-inp calc-inp-sm" id="mul-dint-x1" placeholder="0"/>
-          <label>,</label>
-          <input class="calc-inp calc-inp-sm" id="mul-dint-x2" placeholder="1"/>
-          <label>]</label>
-        </div>
-        <div class="calc-field-row">
-          <label>y: [</label>
-          <input class="calc-inp calc-inp-sm" id="mul-dint-y1" placeholder="0"/>
-          <label>,</label>
-          <input class="calc-inp calc-inp-sm" id="mul-dint-y2" placeholder="1"/>
-          <label>]</label>
-        </div>
-        <button class="calc-btn" onclick="calcDoubleIntegral()">∬ f dx dy</button>
-        <button class="calc-btn sec" onclick="calcClear('mul-dint')">Limpiar</button>
-        <div id="mul-dint-res"></div>
-
-      </div>
-    </div>
-
-    <!-- ══ ECUACIONES DIFERENCIALES ══ -->
-    <div class="calc-panel" id="calc-pEdo">
-      <div class="calc-scroll">
-
-        <div class="calc-keyboard" id="calc-kb-edo"></div>
-
-        <!-- ED de 1er orden separable -->
-        <div class="calc-sec">ED 1er Orden — Variables Separables</div>
-        <div class="calc-field-row">
-          <label>dy/dx =</label>
-          <input class="calc-inp" id="edo-sep-rhs" placeholder="ej: x*y, x/y, y^2" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>y(</label>
-          <input class="calc-inp calc-inp-sm" id="edo-sep-x0" placeholder="x₀"/>
-          <label>) =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-sep-y0" placeholder="y₀"/>
-        </div>
-        <button class="calc-btn" onclick="calcEDOSep()">Resolver</button>
-        <button class="calc-btn sec" onclick="calcClear('edo-sep')">Limpiar</button>
-        <div id="edo-sep-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- ED lineal de 1er orden -->
-        <div class="calc-sec">ED Lineal 1er Orden — y' + P(x)y = Q(x)</div>
-        <div class="calc-field-row">
-          <label>P(x) =</label>
-          <input class="calc-inp" id="edo-lin-px" placeholder="ej: 2, 1/x, x" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>Q(x) =</label>
-          <input class="calc-inp" id="edo-lin-qx" placeholder="ej: x^2, e^x, 0" oninput="calcSetActiveInput(this)"/>
-        </div>
-        <div class="calc-field-row">
-          <label>y(</label>
-          <input class="calc-inp calc-inp-sm" id="edo-lin-x0" placeholder="x₀"/>
-          <label>) =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-lin-y0" placeholder="y₀"/>
-        </div>
-        <button class="calc-btn" onclick="calcEDOLinear()">Resolver</button>
-        <button class="calc-btn sec" onclick="calcClear('edo-lin')">Limpiar</button>
-        <div id="edo-lin-res"></div>
-
-        <div class="calc-sub-sep"></div>
-
-        <!-- ED 2do orden coeficientes constantes -->
-        <div class="calc-sec">ED 2do Orden — ay'' + by' + cy = 0</div>
-        <div class="calc-field-row">
-          <label>a =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-2do-a" placeholder="1"/>
-          <label>b =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-2do-b" placeholder="0"/>
-          <label>c =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-2do-c" placeholder="0"/>
-        </div>
-        <div class="calc-field-row">
-          <label>y(0) =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-2do-y0" placeholder="1"/>
-          <label>y'(0) =</label>
-          <input class="calc-inp calc-inp-sm" id="edo-2do-dy0" placeholder="0"/>
-        </div>
-        <button class="calc-btn" onclick="calcEDO2nd()">Resolver</button>
-        <button class="calc-btn sec" onclick="calcClear('edo-2do')">Limpiar</button>
-        <div id="edo-2do-res"></div>
-
-      </div>
-    </div>
-
-    <!-- ══ GRAFICACIÓN ══ -->
-    <div class="calc-panel" id="calc-pGraf">
-      <div class="calc-scroll">
-
-        <div class="calc-sec">Tipo de función</div>
-        <div class="graf-type-grid">
-          <div class="graf-type-card sel" id="gtype-lin" onclick="grafSetType('lin')">
-            <div class="graf-type-icon">📏</div>
-            <div class="graf-type-name">Lineal</div>
-            <div class="graf-type-form">y = mx + b</div>
+      <div class="calc-card-body" id="body-par">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="mul-par-fxy" placeholder="ej: x^2*y + sin(x*y)"/>
           </div>
-          <div class="graf-type-card" id="gtype-quad" onclick="grafSetType('quad')">
-            <div class="graf-type-icon">∪</div>
-            <div class="graf-type-name">Cuadrática</div>
-            <div class="graf-type-form">y = ax² + bx + c</div>
+          <div class="calc-field-row">
+            <label>Var:</label>
+            <select class="mat-sel" id="mul-par-var">
+              <option value="x">∂f/∂x</option>
+              <option value="y">∂f/∂y</option>
+            </select>
+            <label>Orden:</label>
+            <select class="mat-sel" id="mul-par-ord">
+              <option value="1">1°</option>
+              <option value="2">2°</option>
+            </select>
+            <label>en (x,y):</label>
+            <input class="calc-inp calc-inp-sm" id="mul-par-x0" placeholder="x₀"/>
+            <input class="calc-inp calc-inp-sm" id="mul-par-y0" placeholder="y₀"/>
           </div>
-          <div class="graf-type-card" id="gtype-abs" onclick="grafSetType('abs')">
-            <div class="graf-type-icon">|x|</div>
-            <div class="graf-type-name">Valor absoluto</div>
-            <div class="graf-type-form">y = a|x + h| + k</div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcPartial()">Derivar</button>
+            <button class="calc-btn sec" onclick="clearCard('par')">Limpiar</button>
           </div>
-          <div class="graf-type-card" id="gtype-exp" onclick="grafSetType('exp')">
-            <div class="graf-type-icon">eˣ</div>
-            <div class="graf-type-name">Exponencial</div>
-            <div class="graf-type-form">y = a · bˣ</div>
-          </div>
+          <div id="res-par" class="calc-res"></div>
         </div>
-
-        <!-- Coeficientes dinámicos -->
-        <div class="graf-inputs" id="graf-inputs-wrap">
-          <div class="graf-inputs-title" id="graf-inputs-title">Coeficientes — Lineal</div>
-          <div id="graf-coef-fields"><!-- generado por JS --></div>
-          <div class="graf-formula-preview" id="graf-formula-preview">y = x</div>
-        </div>
-
-        <!-- Puntos -->
-        <div class="graf-pts-row">
-          <label>Puntos a calcular (cada lado de 0):</label>
-          <select class="graf-pts-sel" id="graf-pts-n" onchange="grafUpdate()">
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-          </select>
-        </div>
-
-        <button class="calc-btn" onclick="grafDraw()">Graficar</button>
-        <button class="calc-btn sec" onclick="grafClear()">Limpiar</button>
-
-        <!-- Canvas -->
-        <div class="graf-canvas-wrap" id="graf-canvas-wrap" style="display:none">
-          <canvas id="graf-cv" height="300"></canvas>
-          <div class="graf-table-overlay" id="graf-table"></div>
-        </div>
-
-        <!-- Pasos -->
-        <div id="graf-steps-wrap" style="display:none">
-          <div class="graf-steps-title">Cálculo de puntos</div>
-          <div id="graf-steps"></div>
-        </div>
-
       </div>
     </div>
 
+    <div class="calc-card" id="card-grad">
+      <div class="calc-card-header" onclick="toggleCard('grad')">
+        <div class="calc-card-icon">∇</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Gradiente ∇f</div>
+          <div class="calc-card-desc">Vector de derivadas parciales en un punto</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-grad">›</div>
+      </div>
+      <div class="calc-card-body" id="body-grad">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="mul-grad-fxy" placeholder="ej: x^2 + y^2"/>
+          </div>
+          <div class="calc-field-row">
+            <label>en (x₀,y₀):</label>
+            <input class="calc-inp calc-inp-sm" id="mul-grad-x0" placeholder="x₀"/>
+            <input class="calc-inp calc-inp-sm" id="mul-grad-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcGradient()">∇f</button>
+            <button class="calc-btn sec" onclick="clearCard('grad')">Limpiar</button>
+          </div>
+          <div id="res-grad" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-dint">
+      <div class="calc-card-header" onclick="toggleCard('dint')">
+        <div class="calc-card-icon">∬</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral Doble ∬</div>
+          <div class="calc-card-desc">∬ f(x,y) dx dy sobre región rectangular</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-dint">›</div>
+      </div>
+      <div class="calc-card-body" id="body-dint">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="mul-dint-fxy" placeholder="ej: x*y"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x:[</label>
+            <input class="calc-inp calc-inp-sm" id="mul-dint-x1" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="mul-dint-x2" placeholder="1"/>
+            <label>] &nbsp; y:[</label>
+            <input class="calc-inp calc-inp-sm" id="mul-dint-y1" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="mul-dint-y2" placeholder="1"/>
+            <label>]</label>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcDoubleIntegral()">∬ f dx dy</button>
+            <button class="calc-btn sec" onclick="clearCard('dint')">Limpiar</button>
+          </div>
+          <div id="res-dint" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- ══ EDO ══ -->
+<div class="calc-panel" id="calc-pEdo">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-edo"></div>
+
+    <div class="calc-card" id="card-sep">
+      <div class="calc-card-header" onclick="toggleCard('sep')">
+        <div class="calc-card-icon">dy/dx</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">1er Orden — Variables Separables</div>
+          <div class="calc-card-desc">dy/dx = f(x)·g(y) con condición inicial</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-sep">›</div>
+      </div>
+      <div class="calc-card-body" id="body-sep">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>dy/dx =</label>
+            <input class="calc-inp" id="edo-sep-rhs" placeholder="ej: x*y"/>
+          </div>
+          <div class="calc-field-row">
+            <label>y(</label>
+            <input class="calc-inp calc-inp-sm" id="edo-sep-x0" placeholder="x₀"/>
+            <label>) =</label>
+            <input class="calc-inp calc-inp-sm" id="edo-sep-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcEDOSep()">Resolver (RK4)</button>
+            <button class="calc-btn sec" onclick="clearCard('sep')">Limpiar</button>
+          </div>
+          <div id="res-sep" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-edolin">
+      <div class="calc-card-header" onclick="toggleCard('edolin')">
+        <div class="calc-card-icon">μ(x)</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">1er Orden — ED Lineal</div>
+          <div class="calc-card-desc">y' + P(x)y = Q(x) — factor integrante</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-edolin">›</div>
+      </div>
+      <div class="calc-card-body" id="body-edolin">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>P(x) =</label>
+            <input class="calc-inp" id="edo-lin-px" placeholder="ej: 2, 1/x"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Q(x) =</label>
+            <input class="calc-inp" id="edo-lin-qx" placeholder="ej: x^2, e^x"/>
+          </div>
+          <div class="calc-field-row">
+            <label>y(</label>
+            <input class="calc-inp calc-inp-sm" id="edo-lin-x0" placeholder="x₀"/>
+            <label>) =</label>
+            <input class="calc-inp calc-inp-sm" id="edo-lin-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcEDOLinear()">Resolver (RK4)</button>
+            <button class="calc-btn sec" onclick="clearCard('edolin')">Limpiar</button>
+          </div>
+          <div id="res-edolin" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-edo2">
+      <div class="calc-card-header" onclick="toggleCard('edo2')">
+        <div class="calc-card-icon">ay''</div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">2do Orden — Coef. Constantes</div>
+          <div class="calc-card-desc">ay'' + by' + cy = 0 — ecuación característica</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-edo2">›</div>
+      </div>
+      <div class="calc-card-body" id="body-edo2">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>a=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-a" placeholder="1"/>
+            <label>b=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-b" placeholder="0"/>
+            <label>c=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-c" placeholder="0"/>
+          </div>
+          <div class="calc-field-row">
+            <label>y(0)=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-y0" placeholder="1"/>
+            <label>y'(0)=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-dy0" placeholder="0"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" onclick="calcEDO2nd()">Resolver</button>
+            <button class="calc-btn sec" onclick="clearCard('edo2')">Limpiar</button>
+          </div>
+          <div id="res-edo2" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GRAFICAR ══ -->
+<div class="calc-panel" id="calc-pGraf">
+  <div class="calc-scroll">
+    <div class="calc-sec">Tipo de función</div>
+    <div class="graf-type-grid" id="graf-type-grid"></div>
+    <div id="graf-coef-section"></div>
+    <canvas id="graf-canvas" height="260"></canvas>
+  </div>
+</div>
 </div>
 
 <div id="sc-author-footer">Ing. Rafael Miranda &nbsp;·&nbsp; (xII1rst)</div>

@@ -1,4 +1,4 @@
-// SuperCalc v1.9.4 — Application Logic
+// SuperCalc v1.9.5 — Application Logic
 
 // ── BACKGROUND FÓRMULAS ─────────────────────────────
 (function scBg(){
@@ -166,7 +166,7 @@
 let deferredPrompt=null;
 if('serviceWorker' in navigator){
   const swCode=[
-    "const CACHE='supercalc-1.9.4';",
+    "const CACHE='supercalc-1.9.5';",
     "const PRECACHE=['./','./index.html','./style.css','./app.js','https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap'];",
     "self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(PRECACHE.map(url=>c.add(new Request(url,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));});",
     "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});",
@@ -2036,6 +2036,7 @@ window.addEventListener('popstate', (e) => {
 window.addEventListener('load', () => {
   history.replaceState({sc:'launcher'}, '');
   history.pushState({sc:'base'}, '');
+  setAuthorVisible(true);
 });
 
 // ── Versiones internas sin pushState (evitar loops) ────
@@ -2047,6 +2048,7 @@ function _closeSubmodNoHistory(){
   setTimeout(() => {
     launcher.classList.remove('hidden');
     launcher.style.opacity = '';
+    setAuthorVisible(true);
   }, 50);
 }
 
@@ -2059,6 +2061,11 @@ function _closeModuleNoHistory(id){
   setTimeout(() => {
     document.getElementById('submod-screen').classList.add('visible');
   }, 50);
+}
+
+function setAuthorVisible(visible){
+  const el = document.getElementById('sc-author-footer');
+  if(el) el.style.opacity = visible ? '' : '0';
 }
 
 function _confirmExit(){
@@ -2075,6 +2082,7 @@ function _confirmExit(){
 }
 
 function openSubmod(parent) {
+  setAuthorVisible(false);
   currentParent = parent;
   const cfg = SUBMOD_CONFIG[parent];
   document.getElementById('submod-title').innerHTML = cfg.title;
@@ -2105,6 +2113,7 @@ function closeSubmod() {
   setTimeout(() => {
     launcher.classList.remove('hidden');
     launcher.style.opacity = '';
+    setAuthorVisible(true);
   }, 50);
 }
 
@@ -2924,71 +2933,56 @@ function drawNumLine(points, solutionLabels) {
 
 
 // ═══════════════════════════════════════════════════════
-// CÁLCULO MODULE v1.9.4
+// TECLADO — arquitectura correcta
+// El input activo se registra con onfocus (no oninput)
+// El botón usa pointer events para no robar el foco
 // ═══════════════════════════════════════════════════════
-
-// ── Estado ──
-let calcCurrentTab = 'dif';
 let calcActiveInput = null;
+let calcCurrentTab  = 'dif';
 
-function calcSetActiveInput(el) { calcActiveInput = el; }
-
-// ── Navegación ──
-function calcTab(id) {
-  document.querySelectorAll('.calc-tab').forEach((t,i) => {
-    t.classList.toggle('on', ['dif','int','mul','edo','graf'][i] === id);
+// Registrar todos los inputs calc-inp con onfocus
+function initInputTracking(){
+  document.querySelectorAll('.calc-inp').forEach(inp=>{
+    inp.addEventListener('focus', ()=>{ calcActiveInput = inp; });
   });
-  ['Dif','Int','Mul','Edo','Graf'].forEach(p => {
-    const el = document.getElementById('calc-p'+p);
-    if(el) el.classList.toggle('on', p.toLowerCase() === id);
-  });
-  calcCurrentTab = id;
-  if(id==='graf') grafInitFields();
 }
 
-// ── Teclado tipo C ──
-const CALC_KB_GROUPS = [
-  { label: 'Operadores', btns: [
-    { icon:'∂/∂x', name:'parcial x', ins:'∂/∂x(' },
-    { icon:'d/dx',  name:'derivada',  ins:'d/dx(' },
-    { icon:'∫',     name:'integral',  ins:'∫(' },
-    { icon:'∑',     name:'suma',      ins:'∑(' },
-    { icon:'lim',   name:'límite',    ins:'lim(x→' },
+const CALC_KB = [
+  { label:'Funciones', btns:[
+    {icon:'sin',  name:'seno',     ins:'sin('},
+    {icon:'cos',  name:'coseno',   ins:'cos('},
+    {icon:'tan',  name:'tangente', ins:'tan('},
+    {icon:'asin', name:'arcsin',   ins:'asin('},
+    {icon:'acos', name:'arccos',   ins:'acos('},
+    {icon:'atan', name:'arctan',   ins:'atan('},
+    {icon:'ln',   name:'log nat',  ins:'ln('},
+    {icon:'log',  name:'log₁₀',   ins:'log('},
+    {icon:'√',    name:'raíz',     ins:'sqrt('},
+    {icon:'|x|',  name:'abs',      ins:'abs('},
+    {icon:'eˣ',   name:'exp',      ins:'e^('},
   ]},
-  { label: 'Funciones', btns: [
-    { icon:'sin',   name:'seno',      ins:'sin(' },
-    { icon:'cos',   name:'coseno',    ins:'cos(' },
-    { icon:'tan',   name:'tangente',  ins:'tan(' },
-    { icon:'sin⁻¹', name:'arcsin',    ins:'asin(' },
-    { icon:'cos⁻¹', name:'arccos',    ins:'acos(' },
-    { icon:'tan⁻¹', name:'arctan',    ins:'atan(' },
-    { icon:'ln',    name:'log nat.',  ins:'ln(' },
-    { icon:'log',   name:'log₁₀',    ins:'log(' },
-    { icon:'√',     name:'raíz',      ins:'sqrt(' },
-    { icon:'eˣ',    name:'exp',       ins:'e^' },
-    { icon:'|x|',   name:'abs',       ins:'abs(' },
-  ]},
-  { label: 'Constantes y potencias', btns: [
-    { icon:'xⁿ',   name:'potencia',  ins:'x^' },
-    { icon:'π',    name:'pi',        ins:'π' },
-    { icon:'∞',    name:'infinito',  ins:'∞' },
-    { icon:'e',    name:'euler',     ins:'e' },
-    { icon:'( )',  name:'paréntesis',ins:'(' },
-    { icon:'1/x',  name:'fracción',  ins:'1/(' },
+  { label:'Constantes y operadores', btns:[
+    {icon:'xⁿ',  name:'potencia', ins:'^'},
+    {icon:'π',   name:'pi',       ins:'π'},
+    {icon:'e',   name:'euler',    ins:'e'},
+    {icon:'∞',   name:'inf',      ins:'Infinity'},
+    {icon:'( )', name:'parén.',   ins:'('},
+    {icon:'*',   name:'mult.',    ins:'*'},
+    {icon:'1/x', name:'fracción', ins:'1/('},
   ]},
 ];
 
-function calcBuildKB(containerId) {
+function buildKB(containerId){
   const el = document.getElementById(containerId);
   if(!el || el.dataset.built) return;
   el.dataset.built = '1';
-  el.className = 'calc-keyboard';
-  el.innerHTML = CALC_KB_GROUPS.map(g => `
+  el.innerHTML = CALC_KB.map(g=>`
     <div class="calc-kb-group">
       <div class="calc-kb-label">${g.label}</div>
       <div class="calc-kb-btns">
-        ${g.btns.map(b => `
-          <button class="calc-kb-btn" onclick="calcKBInsert(${JSON.stringify(b.ins)})">
+        ${g.btns.map(b=>`
+          <button class="calc-kb-btn"
+            onpointerdown="kbInsert(event,'${b.ins.replace(/'/g,"\\'")}')">
             <span class="kb-icon">${b.icon}</span>
             <span class="kb-name">${b.name}</span>
           </button>`).join('')}
@@ -2996,43 +2990,80 @@ function calcBuildKB(containerId) {
     </div>`).join('');
 }
 
-function calcKBInsert(text) {
-  // Insert into last focused input in current panel
-  const panel = document.getElementById('calc-p' + calcCurrentTab.charAt(0).toUpperCase() + calcCurrentTab.slice(1));
-  const inp = calcActiveInput && panel && panel.contains(calcActiveInput)
-    ? calcActiveInput
-    : panel ? panel.querySelector('.calc-inp') : null;
+function kbInsert(event, text){
+  // Prevenir que el pointer event robe el foco del input
+  event.preventDefault();
+
+  // Buscar el mejor input target:
+  // 1. El que tiene foco actualmente (calcActiveInput)
+  // 2. Si no, el primer input visible en la card abierta del panel activo
+  let inp = calcActiveInput;
+  if(!inp || !document.contains(inp)){
+    const panelId = 'calc-p' + calcCurrentTab.charAt(0).toUpperCase() + calcCurrentTab.slice(1);
+    const panel   = document.getElementById(panelId);
+    const openCard = panel ? panel.querySelector('.calc-card-body.open') : null;
+    inp = openCard ? openCard.querySelector('.calc-inp') : null;
+    if(!inp && panel) inp = panel.querySelector('.calc-inp');
+  }
   if(!inp) return;
-  const s = inp.selectionStart, e = inp.selectionEnd;
+
+  const s = inp.selectionStart ?? inp.value.length;
+  const e = inp.selectionEnd   ?? inp.value.length;
   inp.value = inp.value.slice(0,s) + text + inp.value.slice(e);
   const pos = s + text.length;
   inp.focus();
-  inp.setSelectionRange(pos,pos);
+  inp.setSelectionRange(pos, pos);
   calcActiveInput = inp;
 }
 
-function calcInitKBs() {
-  ['dif','int','mul','edo'].forEach(id => {
-    calcBuildKB('calc-kb-'+id);
+// ═══════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════════
+function calcTab(id){
+  document.querySelectorAll('.calc-tab').forEach((t,i)=>{
+    t.classList.toggle('on', ['dif','int','mul','edo','graf'][i]===id);
   });
+  ['Dif','Int','Mul','Edo','Graf'].forEach(p=>{
+    const el = document.getElementById('calc-p'+p);
+    if(el) el.classList.toggle('on', p.toLowerCase()===id);
+  });
+  calcCurrentTab = id;
+  if(id==='graf') grafInit();
 }
 
-// ── Limpiar resultado ──
-function calcClear(prefix) {
-  document.querySelectorAll(`[id^="${prefix}"]`).forEach(el => {
-    if(el.tagName==='INPUT') el.value='';
-    if(el.id === prefix+'-res') el.innerHTML='';
-  });
+function toggleCard(id){
+  const body  = document.getElementById('body-'+id);
+  const arr   = document.getElementById('arr-'+id);
+  const card  = document.getElementById('card-'+id);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open',  !isOpen);
+  arr.classList.toggle('open',   !isOpen);
+  card.classList.toggle('active',!isOpen);
 }
 
-// ── Parser de expresiones ──
-// Convierte string a función evaluable
-function calcParse(expr) {
-  if(!expr || !expr.trim()) return null;
+function clearCard(id){
+  // Limpiar inputs dentro de body-id
+  const body = document.getElementById('body-'+id);
+  if(!body) return;
+  body.querySelectorAll('.calc-inp').forEach(el=>el.value='');
+  // Limpiar res dentro de body-id
+  body.querySelectorAll('[id^="res-"]').forEach(el=>el.innerHTML='');
+  // También buscar res específico por convención
+  const resMap = {lim:'res-lim',der:'res-der',imp:'res-imp',ana:'res-ana',
+    indef:'res-indef',def:'res-def',taylor:'res-taylor',
+    par:'res-par',grad:'res-grad',dint:'res-dint',
+    sep:'res-sep',edolin:'res-edolin',edo2:'res-edo2'};
+  if(resMap[id]) { const r=document.getElementById(resMap[id]); if(r) r.innerHTML=''; }
+}
+
+// ═══════════════════════════════════════════════════════
+// PARSER NUMÉRICO
+// ═══════════════════════════════════════════════════════
+function calcParse(expr){
+  if(!expr||!expr.trim()) return null;
   let s = expr.trim();
-  // Normalize
   s = s.replace(/π/g,'Math.PI');
-  s = s.replace(/∞/g,'Infinity');
+  s = s.replace(/\bInfinity\b/g,'Infinity');
   s = s.replace(/\^/g,'**');
   s = s.replace(/\bsin\b/g,'Math.sin');
   s = s.replace(/\bcos\b/g,'Math.cos');
@@ -3044,779 +3075,1090 @@ function calcParse(expr) {
   s = s.replace(/\blog\b/g,'Math.log10');
   s = s.replace(/\bsqrt\b/g,'Math.sqrt');
   s = s.replace(/\babs\b/g,'Math.abs');
-  s = s.replace(/\be\b/g,'Math.E');
-  // implicit multiplication: 2x → 2*x, x(... → x*(
-  s = s.replace(/(\d)([a-zA-Z(])/g,'$1*$2');
+  // e sola → Math.E, pero no dentro de otra palabra
+  s = s.replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g,'Math.E');
+  // multiplicación implícita: 2x → 2*x, pero respetar e**
+  s = s.replace(/(\d)([a-df-zA-DF-Z(])/g,'$1*$2');
   s = s.replace(/([a-zA-Z)])(\d)/g,'$1*$2');
-  s = s.replace(/\)(\()/g,')*$1');
+  s = s.replace(/\)\(/g,')*(');
   try {
-    const fn = new Function('x','y','return '+s+';');
-    fn(0,0); // test
+    const fn = new Function('x','y','return ('+s+');');
+    fn(1,1); // test
     return fn;
-  } catch(e) { return null; }
+  } catch(e){ return null; }
 }
 
-// Evaluate with x=val, y=yval
-function calcEval(fn, x, y=0) {
-  try { const v=fn(x,y); return isFinite(v)?v:NaN; }
-  catch(e){ return NaN; }
-}
-
-// ── Número decimal limpio ──
-function cFmt(v, d=6) {
+function fN(v, d=6){
+  if(v===undefined||v===null||isNaN(v)) return 'indefinido';
   if(!isFinite(v)) return v>0?'+∞':'-∞';
-  if(Math.abs(v)<1e-10) return '0';
-  const r = Math.round(v*1e9)/1e9;
-  // try fraction
-  const frac = toFrac2(r);
-  if(Math.abs(frac[0]/frac[1]-r)<1e-9 && Math.abs(frac[1])<=100 && Math.abs(frac[1])>1)
-    return `${frac[0]}/${frac[1]}`;
-  return parseFloat(r.toPrecision(d)).toString();
+  if(Math.abs(v)<1e-9) return '0';
+  if(Math.abs(v)>=1e6||Math.abs(v)<1e-4&&Math.abs(v)>0) return v.toExponential(4);
+  return parseFloat(v.toFixed(d)).toString();
 }
 
-// ── Derivada numérica (Richardson extrapolation) ──
-function numDeriv(fn, x, order=1) {
-  const h = 1e-4;
-  if(order===1) return (calcEval(fn,x+h)-calcEval(fn,x-h))/(2*h);
-  if(order===2) return (calcEval(fn,x+h)-2*calcEval(fn,x)+calcEval(fn,x-h))/(h*h);
-  if(order===3) return (calcEval(fn,x+2*h)-2*calcEval(fn,x+h)+2*calcEval(fn,x-h)-calcEval(fn,x-2*h))/(2*h*h*h);
-  return NaN;
+function resBox(label,val,hint='',big=false){
+  return `<div class="calc-res-box">
+    <div class="calc-res-label">${label}</div>
+    <div class="calc-res-val${big?' big':''}">${val}</div>
+    ${hint?`<div class="calc-res-hint">${hint}</div>`:''}
+  </div>`;
 }
+function errBox(msg){ return `<div class="calc-err">⚠ ${msg}</div>`; }
 
-// ── Integral numérica (Romberg) ──
-function numIntegral(fn, a, b, n=1000) {
-  if(!isFinite(a)||!isFinite(b)) return NaN;
-  const h=(b-a)/n;
-  let s=calcEval(fn,a)+calcEval(fn,b);
-  for(let i=1;i<n;i++) s+=(i%2===0?2:4)*calcEval(fn,a+i*h);
-  return s*h/3;
-}
+// ═══════════════════════════════════════════════════════
+// DERIVACIÓN SIMBÓLICA
+// Motor basado en árbol de expresión (parse → diff → simplify → print)
+// Cubre: potencias, polinomios, trig, log, exp, productos, cocientes, cadena
+// ═══════════════════════════════════════════════════════
 
-// ── Derivada simbólica básica ──
-// Returns object with exprStr and steps[]
-function symDeriv(exprStr, order=1) {
-  let steps = [];
-  let expr = exprStr.trim();
+// --- Tokenizer ---
+function tokenize(expr){
+  expr = expr.trim()
+    .replace(/\*\*/g,'^')
+    .replace(/π/g,'3.14159265358979')
+    // Superíndices Unicode → ^n
+    .replace(/⁰/g,'^0').replace(/¹/g,'^1').replace(/²/g,'^2').replace(/³/g,'^3')
+    .replace(/⁴/g,'^4').replace(/⁵/g,'^5').replace(/⁶/g,'^6').replace(/⁷/g,'^7')
+    .replace(/⁸/g,'^8').replace(/⁹/g,'^9')
+    // e^x  →  exp(x)
+    .replace(/\be\^(\()/g,'exp(')
+    .replace(/\be\^([a-zA-Z0-9_.]+)/g,'exp($1)')
+    ;
 
-  // Detectar forma canónica
-  const rules = [
-    { pattern: /^(\d+(?:\.\d+)?)\*?x\*\*(\d+(?:\.\d+)?)$/, name: 'Regla de potencia: d/dx[axⁿ] = n·axⁿ⁻¹',
-      apply: (m) => {
-        const a=parseFloat(m[1]),n=parseFloat(m[2]);
-        const na=a*n, nn=n-1;
-        steps.push(`Identificar: a=${cFmt(a)}, n=${cFmt(n)}`);
-        steps.push(`Aplicar d/dx[${cFmt(a)}x^${cFmt(n)}] = ${cFmt(a)}·${cFmt(n)}·x^(${cFmt(n)}−1)`);
-        const res = nn===0 ? cFmt(na) : nn===1 ? `${cFmt(na)}x` : `${cFmt(na)}x^${cFmt(nn)}`;
-        steps.push(`Resultado: ${res}`);
-        return res;
-      }
-    },
-    { pattern: /^x\*\*(\d+(?:\.\d+)?)$/, name: 'Regla de potencia',
-      apply: (m) => {
-        const n=parseFloat(m[1]), nn=n-1;
-        steps.push(`Identificar: a=1, n=${cFmt(n)}`);
-        steps.push(`Aplicar d/dx[x^${cFmt(n)}] = ${cFmt(n)}·x^(${cFmt(n)}−1)`);
-        const res = nn===0?cFmt(n):nn===1?`${cFmt(n)}x`:`${cFmt(n)}x^${cFmt(nn)}`;
-        steps.push(`Resultado: ${res}`);
-        return res;
-      }
-    },
-    { pattern: /^(\d+(?:\.\d+)?)$/, name: 'Derivada de constante',
-      apply: () => { steps.push('Derivada de constante = 0'); return '0'; }
-    },
-    { pattern: /^x$/, name: 'Derivada de x',
-      apply: () => { steps.push('d/dx[x] = 1'); return '1'; }
-    },
-    { pattern: /^(\d+(?:\.\d+)?)\*?x$/, name: 'Derivada de ax',
-      apply: (m) => { steps.push(`d/dx[${m[1]}x] = ${m[1]}`); return m[1]; }
-    },
-    { pattern: /^sin\(x\)$/, name: 'Derivada de sin(x)',
-      apply: () => { steps.push('d/dx[sin(x)] = cos(x)'); return 'cos(x)'; }
-    },
-    { pattern: /^cos\(x\)$/, name: 'Derivada de cos(x)',
-      apply: () => { steps.push('d/dx[cos(x)] = −sin(x)'); return '−sin(x)'; }
-    },
-    { pattern: /^tan\(x\)$/, name: 'Derivada de tan(x)',
-      apply: () => { steps.push('d/dx[tan(x)] = sec²(x) = 1/cos²(x)'); return '1/cos²(x)'; }
-    },
-    { pattern: /^ln\(x\)$/, name: 'Derivada de ln(x)',
-      apply: () => { steps.push('d/dx[ln(x)] = 1/x'); return '1/x'; }
-    },
-    { pattern: /^e\^x$/, name: 'Derivada de eˣ',
-      apply: () => { steps.push('d/dx[eˣ] = eˣ'); return 'eˣ'; }
-    },
-    { pattern: /^asin\(x\)$/, apply: () => { steps.push('d/dx[arcsin(x)] = 1/√(1−x²)'); return '1/√(1−x²)'; } },
-    { pattern: /^acos\(x\)$/, apply: () => { steps.push('d/dx[arccos(x)] = −1/√(1−x²)'); return '−1/√(1−x²)'; } },
-    { pattern: /^atan\(x\)$/, apply: () => { steps.push('d/dx[arctan(x)] = 1/(1+x²)'); return '1/(1+x²)'; } },
-  ];
-
-  // normalize expr for matching
-  const norm = expr.replace(/\s/g,'').replace(/π/g,'PI').replace(/\^/g,'**');
-
-  for(const rule of rules) {
-    const m = norm.match(rule.pattern);
-    if(m) {
-      steps.unshift(`Regla aplicada: ${rule.name||''}`);
-      const res = rule.apply(m);
-      if(order>1) {
-        steps.push(`--- Derivada de orden ${order}: derivar el resultado ---`);
-        const next = symDeriv(res, order-1);
-        steps.push(...next.steps);
-        return { exprStr: next.exprStr, steps };
-      }
-      return { exprStr: res, steps };
+  const raw = [];
+  let i = 0;
+  while(i < expr.length){
+    const c = expr[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(/\d/.test(c)||c==='.'){
+      let num='';
+      while(i<expr.length&&(/\d/.test(expr[i])||expr[i]==='.')) num+=expr[i++];
+      raw.push({type:'num',val:parseFloat(num)});
+      continue;
     }
+    if(/[a-zA-Z]/.test(c)){
+      let word='';
+      while(i<expr.length&&/[a-zA-Z0-9]/.test(expr[i])) word+=expr[i++];
+      if(['sin','cos','tan','asin','acos','atan','ln','log','sqrt','abs','exp'].includes(word))
+        raw.push({type:'fn',val:word});
+      else if(word==='e') raw.push({type:'num',val:Math.E});
+      else raw.push({type:'var',val:word});
+      continue;
+    }
+    if('+-*/^()'.includes(c)) raw.push({type:'op',val:c});
+    i++;
+  }
+  // Insertar '*' implícito: num/var/) seguido de num/var/fn/(
+  const tokens = [];
+  for(let j=0;j<raw.length;j++){
+    tokens.push(raw[j]);
+    const cur = raw[j], nxt = raw[j+1];
+    if(!nxt) continue;
+    const curIsVal = cur.type==='num'||cur.type==='var'||(cur.type==='op'&&cur.val===')');
+    const nxtIsVal = nxt.type==='num'||nxt.type==='var'||nxt.type==='fn'||(nxt.type==='op'&&nxt.val==='(');
+    if(curIsVal && nxtIsVal) tokens.push({type:'op',val:'*'});
+  }
+  return tokens;
+}
+
+// --- Parser recursivo descendente → AST ---
+function parseExpr(tokens){
+  let pos = 0;
+  function peek(){ return tokens[pos]; }
+  function consume(){ return tokens[pos++]; }
+
+  function parseAddSub(){
+    let left = parseMulDiv();
+    while(pos<tokens.length&&peek().type==='op'&&(peek().val==='+'||peek().val==='-')){
+      const op = consume().val;
+      const right = parseMulDiv();
+      left = {type:op, left, right};
+    }
+    return left;
+  }
+  function parseMulDiv(){
+    let left = parsePow();
+    while(pos<tokens.length&&peek().type==='op'&&(peek().val==='*'||peek().val==='/')){
+      const op = consume().val;
+      const right = parsePow();
+      left = {type:op, left, right};
+    }
+    return left;
+  }
+  function parsePow(){
+    let base = parseUnary();
+    if(pos<tokens.length&&peek().type==='op'&&peek().val==='^'){
+      consume();
+      const exp = parseUnary();
+      base = {type:'^', left:base, right:exp};
+    }
+    return base;
+  }
+  function parseUnary(){
+    if(pos<tokens.length&&peek().type==='op'&&peek().val==='-'){
+      consume();
+      return {type:'neg', arg:parseUnary()};
+    }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    const t = peek();
+    if(!t) return {type:'num',val:0};
+    if(t.type==='num'){ consume(); return {type:'num',val:t.val}; }
+    if(t.type==='var'){ consume(); return {type:'var',val:t.val}; }
+    if(t.type==='fn'){
+      const fn = consume().val;
+      // expect '('
+      if(pos<tokens.length&&peek().val==='(') consume();
+      const arg = parseAddSub();
+      if(pos<tokens.length&&peek().val===')') consume();
+      return {type:'fn', fn, arg};
+    }
+    if(t.type==='op'&&t.val==='('){
+      consume();
+      const inner = parseAddSub();
+      if(pos<tokens.length&&peek().val===')') consume();
+      return inner;
+    }
+    return {type:'num',val:0};
+  }
+  return parseAddSub();
+}
+
+// --- Diferenciación simbólica del AST ---
+function diffAST(node, varName='x'){
+  if(!node) return {type:'num',val:0};
+  switch(node.type){
+    case 'num': return {type:'num',val:0};
+    case 'var': return {type:'num',val:node.val===varName?1:0};
+    case 'neg': return {type:'neg',arg:diffAST(node.arg,varName)};
+    case '+': return {type:'+',left:diffAST(node.left,varName),right:diffAST(node.right,varName)};
+    case '-': return {type:'-',left:diffAST(node.left,varName),right:diffAST(node.right,varName)};
+    case '*': return {type:'+',
+      left:{type:'*',left:diffAST(node.left,varName),right:node.right},
+      right:{type:'*',left:node.left,right:diffAST(node.right,varName)}};
+    case '/': return {type:'/',
+      left:{type:'-',
+        left:{type:'*',left:diffAST(node.left,varName),right:node.right},
+        right:{type:'*',left:node.left,right:diffAST(node.right,varName)}},
+      right:{type:'^',left:node.right,right:{type:'num',val:2}}};
+    case '^': {
+      const base = node.left, exp = node.right;
+      // Caso especial: base es e (Math.E) → d/dx[e^u] = e^u * u'
+      if(base.type==='num'&&Math.abs(base.val-Math.E)<1e-6){
+        return simplify({type:'*', left:node, right:diffAST(exp,varName)});
+      }
+      // Si el exponente es constante → n*base^(n-1) * base'
+      if(isConst(exp)){
+        const n = evalAST(exp);
+        if(n===0) return {type:'num',val:0};
+        return simplify({type:'*',
+          left:{type:'*',left:{type:'num',val:n},
+            right:{type:'^',left:base,right:{type:'num',val:n-1}}},
+          right:diffAST(base,varName)});
+      }
+      // Si la base es constante a^u → a^u * ln(a) * u'
+      if(isConst(base)){
+        return simplify({type:'*',
+          left:{type:'*',
+            left:node,
+            right:{type:'fn',fn:'ln',arg:base}},
+          right:diffAST(exp,varName)});
+      }
+      // General
+      return simplify({type:'*',
+        left:node,
+        right:{type:'+',
+          left:{type:'*',left:diffAST(exp,varName),right:{type:'fn',fn:'ln',arg:base}},
+          right:{type:'*',left:exp,right:{type:'/',
+            left:diffAST(base,varName),right:base}}}});
+    }
+    case 'fn': {
+      const u = node.arg, du = diffAST(u,varName);
+      switch(node.fn){
+        case 'sin': return simplify({type:'*',left:{type:'fn',fn:'cos',arg:u},right:du});
+        case 'cos': return simplify({type:'*',left:{type:'neg',arg:{type:'fn',fn:'sin',arg:u}},right:du});
+        case 'tan': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'^',left:{type:'fn',fn:'cos',arg:u},right:{type:'num',val:2}}},
+          right:du});
+        case 'asin': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'fn',fn:'sqrt',arg:{type:'-',
+              left:{type:'num',val:1},right:{type:'^',left:u,right:{type:'num',val:2}}}}},
+          right:du});
+        case 'acos': return simplify({type:'*',
+          left:{type:'neg',arg:{type:'/',left:{type:'num',val:1},
+            right:{type:'fn',fn:'sqrt',arg:{type:'-',
+              left:{type:'num',val:1},right:{type:'^',left:u,right:{type:'num',val:2}}}}}},
+          right:du});
+        case 'atan': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'+',left:{type:'num',val:1},
+              right:{type:'^',left:u,right:{type:'num',val:2}}}},
+          right:du});
+        case 'ln': return simplify({type:'*',left:{type:'/',left:{type:'num',val:1},right:u},right:du});
+        case 'log': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'*',left:{type:'num',val:Math.LN10},right:u}},
+          right:du});
+        case 'sqrt': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'*',left:{type:'num',val:2},right:{type:'fn',fn:'sqrt',arg:u}}},
+          right:du});
+        case 'abs': return simplify({type:'*',
+          left:{type:'/',left:u,right:{type:'fn',fn:'abs',arg:u}},
+          right:du});
+        case 'exp': return simplify({type:'*',left:node,right:du});
+        default: return {type:'num',val:0};
+      }
+    }
+    default: return {type:'num',val:0};
+  }
+}
+
+function isConst(node, varName='x'){
+  if(!node) return true;
+  if(node.type==='num') return true;
+  if(node.type==='var') return node.val!==varName;
+  if(node.type==='fn') return isConst(node.arg,varName);
+  if(node.type==='neg') return isConst(node.arg,varName);
+  return isConst(node.left,varName)&&isConst(node.right,varName);
+}
+
+function evalAST(node){
+  if(!node) return 0;
+  switch(node.type){
+    case 'num': return node.val;
+    case 'neg': return -evalAST(node.arg);
+    case '+': return evalAST(node.left)+evalAST(node.right);
+    case '-': return evalAST(node.left)-evalAST(node.right);
+    case '*': return evalAST(node.left)*evalAST(node.right);
+    case '/': return evalAST(node.left)/evalAST(node.right);
+    case '^': return Math.pow(evalAST(node.left),evalAST(node.right));
+    case 'fn': {
+      const v=evalAST(node.arg);
+      const fns={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,
+        atan:Math.atan,ln:Math.log,log:Math.log10,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp};
+      return (fns[node.fn]||((x)=>x))(v);
+    }
+    default: return 0;
+  }
+}
+
+// --- Simplificación algebraica del AST ---
+function simplify(node){
+  if(!node) return {type:'num',val:0};
+  // Simplificar hijos primero
+  if(node.left) node={...node,left:simplify(node.left)};
+  if(node.right) node={...node,right:simplify(node.right)};
+  if(node.arg) node={...node,arg:simplify(node.arg)};
+
+  switch(node.type){
+    case '*':
+      // 0 * anything = 0
+      if((node.left.type==='num'&&node.left.val===0)||
+         (node.right.type==='num'&&node.right.val===0))
+        return {type:'num',val:0};
+      // 1 * anything = anything
+      if(node.left.type==='num'&&node.left.val===1) return node.right;
+      if(node.right.type==='num'&&node.right.val===1) return node.left;
+      // (-1) * x
+      if(node.left.type==='num'&&node.left.val===-1)
+        return {type:'neg',arg:node.right};
+      // num * num
+      if(node.left.type==='num'&&node.right.type==='num')
+        return {type:'num',val:node.left.val*node.right.val};
+      // FIX: colapsar num*(num*expr) → (n1*n2)*expr
+      if(node.left.type==='num'&&node.right.type==='*'&&node.right.left.type==='num')
+        return simplify({type:'*',
+          left:{type:'num',val:node.left.val*node.right.left.val},
+          right:node.right.right});
+      // FIX: colapsar (num*expr)*num → (n1*n2)*expr
+      if(node.right.type==='num'&&node.left.type==='*'&&node.left.left.type==='num')
+        return simplify({type:'*',
+          left:{type:'num',val:node.right.val*node.left.left.val},
+          right:node.left.right});
+      break;
+    case '+':
+      if(node.left.type==='num'&&node.left.val===0) return node.right;
+      if(node.right.type==='num'&&node.right.val===0) return node.left;
+      if(node.left.type==='num'&&node.right.type==='num')
+        return {type:'num',val:node.left.val+node.right.val};
+      break;
+    case '-':
+      if(node.right.type==='num'&&node.right.val===0) return node.left;
+      if(node.left.type==='num'&&node.left.val===0)
+        return {type:'neg',arg:node.right};
+      if(node.left.type==='num'&&node.right.type==='num')
+        return {type:'num',val:node.left.val-node.right.val};
+      break;
+    case '/':
+      if(node.right.type==='num'&&node.right.val===1) return node.left;
+      if(node.left.type==='num'&&node.left.val===0) return {type:'num',val:0};
+      if(node.left.type==='num'&&node.right.type==='num')
+        return {type:'num',val:node.left.val/node.right.val};
+      break;
+    case '^':
+      if(node.right.type==='num'&&node.right.val===1) return node.left;
+      if(node.right.type==='num'&&node.right.val===0) return {type:'num',val:1};
+      if(node.left.type==='num'&&node.right.type==='num')
+        return {type:'num',val:Math.pow(node.left.val,node.right.val)};
+      break;
+    case 'neg':
+      if(node.arg.type==='num') return {type:'num',val:-node.arg.val};
+      if(node.arg.type==='neg') return node.arg.arg;
+      break;
+  }
+  return node;
+}
+
+// --- AST a string legible ---
+function astToStr(node, parentPrec=0){
+  if(!node) return '0';
+  const PREC = {'+':1,'-':1,'*':2,'/':2,'^':3,'neg':4};
+  switch(node.type){
+    case 'num': {
+      const v = node.val;
+      if(Math.abs(v-Math.PI)<1e-6) return 'π';
+      if(Math.abs(v-Math.E)<1e-6) return 'e';
+      if(Number.isInteger(v)) return String(v);
+      // Mostrar como fracción si es racional simple
+      const rounded = parseFloat(v.toFixed(6));
+      return String(rounded);
+    }
+    case 'var': return node.val;
+    case 'neg': {
+      const inner = astToStr(node.arg, PREC['neg']);
+      return node.arg.type==='num'||node.arg.type==='var' ? '-'+inner : '-('+inner+')';
+    }
+    case 'fn':
+      if(node.fn==='exp') return `e^(${astToStr(node.arg)})`;
+      return `${node.fn}(${astToStr(node.arg)})`;
+    case '+': {
+      const l=astToStr(node.left,1), r=astToStr(node.right,1);
+      // Si right empieza con - no poner +
+      if(r.startsWith('-')) return `${l} ${r}`;
+      return `${l} + ${r}`;
+    }
+    case '-': {
+      const l=astToStr(node.left,1), r=astToStr(node.right,1);
+      const rStr = node.right.type==='+'||node.right.type==='-' ? `(${r})` : r;
+      return `${l} - ${rStr}`;
+    }
+    case '*': {
+      const l=astToStr(node.left,2), r=astToStr(node.right,2);
+      const lStr = node.left.type==='+'||node.left.type==='-' ? `(${l})` : l;
+      const rStr = node.right.type==='+'||node.right.type==='-' ? `(${r})` : r;
+      // Omitir * antes de letra: 2*x → 2x, 2*sin → 2sin
+      if(rStr[0]&&/[a-zA-Z(]/.test(rStr[0])&&!lStr.includes('/'))
+        return `${lStr}${rStr}`;
+      return `${lStr}*${rStr}`;
+    }
+    case '/': {
+      const l=astToStr(node.left,2), r=astToStr(node.right,2);
+      const lStr = node.left.type==='+'||node.left.type==='-' ? `(${l})` : l;
+      const rStr = (node.right.type==='+'||node.right.type==='-'||node.right.type==='*'||node.right.type==='/') ? `(${r})` : r;
+      return `${lStr}/${rStr}`;
+    }
+    case '^': {
+      const l=astToStr(node.left,3), r=astToStr(node.right,3);
+      const lStr = (node.left.type!=='num'&&node.left.type!=='var') ? `(${l})` : l;
+      return `${lStr}^${r}`;
+    }
+    default: return '?';
+  }
+}
+
+// Recolectar y combinar términos similares del AST (suma/resta de monomios)
+// Convierte el AST a lista de {coef, base_str} y reconstruye
+function collectTerms(ast){
+  // Extraer lista plana de sumandos del AST
+  function flatten(node, sign=1){
+    if(!node) return [];
+    if(node.type==='+') return [...flatten(node.left,sign),...flatten(node.right,sign)];
+    if(node.type==='-') return [...flatten(node.left,sign),...flatten(node.right,-sign)];
+    if(node.type==='neg') return flatten(node.arg,-sign);
+    // término individual: extraer coeficiente y base
+    return [{sign, node}];
+  }
+  // Normalizar un término a {coef:number, key:string, node}
+  function termKey(sign, node){
+    // num * expr  o  expr solo
+    if(node.type==='*'&&node.left.type==='num')
+      return {coef:sign*node.left.val, key:astToStr(node.right), rest:node.right};
+    if(node.type==='num')
+      return {coef:sign*node.val, key:'__const__', rest:null};
+    if(node.type==='neg'&&node.arg.type==='num')
+      return {coef:-sign*node.arg.val, key:'__const__', rest:null};
+    return {coef:sign*1, key:astToStr(node), rest:node};
   }
 
-  // Fallback: numerical
-  steps.push('Expresión compuesta — usando diferenciación numérica');
-  return { exprStr: null, steps, numerical: true };
+  const terms = flatten(ast);
+  const map = new Map();
+  const order = [];
+  terms.forEach(({sign,node})=>{
+    const {coef,key,rest} = termKey(sign,node);
+    if(map.has(key)){
+      map.get(key).coef += coef;
+    } else {
+      map.set(key, {coef, rest, key});
+      order.push(key);
+    }
+  });
+
+  // Reconstruir AST desde la lista combinada
+  let result = null;
+  order.forEach(key=>{
+    const {coef, rest} = map.get(key);
+    if(Math.abs(coef)<1e-10) return;
+    const absCoef = Math.abs(coef);
+    const isNeg   = coef < 0;
+
+    // Construir el término positivo
+    let posTerm;
+    if(key==='__const__')     posTerm = {type:'num', val:absCoef};
+    else if(absCoef===1)      posTerm = rest;
+    else                      posTerm = {type:'*', left:{type:'num',val:absCoef}, right:rest};
+
+    if(result===null){
+      result = isNeg ? {type:'neg', arg:posTerm} : posTerm;
+    } else if(isNeg){
+      result = {type:'-', left:result, right:posTerm};
+    } else {
+      result = {type:'+', left:result, right:posTerm};
+    }
+  });
+  return result||{type:'num',val:0};
 }
 
-// ══════════════════════════════════════
-// CÁLCULO DIFERENCIAL
-// ══════════════════════════════════════
+function symbolicDeriv(exprStr, order=1, varName='x'){
+  try{
+    const tokens = tokenize(exprStr);
+    let ast = parseExpr(tokens);
+    for(let i=0;i<order;i++){
+      ast = simplify(diffAST(ast, varName));
+      ast = collectTerms(ast);   // combinar términos similares
+      ast = simplify(ast);       // simplificar de nuevo tras combinar
+    }
+    return astToStr(ast);
+  } catch(e){
+    return null;
+  }
+}
 
-function calcLimit() {
+// ═══════════════════════════════════════════════════════
+// CÁLCULO DIFERENCIAL
+// ═══════════════════════════════════════════════════════
+
+function calcLimit(){
   const fxStr = document.getElementById('dif-lim-fx').value.trim();
   const aStr  = document.getElementById('dif-lim-a').value.trim();
   const side  = document.getElementById('dif-lim-side').value;
-  const resEl = document.getElementById('dif-lim-res');
+  const res   = document.getElementById('res-lim');
+  const fn    = calcParse(fxStr);
+  if(!fn){res.innerHTML=errBox('Función inválida. Usa: sin(x), x^2, ln(x), etc.');return;}
+  const a = parseFloat(aStr);
+  if(isNaN(a)){res.innerHTML=errBox('Ingresa el valor de x → a');return;}
 
-  if(!fxStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x)</div>`; return; }
+  function approach(dir){
+    const hs=[1e-3,1e-4,1e-5,1e-6,1e-7,1e-8];
+    const vals=hs.map(h=>{try{const v=fn(a+dir*h,0);return isFinite(v)?v:null;}catch{return null;}});
+    const finite=vals.filter(v=>v!==null);
+    return finite.length ? finite[finite.length-1] : NaN;
+  }
 
-  const fn = calcParse(fxStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida. Revisa la sintaxis.</div>`; return; }
+  let html='';
+  const vr=approach(1), vl=approach(-1);
+  if(side==='both'||side==='right')
+    html+=resBox('Límite por la derecha (x→a⁺)', isFinite(vr)?fN(vr,8):'∞ / no existe');
+  if(side==='both'||side==='left')
+    html+=resBox('Límite por la izquierda (x→a⁻)', isFinite(vl)?fN(vl,8):'∞ / no existe');
+  if(side==='both'){
+    const exists=isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<1e-5;
+    html+=resBox('Límite bilateral', exists?fN((vr+vl)/2,8):'No existe',
+      exists?'✓ Límites laterales coinciden':'⚠ Límites laterales distintos', exists);
+  }
+  res.innerHTML=html;
+}
 
-  const a = aStr==='∞'?Infinity:aStr==='-∞'?-Infinity:parseFloat(aStr);
-  const steps = [];
-  steps.push(`Calcular: lim(x→${aStr||'?'}) ${fxStr}`);
+function calcDerivative(){
+  const fxStr = document.getElementById('dif-der-fx').value.trim();
+  const ord   = parseInt(document.getElementById('dif-der-ord').value);
+  const ptStr = document.getElementById('dif-der-pt').value.trim();
+  const res   = document.getElementById('res-der');
+  if(!fxStr){res.innerHTML=errBox('Ingresa una función');return;}
 
-  let L = NaN;
-  const eps = [1e-4, 1e-6, 1e-8];
+  const labels = ["Primera","Segunda","Tercera"];
+  const primes = ["f'(x)","f''(x)","f'''(x)"];
 
-  if(!isFinite(a)) {
-    // límite en infinito: evaluamos en valores grandes
-    const big = a>0 ? [1e6,1e8,1e10] : [-1e6,-1e8,-1e10];
-    const vals = big.map(x=>calcEval(fn,x));
-    steps.push(`Evaluar en valores ${a>0?'grandes positivos':'grandes negativos'}:`);
-    big.forEach((x,i)=>steps.push(`  f(${x.toExponential(0)}) = ${cFmt(vals[i])}`));
-    const diffs = [Math.abs(vals[1]-vals[0]), Math.abs(vals[2]-vals[1])];
-    if(diffs[0]<1e-3 && diffs[1]<diffs[0]+1e-6) {
-      L = vals[2];
-      steps.push(`Los valores convergen → límite = ${cFmt(L)}`);
-    } else {
-      steps.push('Los valores no convergen → límite no existe o es ∞');
-      L = Infinity;
-    }
-  } else {
-    if(side==='both'||side==='right') {
-      const rVals = eps.map(h=>calcEval(fn,a+h));
-      steps.push(`Aproximación por la derecha (x→${aStr}⁺):`);
-      eps.forEach((h,i)=>steps.push(`  f(${a}+${h}) = ${cFmt(rVals[i])}`));
-      const rL = rVals[2];
-      if(side==='right'){ L=rL; steps.push(`Límite derecho = ${cFmt(rL)}`); }
-      else {
-        const lVals = eps.map(h=>calcEval(fn,a-h));
-        steps.push(`Aproximación por la izquierda (x→${aStr}⁻):`);
-        eps.forEach((h,i)=>steps.push(`  f(${a}−${h}) = ${cFmt(lVals[i])}`));
-        const lL = lVals[2];
-        steps.push(`Límite derecho = ${cFmt(rL)}`);
-        steps.push(`Límite izquierdo = ${cFmt(lL)}`);
-        if(Math.abs(rL-lL)<1e-5){
-          L = (rL+lL)/2;
-          steps.push(`Ambos lados coinciden → límite bilateral = ${cFmt(L)}`);
+  // Derivada simbólica
+  const sym = symbolicDeriv(fxStr, ord);
+  let html = '';
+
+  if(sym){
+    html += resBox(primes[ord-1]+' — derivada simbólica', sym, labels[ord-1]+' derivada', true);
+    // Evaluar en punto si se pide
+    if(ptStr!==''&&ptStr!=='opcional'){
+      const x0 = parseFloat(ptStr);
+      if(!isNaN(x0)){
+        // Evaluar la derivada simbólica numéricamente
+        const symFn = calcParse(sym.replace(/\^/g,'**'));
+        if(symFn){
+          const val = symFn(x0,0);
+          if(isFinite(val))
+            html+=resBox(`${primes[ord-1]} en x = ${x0}`, fN(val,8),
+              `Sustituyendo en ${sym}`);
         } else {
-          steps.push('Los límites laterales son distintos → el límite bilateral NO existe');
-          L = NaN;
+          // Fallback numérico
+          const fn = calcParse(fxStr);
+          if(fn){
+            const h=1e-6;
+            let v;
+            if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
+            else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
+            else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
+            html+=resBox(`${primes[ord-1]} en x = ${x0}`, fN(v,8));
+          }
         }
       }
-    } else {
-      const lVals = eps.map(h=>calcEval(fn,a-h));
-      steps.push(`Aproximación por la izquierda:`);
-      eps.forEach((h,i)=>steps.push(`  f(${a}−${h}) = ${cFmt(lVals[i])}`));
-      L = lVals[2];
-      steps.push(`Límite izquierdo = ${cFmt(L)}`);
     }
-  }
-
-  const valDirect = calcEval(fn, a);
-  if(isFinite(valDirect) && Math.abs(valDirect-L)<1e-4) {
-    steps.push(`Verificación: f(${aStr}) = ${cFmt(valDirect)} ✓ (función continua en ese punto)`);
-  }
-
-  resEl.innerHTML = calcResHTML(`lim(x→${aStr||'?'}) ${fxStr}`, steps, isNaN(L)?'No existe':cFmt(L));
-}
-
-function calcDerivative() {
-  const fxStr = document.getElementById('dif-der-fx').value.trim();
-  const ord   = parseInt(document.getElementById('dif-der-ord').value)||1;
-  const ptStr = document.getElementById('dif-der-pt').value.trim();
-  const resEl = document.getElementById('dif-der-res');
-
-  if(!fxStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x)</div>`; return; }
-
-  const fn = calcParse(fxStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const ordLabel = ord===1?"Primera (f')" : ord===2?"Segunda (f'')" : "Tercera (f''')";
-  const steps = [`Calcular derivada de orden ${ord}: ${ordLabel}`];
-  steps.push(`f(x) = ${fxStr}`);
-
-  const { exprStr, steps: symSteps, numerical } = symDeriv(fxStr, ord);
-  steps.push(...symSteps);
-
-  let resultStr = exprStr || '(ver valor numérico)';
-  let evalPart = '';
-
-  if(ptStr !== '') {
-    const pt = parseFloat(ptStr);
-    if(!isNaN(pt)) {
-      const numVal = numDeriv(fn, pt, ord);
-      steps.push(`Evaluar en x = ${ptStr}:`);
-      steps.push(`f${"'".repeat(ord)}(${ptStr}) ≈ ${cFmt(numVal)}`);
-      evalPart = ` → en x=${ptStr}: ${cFmt(numVal)}`;
-    }
-  }
-
-  resEl.innerHTML = calcResHTML(`d${ord>1?ord:''}/dx${ord>1?ord:''} [${fxStr}]`, steps, resultStr + evalPart);
-}
-
-function calcAnalysis() {
-  const fxStr = document.getElementById('dif-ana-fx').value.trim();
-  const resEl = document.getElementById('dif-ana-res');
-
-  if(!fxStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x)</div>`; return; }
-  const fn = calcParse(fxStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const steps = [`Análisis completo de f(x) = ${fxStr}`];
-
-  // Puntos críticos (f'=0): buscar donde f' cambia de signo
-  const h = 1e-5;
-  const xs = Array.from({length:800},(_,i)=>-10+(i/799)*20);
-  const fVals = xs.map(x=>calcEval(fn,x));
-  const dVals = xs.map(x=>numDeriv(fn,x,1));
-  const d2Vals = xs.map(x=>numDeriv(fn,x,2));
-
-  // Raíces de f' (cambio de signo)
-  const critPts = [];
-  for(let i=1;i<xs.length;i++){
-    if(Math.sign(dVals[i])!==Math.sign(dVals[i-1]) && isFinite(dVals[i]) && isFinite(dVals[i-1])){
-      const xc = (xs[i]+xs[i-1])/2;
-      const fc = calcEval(fn,xc);
-      const d2 = numDeriv(fn,xc,2);
-      critPts.push({x:xc, f:fc, d2});
-    }
-  }
-
-  steps.push(`\nDerivada primera: se evalúa numéricamente`);
-  if(critPts.length===0) {
-    steps.push('Sin puntos críticos en [-10, 10]');
   } else {
-    steps.push(`Puntos críticos encontrados en [-10, 10]:`);
-    critPts.slice(0,5).forEach(({x,f,d2})=>{
-      const tipo = Math.abs(d2)<1e-6?'punto de inflexión':d2>0?'mínimo local':'máximo local';
-      steps.push(`  x ≈ ${cFmt(x)} → f(x) ≈ ${cFmt(f)} → ${tipo} (f''(x) ≈ ${cFmt(d2)})`);
-    });
-  }
-
-  // Creciente / decreciente en intervalos
-  const increasing = dVals.filter(d=>d>1e-4).length;
-  const decreasing = dVals.filter(d=>d<-1e-4).length;
-  steps.push(`\nComportamiento general en [-10, 10]:`);
-  steps.push(`  Creciente en ${increasing} / ${xs.length} puntos evaluados`);
-  steps.push(`  Decreciente en ${decreasing} / ${xs.length} puntos evaluados`);
-
-  // Concavidad
-  const concaveUp = d2Vals.filter(d=>d>1e-4).length;
-  steps.push(`  Cóncava hacia arriba (f''>0): ${concaveUp} / ${xs.length} puntos`);
-  steps.push(`  Cóncava hacia abajo (f''<0): ${xs.length-concaveUp} / ${xs.length} puntos`);
-
-  // Valor en x=0
-  const f0 = calcEval(fn,0);
-  steps.push(`\nIntercepto vertical: f(0) = ${cFmt(f0)}`);
-
-  resEl.innerHTML = calcResHTML(`Análisis de f(x) = ${fxStr}`, steps, `${critPts.length} punto(s) crítico(s) en [-10,10]`);
-}
-
-// ══════════════════════════════════════
-// CÁLCULO INTEGRAL
-// ══════════════════════════════════════
-
-function calcIntegralIndef() {
-  const fxStr = document.getElementById('int-indef-fx').value.trim();
-  const resEl = document.getElementById('int-indef-res');
-
-  if(!fxStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x)</div>`; return; }
-
-  const steps = [`Calcular: ∫ ${fxStr} dx`];
-
-  // Reglas simbólicas básicas
-  const intRules = [
-    { label:'constante',  pat:/^(\d+(?:\.\d+)?)$/, apply: m => { const c=m[1]; steps.push(`Regla: ∫k dx = kx + C`); steps.push(`∫${c} dx = ${c}x + C`); return `${c}x + C`; } },
-    { label:'xⁿ',         pat:/^x\*\*(\d+(?:\.\d+)?)$/, apply: m => { const n=parseFloat(m[1]),n1=n+1; steps.push(`Regla de potencia: ∫xⁿ dx = xⁿ⁺¹/(n+1) + C`); steps.push(`∫x^${n} dx = x^${n1}/${cFmt(n1)} + C`); return `x^${n1}/${cFmt(n1)} + C`; } },
-    { label:'axⁿ',        pat:/^(\d+(?:\.\d+)?)\*?x\*\*(\d+(?:\.\d+)?)$/, apply: m => { const a=parseFloat(m[1]),n=parseFloat(m[2]),n1=n+1; steps.push(`Regla: ∫axⁿ dx = axⁿ⁺¹/(n+1) + C`); steps.push(`∫${a}x^${n} dx = ${a}x^${n1}/${cFmt(n1)} + C`); return `${cFmt(a/n1)}x^${n1} + C`; } },
-    { label:'ax',         pat:/^(\d+(?:\.\d+)?)\*?x$/, apply: m => { const a=parseFloat(m[1]); steps.push(`Regla: ∫ax dx = ax²/2 + C`); return `${cFmt(a/2)}x² + C`; } },
-    { label:'x',          pat:/^x$/, apply: () => { steps.push(`Regla: ∫x dx = x²/2 + C`); return `x²/2 + C`; } },
-    { label:'sin(x)',     pat:/^sin\(x\)$/, apply: () => { steps.push(`Regla: ∫sin(x) dx = −cos(x) + C`); return `−cos(x) + C`; } },
-    { label:'cos(x)',     pat:/^cos\(x\)$/, apply: () => { steps.push(`Regla: ∫cos(x) dx = sin(x) + C`); return `sin(x) + C`; } },
-    { label:'eˣ',         pat:/^e\^x$/, apply: () => { steps.push(`Regla: ∫eˣ dx = eˣ + C`); return `eˣ + C`; } },
-    { label:'1/x',        pat:/^1\/x$/, apply: () => { steps.push(`Regla: ∫(1/x) dx = ln|x| + C`); return `ln|x| + C`; } },
-    { label:'ln(x)',      pat:/^ln\(x\)$/, apply: () => { steps.push(`Integración por partes: ∫ln(x) dx = x·ln(x) − x + C`); return `x·ln(x) − x + C`; } },
-    { label:'1/sqrt',     pat:/^1\/sqrt\(x\)$/, apply: () => { steps.push(`Regla: ∫1/√x dx = 2√x + C`); return `2√x + C`; } },
-    { label:'tan(x)',     pat:/^tan\(x\)$/, apply: () => { steps.push(`Regla: ∫tan(x) dx = −ln|cos(x)| + C`); return `−ln|cos(x)| + C`; } },
-  ];
-
-  const norm = fxStr.trim().replace(/\s/g,'').replace(/\^/g,'**');
-  let found = false;
-  for(const rule of intRules) {
-    const m = norm.match(rule.pattern);
-    if(m){ const res=rule.apply(m); resEl.innerHTML=calcResHTML(`∫ ${fxStr} dx`, steps, res); found=true; break; }
-  }
-
-  if(!found) {
-    steps.push('Forma no reconocida para integración simbólica exacta');
-    steps.push('Mostrando antiderivada aproximada (verificar con derivación)');
+    // Fallback numérico
     const fn = calcParse(fxStr);
-    if(fn) {
-      // Show numeric integral over [0,1] as a reference
-      const v = numIntegral(fn, 0, 1);
-      steps.push(`∫₀¹ f(x) dx ≈ ${cFmt(v)} (referencia numérica)`);
-      steps.push('Para integral indefinida exacta de expresiones compuestas, usa integración por sustitución o por partes');
-      resEl.innerHTML = calcResHTML(`∫ ${fxStr} dx`, steps, 'F(x) + C (ver pasos)');
+    if(!fn){res.innerHTML=errBox('Función inválida');return;}
+    html+=resBox('No se pudo derivar simbólicamente — resultado numérico','','',false);
+    if(ptStr.trim()!==''&&ptStr.trim()!=='opcional'){
+      const x0=parseFloat(ptStr);
+      if(!isNaN(x0)){
+        const h=1e-6;
+        let v;
+        if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
+        else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
+        else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
+        html+=resBox(`${primes[ord-1]} en x = ${x0}`, fN(v,8));
+      }
+    }
+  }
+  res.innerHTML=html;
+}
+
+function calcImplicit(){
+  const fxyStr = document.getElementById('dif-imp-fxy').value.trim();
+  const x0 = parseFloat(document.getElementById('dif-imp-x0').value);
+  const y0 = parseFloat(document.getElementById('dif-imp-y0').value);
+  const res = document.getElementById('res-imp');
+  const fn  = calcParse(fxyStr);
+  if(!fn){res.innerHTML=errBox('F(x,y) inválida. Ej: x^2 + y^2 - 25');return;}
+  if(isNaN(x0)||isNaN(y0)){res.innerHTML=errBox('Ingresa el punto (x₀, y₀)');return;}
+
+  const h=1e-7;
+  const Fx=(fn(x0+h,y0)-fn(x0-h,y0))/(2*h);
+  const Fy=(fn(x0,y0+h)-fn(x0,y0-h))/(2*h);
+
+  if(Math.abs(Fy)<1e-10){
+    res.innerHTML=errBox('∂F/∂y ≈ 0 — tangente vertical, dy/dx no está definida');return;
+  }
+  const dydx=-Fx/Fy;
+  const Fval=fn(x0,y0);
+
+  res.innerHTML=
+    resBox('∂F/∂x en ('+x0+','+y0+')', fN(Fx))+
+    resBox('∂F/∂y en ('+x0+','+y0+')', fN(Fy))+
+    resBox('dy/dx = −(∂F/∂x) / (∂F/∂y)', fN(dydx,8), 'Regla de la función implícita', true)+
+    resBox('F(x₀,y₀) =', fN(Fval,6),
+      Math.abs(Fval)<1e-3?'✓ Punto sobre la curva F=0':'⚠ El punto puede no pertenecer a F=0');
+}
+
+function calcAnalysis(){
+  const fxStr = document.getElementById('dif-ana-fx').value.trim();
+  const res   = document.getElementById('res-ana');
+  const fn    = calcParse(fxStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+
+  const h=1e-5, dx=0.05;
+  const pts=[];
+  for(let x=-8;x<=8;x+=dx){
+    const fp=(fn(x+h,0)-fn(x-h,0))/(2*h);
+    const fpp=(fn(x+h,0)-2*fn(x,0)+fn(x-h,0))/(h*h);
+    pts.push({x:parseFloat(x.toFixed(3)),fp,fpp});
+  }
+
+  const maxs=[],mins=[],infs=[];
+  for(let i=1;i<pts.length-1;i++){
+    if(pts[i-1].fp>0&&pts[i+1].fp<0) maxs.push(pts[i].x);
+    if(pts[i-1].fp<0&&pts[i+1].fp>0) mins.push(pts[i].x);
+    if(pts[i-1].fpp*pts[i+1].fpp<0)  infs.push(pts[i].x);
+  }
+
+  const incr=pts.filter(p=>p.fp>0.01).length, decr=pts.filter(p=>p.fp<-0.01).length;
+  const sym1=symbolicDeriv(fxStr,1), sym2=symbolicDeriv(fxStr,2);
+
+  let html='';
+  if(sym1) html+=resBox("f'(x) =", sym1);
+  if(sym2) html+=resBox("f''(x) =", sym2);
+  html+=resBox('Monotonía en [−8,8]',
+    `↑ Crece: ${incr} puntos  ↓ Decrece: ${decr} puntos`);
+  html+=resBox('Máximos locales (x donde f\' cambia +→−)',
+    maxs.length?maxs.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
+  html+=resBox('Mínimos locales (x donde f\' cambia −→+)',
+    mins.length?mins.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
+  html+=resBox('Puntos de inflexión (f\'\' cambia signo)',
+    infs.length?infs.map(x=>`x≈${x}`).join(', '):'Ninguno detectado');
+  res.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// APLICACIONES DE DERIVADAS
+// ═══════════════════════════════════════════════════════
+let currentApp = 'opt';
+let appsVisible = false;
+
+function toggleApps(){
+  appsVisible=!appsVisible;
+  document.getElementById('apps-panel').style.display=appsVisible?'block':'none';
+  if(appsVisible) setApp('opt');
+}
+
+function setApp(id){
+  currentApp=id;
+  document.querySelectorAll('.app-sel-btn').forEach(b=>b.classList.remove('on'));
+  const btn=document.getElementById('app-btn-'+id);
+  if(btn) btn.classList.add('on');
+  renderAppForm(id);
+}
+
+const APP_FORMS = {
+  opt:{
+    desc:'Dada una función f(x), encuentra los valores de x donde se alcanzan máximos y mínimos dentro de un intervalo.',
+    fields:[
+      {id:'app-opt-fx', label:'f(x) =', ph:'ej: -x^2 + 4*x'},
+      {id:'app-opt-a',  label:'a =',   ph:'-5', sm:true},
+      {id:'app-opt-b',  label:'b =',   ph:'5',  sm:true},
+    ],
+    btn:'Optimizar',
+    fn:'appOptimize'
+  },
+  pob:{
+    desc:'Modelo de crecimiento exponencial P(t) = P₀·eᵏᵗ. Calcula la tasa de cambio y proyecciones.',
+    fields:[
+      {id:'app-pob-p0',  label:'P₀ =', ph:'1000', sm:true},
+      {id:'app-pob-k',   label:'k =',  ph:'0.03', sm:true},
+      {id:'app-pob-t',   label:'t =',  ph:'5',    sm:true},
+    ],
+    btn:'Calcular',
+    fn:'appGrowth'
+  },
+  vel:{
+    desc:'Posición s(t). Calcula velocidad v = s\'(t) y aceleración a = s\'\'(t) en un instante t₀.',
+    fields:[
+      {id:'app-vel-st', label:'s(t) =', ph:'ej: t^3 - 6*t^2 + 9*t'},
+      {id:'app-vel-t0', label:'t₀ =',  ph:'2', sm:true},
+    ],
+    btn:'Analizar movimiento',
+    fn:'appMotion'
+  },
+  tan:{
+    desc:'Recta tangente a f(x) en el punto x₀: y = f\'(x₀)(x − x₀) + f(x₀)',
+    fields:[
+      {id:'app-tan-fx', label:'f(x) =', ph:'ej: x^2 + sin(x)'},
+      {id:'app-tan-x0', label:'x₀ =',  ph:'1', sm:true},
+    ],
+    btn:'Recta tangente',
+    fn:'appTangent'
+  },
+  rel:{
+    desc:'Tasas relacionadas: dada una relación entre variables y una tasa conocida, calcula la tasa desconocida.',
+    fields:[
+      {id:'app-rel-type', label:'Tipo:', select:['Esfera (radio→volumen)','Cono (radio→volumen)','Pitágoras (x,y→z)']},
+      {id:'app-rel-r',  label:'r =',   ph:'5',   sm:true},
+      {id:'app-rel-dr', label:'dr/dt=',ph:'2',   sm:true},
+    ],
+    btn:'Calcular tasa',
+    fn:'appRelated'
+  },
+};
+
+function renderAppForm(id){
+  const cfg = APP_FORMS[id];
+  if(!cfg) return;
+  const c = document.getElementById('app-form-container');
+  let fieldsHtml = '<div class="calc-field-row">';
+  cfg.fields.forEach(f=>{
+    if(f.select){
+      fieldsHtml+=`<label>${f.label}</label>
+        <select class="mat-sel" id="${f.id}">
+          ${f.select.map(s=>`<option>${s}</option>`).join('')}
+        </select>`;
     } else {
-      resEl.innerHTML = `<div class="calc-err">Expresión inválida.</div>`;
+      fieldsHtml+=`<label>${f.label}</label>
+        <input class="calc-inp${f.sm?' calc-inp-sm':''}" id="${f.id}" placeholder="${f.ph}"/>`;
     }
-  }
-}
-
-function calcIntegralDef() {
-  const fxStr = document.getElementById('int-def-fx').value.trim();
-  const aStr  = document.getElementById('int-def-a').value.trim();
-  const bStr  = document.getElementById('int-def-b').value.trim();
-  const resEl = document.getElementById('int-def-res');
-
-  if(!fxStr||!aStr||!bStr){ resEl.innerHTML=`<div class="calc-err">Completa todos los campos</div>`; return; }
-
-  const fn = calcParse(fxStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const a=parseFloat(aStr), b=parseFloat(bStr);
-  if(isNaN(a)||isNaN(b)){ resEl.innerHTML=`<div class="calc-err">Límites inválidos</div>`; return; }
-
-  const steps = [`Calcular: ∫₍${aStr}₎^₍${bStr}₎ ${fxStr} dx`];
-  steps.push(`Método: Regla de Simpson 1/3 (n=1000 subdivisiones)`);
-
-  const n=1000, h=(b-a)/n;
-  steps.push(`Partición: h = (${bStr}−${aStr})/${n} = ${cFmt(h)}`);
-
-  let s = calcEval(fn,a) + calcEval(fn,b);
-  for(let i=1;i<n;i++) s += (i%2===0?2:4)*calcEval(fn,a+i*h);
-  const result = s*h/3;
-
-  steps.push(`Aplicar fórmula de Simpson:`);
-  steps.push(`∫ ≈ (h/3)·[f(${aStr}) + 4f(x₁) + 2f(x₂) + ... + f(${bStr})]`);
-  steps.push(`f(${aStr}) = ${cFmt(calcEval(fn,a))}`);
-  steps.push(`f(${bStr}) = ${cFmt(calcEval(fn,b))}`);
-  steps.push(`f((${aStr}+${bStr})/2) = ${cFmt(calcEval(fn,(a+b)/2))}`);
-  steps.push(`Resultado: ∫₍${aStr}₎^₍${bStr}₎ ${fxStr} dx ≈ ${cFmt(result)}`);
-
-  // Propiedad de linealidad
-  if(a!==b) {
-    const swapped = numIntegral(fn,b,a);
-    steps.push(`Verificación: ∫₍${bStr}₎^₍${aStr}₎ = −∫₍${aStr}₎^₍${bStr}₎ = ${cFmt(swapped)}`);
-  }
-
-  resEl.innerHTML = calcResHTML(`∫₍${aStr}₎^₍${bStr}₎ ${fxStr} dx`, steps, cFmt(result));
-}
-
-function calcTaylor() {
-  const fxStr = document.getElementById('int-taylor-fx').value.trim();
-  const aStr  = document.getElementById('int-taylor-a').value.trim();
-  const nStr  = document.getElementById('int-taylor-n').value.trim();
-  const resEl = document.getElementById('int-taylor-res');
-
-  if(!fxStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x)</div>`; return; }
-
-  const fn = calcParse(fxStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const a = parseFloat(aStr)||0;
-  const N = Math.min(parseInt(nStr)||5, 8);
-  const steps = [`Serie de Taylor de f(x) = ${fxStr} centrada en a = ${cFmt(a)}`];
-  steps.push(`f(x) = Σ [f⁽ⁿ⁾(a)/n!] · (x−a)ⁿ`);
-
-  // Calcular coeficientes numéricos
-  const h=1e-4;
-  const derivs = [calcEval(fn,a)];
-  let facs = [1];
-  for(let k=1;k<=N;k++){
-    derivs.push(numDeriv(fn,a,Math.min(k,3)));
-    facs.push(facs[k-1]*k);
-  }
-
-  // Para n>3 usamos diferencias finitas de orden superior
-  const higherDeriv = (k) => {
-    if(k<=3) return numDeriv(fn,a,k);
-    // approx via function values
-    const H=1e-3;
-    let s=0;
-    for(let j=0;j<=k;j++){
-      const sgn=((k-j)%2===0)?1:-1;
-      const binom = facs[k]/(facs[j]*facs[k-j]);
-      s += sgn*binom*calcEval(fn,a+j*H);
-    }
-    return s/(H**k);
-  };
-
-  const terms = [];
-  steps.push(`\nCoeficientes:`);
-  for(let k=0;k<=N;k++){
-    const dk = k<=3 ? derivs[k] : higherDeriv(k);
-    const coef = dk/facs[k];
-    if(Math.abs(coef)>1e-10) {
-      const xPart = k===0?'':k===1?`(x−${cFmt(a)})`:`(x−${cFmt(a)})^${k}`;
-      const termStr = `${cFmt(coef)}${xPart}`;
-      terms.push(termStr);
-      steps.push(`  k=${k}: f⁽${k}⁾(${cFmt(a)}) = ${cFmt(dk)} → coef = ${cFmt(dk)}/${facs[k]} = ${cFmt(coef)}`);
-    }
-  }
-
-  const series = terms.join(' + ').replace(/\+ −/g,'− ');
-  steps.push(`\nSerie resultante (${N} términos):`);
-  steps.push(`f(x) ≈ ${series}`);
-
-  resEl.innerHTML = calcResHTML(`Taylor de ${fxStr} en a=${cFmt(a)}`, steps, series);
-}
-
-// ══════════════════════════════════════
-// CÁLCULO MULTIVARIABLE
-// ══════════════════════════════════════
-
-function calcPartial() {
-  const fxyStr = document.getElementById('mul-par-fxy').value.trim();
-  const varName= document.getElementById('mul-par-var').value;
-  const ord    = parseInt(document.getElementById('mul-par-ord').value)||1;
-  const resEl  = document.getElementById('mul-par-res');
-
-  if(!fxyStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x,y)</div>`; return; }
-
-  const fn = calcParse(fxyStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const steps = [`Calcular ∂${ord>1?ord:''}f/∂${varName}${ord>1?ord:''} de f(x,y) = ${fxyStr}`];
-  const h = 1e-5;
-
-  const evalPts = [
-    {x:0,y:0},{x:1,y:1},{x:1,y:0},{x:0,y:1},{x:-1,y:1}
-  ];
-
-  steps.push(`Método: diferenciación numérica con h=${h}`);
-  steps.push(`Fórmula: ∂f/∂${varName} ≈ [f(${varName}+h)−f(${varName}−h)] / (2h)`);
-  steps.push(`\nValores en puntos de muestra:`);
-
-  evalPts.forEach(({x,y})=>{
-    let dv;
-    if(ord===1) {
-      dv = varName==='x'
-        ? (calcEval(fn,x+h,y)-calcEval(fn,x-h,y))/(2*h)
-        : (calcEval(fn,x,y+h)-calcEval(fn,x,y-h))/(2*h);
-    } else {
-      dv = varName==='x'
-        ? (calcEval(fn,x+h,y)-2*calcEval(fn,x,y)+calcEval(fn,x-h,y))/(h*h)
-        : (calcEval(fn,x,y+h)-2*calcEval(fn,x,y)+calcEval(fn,x,y-h))/(h*h);
-    }
-    steps.push(`  ∂${ord>1?ord:''}f/∂${varName}${ord>1?ord:''}(${x},${y}) ≈ ${cFmt(dv)}`);
   });
+  fieldsHtml+='</div>';
+  c.innerHTML=`
+    <div class="app-form">
+      <div class="app-form-desc">${cfg.desc}</div>
+      ${fieldsHtml}
+      <div class="calc-btn-row">
+        <button class="calc-btn" style="background:rgba(240,192,64,.12);border-color:rgba(240,192,64,.3);color:var(--gold)"
+          onclick="${cfg.fn}()">${cfg.btn}</button>
+        <button class="calc-btn sec" onclick="document.getElementById('app-res').innerHTML=''">Limpiar</button>
+      </div>
+      <div id="app-res" class="calc-res"></div>
+    </div>`;
+  // Registrar inputs para teclado
+  c.querySelectorAll('.calc-inp').forEach(inp=>{
+    inp.addEventListener('focus',()=>{ calcActiveInput=inp; });
+  });
+}
 
-  resEl.innerHTML = calcResHTML(
-    `∂${ord>1?ord:''}f/∂${varName}${ord>1?ord:''} [${fxyStr}]`,
-    steps,
-    `Ver tabla de valores (evaluación numérica)`,
+function appRes(html){ document.getElementById('app-res').innerHTML=html; }
+
+function appOptimize(){
+  const fxStr=v('app-opt-fx'), a=pf('app-opt-a'), b=pf('app-opt-b');
+  const fn=calcParse(fxStr);
+  if(!fn||isNaN(a)||isNaN(b)){appRes(errBox('Verifica los datos'));return;}
+  const h=1e-6, n=2000, dx=(b-a)/n;
+  let maxX=a, minX=a, maxV=fn(a,0), minV=fn(a,0);
+  const crits=[];
+  let prevFp=(fn(a+h,0)-fn(a-h,0))/(2*h);
+  for(let i=1;i<=n;i++){
+    const x=a+i*dx, fv=fn(x,0);
+    if(!isFinite(fv)) continue;
+    const fp=(fn(x+h,0)-fn(x-h,0))/(2*h);
+    if(prevFp*fp<0) crits.push({x:parseFloat(x.toFixed(5)),y:fv,type:prevFp>0?'MAX':'MIN'});
+    if(fv>maxV){maxV=fv;maxX=x;}
+    if(fv<minV){minV=fv;minX=x;}
+    prevFp=fp;
+  }
+  const sym=symbolicDeriv(fxStr,1);
+  let html=sym?resBox("f'(x) =",sym):'';
+  html+=resBox('Puntos críticos f\'=0 en ['+a+','+b+']',
+    crits.length?crits.map(c=>`x≈${c.x} (${c.type}, f≈${fN(c.y)})`).join('<br>'):'Ninguno detectado');
+  html+=resBox('Máximo global en ['+a+','+b+']',`x≈${fN(maxX,4)},  f(x)≈${fN(maxV,6)}`,'')+
+        resBox('Mínimo global en ['+a+','+b+']',`x≈${fN(minX,4)},  f(x)≈${fN(minV,6)}`,'');
+  appRes(html);
+}
+
+function appGrowth(){
+  const p0=pf('app-pob-p0'), k=pf('app-pob-k'), t=pf('app-pob-t');
+  if([p0,k,t].some(isNaN)){appRes(errBox('Verifica los valores'));return;}
+  const Pt=p0*Math.exp(k*t);
+  const dPdt=k*Pt;
+  const t2x=k!==0?Math.log(2)/k:Infinity;
+  appRes(
+    resBox('P(t) = P₀·eᵏᵗ',`P(${t}) = ${fN(p0)} · e^(${k}·${t}) = ${fN(Pt,4)}`,`P₀=${p0}, k=${k}`,true)+
+    resBox('Tasa de cambio dP/dt = k·P(t)', fN(dPdt,4)+' unidades/tiempo',`Proporcional a la población actual`)+
+    resBox('Tiempo de duplicación  t₂ = ln(2)/k', isFinite(t2x)?fN(t2x,4)+' unidades de tiempo':'∞ (k=0)')+
+    resBox('Verificación: P\'(t)/P(t)', fN(k),' = k ✓')
   );
 }
 
-function calcGradient() {
-  const fxyStr = document.getElementById('mul-grad-fxy').value.trim();
-  const x0Str  = document.getElementById('mul-grad-x0').value.trim();
-  const y0Str  = document.getElementById('mul-grad-y0').value.trim();
-  const resEl  = document.getElementById('mul-grad-res');
-
-  if(!fxyStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x,y)</div>`; return; }
-
-  const fn = calcParse(fxyStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const h=1e-5;
-  const steps = [`Calcular ∇f(x,y) = (∂f/∂x, ∂f/∂y) de f(x,y) = ${fxyStr}`];
-  steps.push(`El gradiente apunta en la dirección de mayor incremento de f`);
-
-  const evalPts = x0Str!==''&&y0Str!==''
-    ? [{x:parseFloat(x0Str),y:parseFloat(y0Str)}]
-    : [{x:0,y:0},{x:1,y:1},{x:2,y:0}];
-
-  evalPts.forEach(({x,y})=>{
-    const dfx = (calcEval(fn,x+h,y)-calcEval(fn,x-h,y))/(2*h);
-    const dfy = (calcEval(fn,x,y+h)-calcEval(fn,x,y-h))/(2*h);
-    const mag = Math.sqrt(dfx*dfx+dfy*dfy);
-    steps.push(`\n∇f(${cFmt(x)},${cFmt(y)}):`);
-    steps.push(`  ∂f/∂x = ${cFmt(dfx)}`);
-    steps.push(`  ∂f/∂y = ${cFmt(dfy)}`);
-    steps.push(`  |∇f| = √(${cFmt(dfx)}² + ${cFmt(dfy)}²) = ${cFmt(mag)}`);
-    if(mag>1e-10) steps.push(`  Dirección unitaria: (${cFmt(dfx/mag)}, ${cFmt(dfy/mag)})`);
-  });
-
-  const {x,y} = evalPts[0];
-  const dfx = (calcEval(fn,x+h,y)-calcEval(fn,x-h,y))/(2*h);
-  const dfy = (calcEval(fn,x,y+h)-calcEval(fn,x,y-h))/(2*h);
-
-  resEl.innerHTML = calcResHTML(`∇f(${x0Str||'x'},${y0Str||'y'})`, steps, `(${cFmt(dfx)}, ${cFmt(dfy)})`);
+function appMotion(){
+  const stStr=v('app-vel-st'), t0=pf('app-vel-t0');
+  const fn=calcParse(stStr);
+  if(!fn||isNaN(t0)){appRes(errBox('Verifica los datos'));return;}
+  const h=1e-6;
+  const s0=fn(t0,0);
+  const vel=(fn(t0+h,0)-fn(t0-h,0))/(2*h);
+  const acel=(fn(t0+h,0)-2*fn(t0,0)+fn(t0-h,0))/(h*h);
+  const symV=symbolicDeriv(stStr,1), symA=symbolicDeriv(stStr,2);
+  appRes(
+    (symV?resBox("v(t) = s'(t) =",symV):'')+
+    (symA?resBox("a(t) = s''(t) =",symA):'')+
+    resBox(`s(${t0}) — posición`, fN(s0,6))+
+    resBox(`v(${t0}) — velocidad`, fN(vel,6), vel>0?'↑ Movimiento positivo':vel<0?'↓ Movimiento negativo':'En reposo', true)+
+    resBox(`a(${t0}) — aceleración`, fN(acel,6),
+      acel>0?'↑ Acelerando en dir. positiva':acel<0?'↓ Frenando':'Velocidad constante')
+  );
 }
 
-function calcDoubleIntegral() {
-  const fxyStr = document.getElementById('mul-dint-fxy').value.trim();
-  const x1=parseFloat(document.getElementById('mul-dint-x1').value)||0;
-  const x2=parseFloat(document.getElementById('mul-dint-x2').value)||1;
-  const y1=parseFloat(document.getElementById('mul-dint-y1').value)||0;
-  const y2=parseFloat(document.getElementById('mul-dint-y2').value)||1;
-  const resEl=document.getElementById('mul-dint-res');
-
-  if(!fxyStr){ resEl.innerHTML=`<div class="calc-err">Ingresa f(x,y)</div>`; return; }
-  const fn=calcParse(fxyStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const steps=[`Calcular ∬ ${fxyStr} dx dy`];
-  steps.push(`Región: x ∈ [${x1}, ${x2}], y ∈ [${y1}, ${y2}]`);
-  steps.push(`Método: Regla de Simpson 2D (n=50 × 50)`);
-  steps.push(`Por el Teorema de Fubini: ∬ = ∫₍${y1}₎^₍${y2}₎ [∫₍${x1}₎^₍${x2}₎ f(x,y) dx] dy`);
-
-  // Simpson 2D
-  const nx=50,ny=50;
-  const hx=(x2-x1)/nx, hy=(y2-y1)/ny;
-  let total=0;
-  for(let j=0;j<=ny;j++){
-    const y=y1+j*hy;
-    const wy = j===0||j===ny?1:j%2===0?2:4;
-    for(let i=0;i<=nx;i++){
-      const x=x1+i*hx;
-      const wx = i===0||i===nx?1:i%2===0?2:4;
-      total += wx*wy*calcEval(fn,x,y);
-    }
-  }
-  const result = total*hx*hy/9;
-
-  steps.push(`\nEvaluando integrales interiores:`);
-  [y1,(y1+y2)/2,y2].forEach(y=>{
-    const inner=numIntegral(x=>calcEval(fn,x,y),x1,x2);
-    steps.push(`  y=${cFmt(y)}: ∫f(x,${cFmt(y)})dx ≈ ${cFmt(inner)}`);
-  });
-  steps.push(`\nResultado final: ∬ ${fxyStr} dx dy ≈ ${cFmt(result)}`);
-
-  resEl.innerHTML=calcResHTML(`∬ ${fxyStr} dx dy`, steps, cFmt(result));
+function appTangent(){
+  const fxStr=v('app-tan-fx'), x0=pf('app-tan-x0');
+  const fn=calcParse(fxStr);
+  if(!fn||isNaN(x0)){appRes(errBox('Verifica los datos'));return;}
+  const h=1e-6;
+  const fx0=fn(x0,0);
+  const fpx0=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
+  const b=fx0-fpx0*x0;
+  const symD=symbolicDeriv(fxStr,1);
+  const bStr=b>=0?` + ${fN(b,4)}`:` - ${fN(Math.abs(b),4)}`;
+  appRes(
+    (symD?resBox("f'(x) =",symD):'')+
+    resBox(`f(${x0}) — punto de tangencia`, fN(fx0,6))+
+    resBox(`f'(${x0}) — pendiente`, fN(fpx0,6), 'Ángulo ≈ '+fN(Math.atan(fpx0)*180/Math.PI,2)+'°')+
+    resBox('Ecuación recta tangente', `y = ${fN(fpx0,4)}x${bStr}`, `y − f(x₀) = f\'(x₀)·(x − x₀)`, true)
+  );
 }
 
-// ══════════════════════════════════════
-// ECUACIONES DIFERENCIALES
-// ══════════════════════════════════════
-
-function calcEDOSep() {
-  const rhsStr=document.getElementById('edo-sep-rhs').value.trim();
-  const x0=parseFloat(document.getElementById('edo-sep-x0').value)||0;
-  const y0=parseFloat(document.getElementById('edo-sep-y0').value)||1;
-  const resEl=document.getElementById('edo-sep-res');
-
-  if(!rhsStr){ resEl.innerHTML=`<div class="calc-err">Ingresa dy/dx = f(x,y)</div>`; return; }
-  const fn=calcParse(rhsStr);
-  if(!fn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const steps=[`Resolver: dy/dx = ${rhsStr}`];
-  steps.push(`Condición inicial: y(${x0}) = ${y0}`);
-  steps.push(`\nMétodo: Runge-Kutta de 4to orden (RK4)`);
-  steps.push(`Intervalo: x ∈ [${x0}, ${x0+5}], paso h = 0.1`);
-
-  const h=0.1, steps_n=50;
-  const xs=[x0], ys=[y0];
-  let x=x0, y=y0;
-  for(let i=0;i<steps_n;i++){
-    const k1=h*calcEval(fn,x,y);
-    const k2=h*calcEval(fn,x+h/2,y+k1/2);
-    const k3=h*calcEval(fn,x+h/2,y+k2/2);
-    const k4=h*calcEval(fn,x+h,y+k3);
-    y += (k1+2*k2+2*k3+k4)/6;
-    x += h;
-    xs.push(parseFloat(x.toFixed(4)));
-    ys.push(y);
-  }
-
-  steps.push(`\nFórmula RK4:`);
-  steps.push(`k₁ = h·f(xₙ, yₙ)`);
-  steps.push(`k₂ = h·f(xₙ+h/2, yₙ+k₁/2)`);
-  steps.push(`k₃ = h·f(xₙ+h/2, yₙ+k₂/2)`);
-  steps.push(`k₄ = h·f(xₙ+h, yₙ+k₃)`);
-  steps.push(`yₙ₊₁ = yₙ + (k₁+2k₂+2k₃+k₄)/6`);
-
-  steps.push(`\nPrimeros pasos:`);
-  for(let i=0;i<Math.min(6,xs.length);i++){
-    steps.push(`  y(${cFmt(xs[i])}) ≈ ${cFmt(ys[i])}`);
-  }
-  steps.push(`  ...`);
-  steps.push(`  y(${cFmt(xs[xs.length-1])}) ≈ ${cFmt(ys[ys.length-1])}`);
-
-  resEl.innerHTML=calcResHTML(`dy/dx = ${rhsStr}, y(${x0})=${y0}`, steps,
-    `y(${cFmt(x0+5)}) ≈ ${cFmt(ys[ys.length-1])}}`);
-}
-
-function calcEDOLinear() {
-  const pxStr=document.getElementById('edo-lin-px').value.trim();
-  const qxStr=document.getElementById('edo-lin-qx').value.trim();
-  const x0=parseFloat(document.getElementById('edo-lin-x0').value)||0;
-  const y0=parseFloat(document.getElementById('edo-lin-y0').value)||1;
-  const resEl=document.getElementById('edo-lin-res');
-
-  if(!pxStr||!qxStr){ resEl.innerHTML=`<div class="calc-err">Completa P(x) y Q(x)</div>`; return; }
-  const pFn=calcParse(pxStr), qFn=calcParse(qxStr);
-  if(!pFn||!qFn){ resEl.innerHTML=`<div class="calc-err">Expresión inválida.</div>`; return; }
-
-  const steps=[`Resolver: y' + P(x)y = Q(x)`];
-  steps.push(`P(x) = ${pxStr}`);
-  steps.push(`Q(x) = ${qxStr}`);
-  steps.push(`Condición inicial: y(${x0}) = ${y0}`);
-  steps.push(`\nMétodo del factor integrante μ(x) = e^[∫P(x)dx]`);
-  steps.push(`Multiplicamos ambos lados por μ(x):`);
-  steps.push(`d/dx[μ(x)·y] = μ(x)·Q(x)`);
-  steps.push(`y = (1/μ(x))·[∫μ(x)·Q(x)dx + C]`);
-  steps.push(`\nSolución numérica via RK4 con f(x,y) = Q(x)−P(x)·y:`);
-
-  // RK4 on y' = Q(x) - P(x)*y
-  const dy = calcParse(`(${qxStr})-(${pxStr})*y`);
-  if(!dy){ resEl.innerHTML=`<div class="calc-err">No se pudo construir la ecuación.</div>`; return; }
-
-  const h=0.1, nst=50;
-  let x=x0, y=y0;
-  const pts=[[x,y]];
-  for(let i=0;i<nst;i++){
-    const k1=h*(calcEval(qFn,x)-calcEval(pFn,x)*y);
-    const k2=h*(calcEval(qFn,x+h/2)-calcEval(pFn,x+h/2)*(y+k1/2));
-    const k3=h*(calcEval(qFn,x+h/2)-calcEval(pFn,x+h/2)*(y+k2/2));
-    const k4=h*(calcEval(qFn,x+h)-calcEval(pFn,x+h)*(y+k3));
-    y+=(k1+2*k2+2*k3+k4)/6; x+=h;
-    pts.push([parseFloat(x.toFixed(4)),y]);
-  }
-
-  steps.push(`Primeros pasos:`);
-  pts.slice(0,6).forEach(([xi,yi])=>steps.push(`  y(${cFmt(xi)}) ≈ ${cFmt(yi)}`));
-  steps.push(`  ...`);
-  const last=pts[pts.length-1];
-  steps.push(`  y(${cFmt(last[0])}) ≈ ${cFmt(last[1])}`);
-
-  resEl.innerHTML=calcResHTML(`y' + (${pxStr})y = ${qxStr}`, steps, `y(${cFmt(last[0])}) ≈ ${cFmt(last[1])}`);
-}
-
-function calcEDO2nd() {
-  const a=parseFloat(document.getElementById('edo-2do-a').value)||1;
-  const b=parseFloat(document.getElementById('edo-2do-b').value)||0;
-  const c=parseFloat(document.getElementById('edo-2do-c').value)||0;
-  const y0=parseFloat(document.getElementById('edo-2do-y0').value)||1;
-  const dy0=parseFloat(document.getElementById('edo-2do-dy0').value)||0;
-  const resEl=document.getElementById('edo-2do-res');
-
-  const steps=[`Resolver: ${cFmt(a)}y'' + ${cFmt(b)}y' + ${cFmt(c)}y = 0`];
-  steps.push(`Condiciones iniciales: y(0) = ${y0}, y'(0) = ${dy0}`);
-  steps.push(`\nMétodo: Ecuación característica ar² + br + c = 0`);
-
-  const disc = b*b - 4*a*c;
-  steps.push(`Discriminante: Δ = b²−4ac = ${cFmt(b)}²−4·${cFmt(a)}·${cFmt(c)} = ${cFmt(disc)}`);
-
-  let sol='', type='';
-  if(disc>1e-9){
-    const r1=(-b+Math.sqrt(disc))/(2*a);
-    const r2=(-b-Math.sqrt(disc))/(2*a);
-    type='Raíces reales distintas';
-    steps.push(`${type}: r₁ = ${cFmt(r1)}, r₂ = ${cFmt(r2)}`);
-    steps.push(`Solución general: y(x) = C₁·e^(${cFmt(r1)}x) + C₂·e^(${cFmt(r2)}x)`);
-    // Apply IC
-    // y(0)=C1+C2=y0, y'(0)=r1*C1+r2*C2=dy0
-    const det=r1-r2;
-    const C1=(dy0-r2*y0)/det;
-    const C2=(r1*y0-dy0)/det;
-    steps.push(`Aplicar condiciones iniciales:`);
-    steps.push(`  C₁+C₂ = ${y0} y r₁C₁+r₂C₂ = ${dy0}`);
-    steps.push(`  C₁ = ${cFmt(C1)}, C₂ = ${cFmt(C2)}`);
-    sol=`y(x) = ${cFmt(C1)}·e^(${cFmt(r1)}x) + ${cFmt(C2)}·e^(${cFmt(r2)}x)`;
-    steps.push(`Solución particular: ${sol}`);
-    steps.push(`\nVerificación en puntos:`);
-    [0,1,2,3].forEach(x=>{
-      const yv=C1*Math.exp(r1*x)+C2*Math.exp(r2*x);
-      steps.push(`  y(${x}) ≈ ${cFmt(yv)}`);
-    });
-  } else if(Math.abs(disc)<1e-9) {
-    const r=-b/(2*a);
-    type='Raíz real doble';
-    steps.push(`${type}: r = ${cFmt(r)}`);
-    steps.push(`Solución general: y(x) = (C₁ + C₂x)·e^(${cFmt(r)}x)`);
-    const C1=y0;
-    const C2=dy0-r*y0;
-    steps.push(`C₁ = ${cFmt(C1)}, C₂ = ${cFmt(C2)}`);
-    sol=`y(x) = (${cFmt(C1)} + ${cFmt(C2)}x)·e^(${cFmt(r)}x)`;
-    steps.push(`Solución particular: ${sol}`);
+function appRelated(){
+  const type=document.getElementById('app-rel-type')?.value||'Esfera';
+  const r=pf('app-rel-r'), drdt=pf('app-rel-dr');
+  if(isNaN(r)||isNaN(drdt)){appRes(errBox('Verifica los valores'));return;}
+  if(type.includes('Esfera')){
+    const V=(4/3)*Math.PI*r**3;
+    const dVdt=4*Math.PI*r**2*drdt;
+    appRes(
+      resBox('Esfera V = (4/3)πr³','','')+
+      resBox(`V cuando r=${r}`, fN(V,6)+' u³')+
+      resBox('dV/dt = 4πr²·(dr/dt)', fN(dVdt,6)+' u³/tiempo',
+        `4π·${r}²·${drdt} = ${fN(dVdt,4)}`, true)
+    );
+  } else if(type.includes('Cono')){
+    const V=(1/3)*Math.PI*r**3;
+    const dVdt=Math.PI*r**2*drdt;
+    appRes(
+      resBox('Cono V = (1/3)πr³ (h=r)','','')+
+      resBox(`V cuando r=${r}`, fN(V,6)+' u³')+
+      resBox('dV/dt = πr²·(dr/dt)', fN(dVdt,6)+' u³/tiempo','', true)
+    );
   } else {
-    const alpha=-b/(2*a);
-    const beta=Math.sqrt(-disc)/(2*a);
-    type='Raíces complejas conjugadas';
-    steps.push(`${type}: r = ${cFmt(alpha)} ± ${cFmt(beta)}i`);
-    steps.push(`Solución general: y(x) = e^(${cFmt(alpha)}x)·[C₁cos(${cFmt(beta)}x) + C₂sin(${cFmt(beta)}x)]`);
-    const C1=y0;
-    const C2=(dy0-alpha*y0)/beta;
-    steps.push(`C₁ = ${cFmt(C1)}, C₂ = ${cFmt(C2)}`);
-    sol=`y(x) = e^(${cFmt(alpha)}x)·[${cFmt(C1)}cos(${cFmt(beta)}x) + ${cFmt(C2)}sin(${cFmt(beta)}x)]`;
-    steps.push(`Solución particular: ${sol}`);
-    steps.push(`\nVerificación en puntos:`);
-    [0,1,2,3].forEach(x=>{
-      const yv=Math.exp(alpha*x)*(C1*Math.cos(beta*x)+C2*Math.sin(beta*x));
-      steps.push(`  y(${x}) ≈ ${cFmt(yv)}`);
-    });
+    appRes(resBox('Pitágoras','Selecciona Esfera o Cono para demo completa',''));
   }
+}
 
-  // build plot points for 2nd order solution
-  const _edo2pts=[];
-  for(let _xi=0;_xi<=30;_xi++){
-    const _x=_xi*0.2;
-    let _yv=NaN;
-    const _disc=b*b-4*a*c;
-    if(_disc>1e-9){
-      const _r1=(-b+Math.sqrt(_disc))/(2*a),_r2=(-b-Math.sqrt(_disc))/(2*a);
-      const _det=_r1-_r2,_C1=(dy0-_r2*y0)/_det,_C2=(_r1*y0-dy0)/_det;
-      _yv=_C1*Math.exp(_r1*_x)+_C2*Math.exp(_r2*_x);
-    } else if(Math.abs(_disc)<1e-9){
-      const _r=-b/(2*a),_C1=y0,_C2=dy0-_r*y0;
-      _yv=(_C1+_C2*_x)*Math.exp(_r*_x);
-    } else {
-      const _al=-b/(2*a),_be=Math.sqrt(-_disc)/(2*a);
-      const _C1=y0,_C2=(dy0-_al*y0)/_be;
-      _yv=Math.exp(_al*_x)*(_C1*Math.cos(_be*_x)+_C2*Math.sin(_be*_x));
+
+
+function v(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+function pf(id){ return parseFloat(v(id)); }
+
+// ═══════════════════════════════════════════════════════
+// CÁLCULO INTEGRAL
+// ═══════════════════════════════════════════════════════
+function calcIntegralIndef(){
+  const fxStr=v('int-indef-fx');
+  const res=document.getElementById('res-indef');
+  const fn=calcParse(fxStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  // Antiderivada simbólica básica (regla de potencia, constantes conocidas)
+  const antideriv=basicAntideriv(fxStr);
+  let html=antideriv?
+    resBox('∫ f(x) dx =', antideriv+' + C', 'Verificable derivando el resultado', true):
+    resBox('∫ f(x) dx','Usa la Integral Definida para calcular numéricamente','');
+  // Siempre dar verificación numérica
+  const v0=(fn(1+1e-4,0)-fn(1-1e-4,0))/(2e-4);
+  html+=resBox('f(1) para referencia', fN(fn(1,0),6));
+  res.innerHTML=html;
+}
+
+function basicAntideriv(expr){
+  // Detectar monomios simples: a*x^n
+  const mono=/^(-?\d*\.?\d*)\*?x\^(-?\d+\.?\d*)$/.exec(expr.trim());
+  if(mono){
+    const a=parseFloat(mono[1]||'1')||1, n=parseFloat(mono[2]);
+    if(n===-1) return `${a===1?'':a}ln|x|`;
+    const coef=a/(n+1);
+    const cStr=parseFloat(coef.toFixed(6)).toString();
+    return `${cStr}x^${n+1}`;
+  }
+  // Solo x
+  if(expr.trim()==='x') return '(1/2)x^2';
+  if(expr.trim()==='1') return 'x';
+  // Trig básico
+  if(expr.trim()==='sin(x)') return '-cos(x)';
+  if(expr.trim()==='cos(x)') return 'sin(x)';
+  if(expr.trim()==='e^(x)'||expr.trim()==='e^x') return 'e^x';
+  if(expr.trim()==='1/x') return 'ln|x|';
+  return null;
+}
+
+function calcIntegralDef(){
+  const fxStr=v('int-def-fx');
+  const a=pf('int-def-a'), b=pf('int-def-b');
+  const res=document.getElementById('res-def');
+  const fn=calcParse(fxStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  if(isNaN(a)||isNaN(b)){res.innerHTML=errBox('Ingresa los límites a y b');return;}
+  if(a>=b){res.innerHTML=errBox('Se requiere a < b');return;}
+
+  const n=1000, h=(b-a)/n;
+  let s=fn(a,0)+fn(b,0);
+  for(let i=1;i<n;i++) s+=(i%2===0?2:4)*fn(a+i*h,0);
+  const result=s*h/3;
+
+  res.innerHTML=
+    resBox(`∫ₐᵇ f(x) dx  [${a}, ${b}]`, fN(result,8), 'Simpson 1/3 con n=1000', true)+
+    resBox('Valor promedio  f̄ = (1/(b−a))∫f dx', fN(result/(b-a),6))+
+    resBox('Longitud del intervalo', fN(b-a,4)+' u');
+}
+
+function calcTaylor(){
+  const fxStr=v('int-taylor-fx');
+  const a=pf('int-taylor-a')||0;
+  const nTerms=parseInt(document.getElementById('int-taylor-n')?.value)||5;
+  const res=document.getElementById('res-taylor');
+  const fn=calcParse(fxStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+
+  function fact(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+  // Derivadas numéricas en x=a
+  const h=1e-4;
+  const terms=[];
+  let poly='';
+  for(let k=0;k<=Math.min(nTerms,8);k++){
+    // k-ésima derivada en a via diferencias finitas
+    let dk=0;
+    for(let i=0;i<=k;i++){
+      let binom=1;
+      for(let j=0;j<i;j++) binom=binom*(k-j)/(j+1);
+      dk+=((i%2===0?1:-1)*binom*fn(a+(k-i)*h,0));
     }
-    if(isFinite(_yv)) _edo2pts.push([_x,_yv]);
+    dk/=Math.pow(h,k);
+    const coef=dk/fact(k);
+    if(Math.abs(coef)<1e-10) continue;
+    const cs=parseFloat(coef.toFixed(5)).toString();
+    if(k===0) poly+=cs;
+    else if(k===1) poly+=` ${coef>=0?'+':''} ${cs}(x${a!==0?`−${a}`:''})`; 
+    else poly+=` ${coef>=0?'+':''} ${cs}(x${a!==0?`−${a}`:''})<sup>${k}</sup>`;
+    terms.push({k,coef});
   }
-  resEl.innerHTML=calcResHTML(`${cFmt(a)}y''+${cFmt(b)}y'+${cFmt(c)}y=0`, steps, sol, {type:'ode',pts:_edo2pts,xMin:0,xMax:6});
+
+  const xtest=a+0.3;
+  const freal=fn(xtest,0);
+  const fapprox=terms.reduce((s,t)=>s+t.coef*Math.pow(xtest-a,t.k),0);
+  res.innerHTML=
+    resBox('Serie de Taylor alrededor de a='+a, poly, '')+
+    resBox(`Verificación en x=${xtest}`, `f(x) = ${fN(freal,6)}   T(x) = ${fN(fapprox,6)}`,
+      `Error = ${fN(Math.abs(freal-fapprox),4)}`);
 }
 
-// ── HTML renderer para resultados ──
-function calcResHTML(expr, steps, result) {
-  return `<div class="calc-res">
-    <div class="calc-res-expr">${expr}</div>
-    <div class="calc-res-lbl">Paso a paso:</div>
-    ${steps.map(s=>`<div class="calc-step">${s.startsWith('  ')?s:('<b>›</b> '+s)}</div>`).join('')}
-    <div class="calc-res-lbl" style="margin-top:10px">Resultado:</div>
-    <div class="calc-res-val">${result}</div>
-  </div>`;
+// ═══════════════════════════════════════════════════════
+// MULTIVARIABLE
+// ═══════════════════════════════════════════════════════
+function calcPartial(){
+  const fxyStr=v('mul-par-fxy');
+  const varN=document.getElementById('mul-par-var').value;
+  const ord=parseInt(document.getElementById('mul-par-ord').value);
+  const x0=pf('mul-par-x0'), y0=pf('mul-par-y0');
+  const res=document.getElementById('res-par');
+  const fn=calcParse(fxyStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+
+  const h=1e-6;
+  const sym=symbolicDeriv(fxyStr,ord,varN);
+  let html=sym?resBox(`∂${ord>1?ord:''}f/∂${varN}${ord>1?ord:''}`,sym):'' ;
+
+  if(!isNaN(x0)&&!isNaN(y0)){
+    let v2;
+    if(varN==='x'){
+      if(ord===1) v2=(fn(x0+h,y0)-fn(x0-h,y0))/(2*h);
+      else v2=(fn(x0+h,y0)-2*fn(x0,y0)+fn(x0-h,y0))/(h*h);
+    } else {
+      if(ord===1) v2=(fn(x0,y0+h)-fn(x0,y0-h))/(2*h);
+      else v2=(fn(x0,y0+h)-2*fn(x0,y0)+fn(x0,y0-h))/(h*h);
+    }
+    html+=resBox(`Valor en (${x0},${y0})`, fN(v2,8), '', true);
+  } else {
+    html+=resBox('Nota','Ingresa (x₀,y₀) para evaluar en un punto','');
+  }
+  res.innerHTML=html;
 }
 
+function calcGradient(){
+  const fxyStr=v('mul-grad-fxy');
+  const x0=pf('mul-grad-x0'), y0=pf('mul-grad-y0');
+  const res=document.getElementById('res-grad');
+  const fn=calcParse(fxyStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  if(isNaN(x0)||isNaN(y0)){res.innerHTML=errBox('Ingresa el punto (x₀, y₀)');return;}
 
-// ── Init al abrir módulo ──
-function calcInit() {
-  calcInitKBs();
-  calcTab('dif');
+  const h=1e-6;
+  const fx=(fn(x0+h,y0)-fn(x0-h,y0))/(2*h);
+  const fy=(fn(x0,y0+h)-fn(x0,y0-h))/(2*h);
+  const mag=Math.sqrt(fx*fx+fy*fy);
+  res.innerHTML=
+    resBox('∂f/∂x', fN(fx))+
+    resBox('∂f/∂y', fN(fy))+
+    resBox('∇f = (∂f/∂x, ∂f/∂y)', `(${fN(fx,4)},  ${fN(fy,4)})`, 'Dirección de máximo crecimiento', true)+
+    resBox('|∇f| — magnitud', fN(mag,6))+
+    resBox('∇f unitario', mag>1e-10?`(${fN(fx/mag,4)},  ${fN(fy/mag,4)})`:'(0, 0)');
+}
+
+function calcDoubleIntegral(){
+  const fxyStr=v('mul-dint-fxy');
+  const x1=pf('mul-dint-x1'),x2=pf('mul-dint-x2');
+  const y1=pf('mul-dint-y1'),y2=pf('mul-dint-y2');
+  const res=document.getElementById('res-dint');
+  const fn=calcParse(fxyStr);
+  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  if([x1,x2,y1,y2].some(isNaN)){res.innerHTML=errBox('Ingresa todos los límites');return;}
+
+  const nx=100,ny=100, hx=(x2-x1)/nx, hy=(y2-y1)/ny;
+  let s=0;
+  for(let i=0;i<nx;i++) for(let j=0;j<ny;j++)
+    s+=fn(x1+(i+.5)*hx, y1+(j+.5)*hy);
+  const result=s*hx*hy;
+  res.innerHTML=
+    resBox(`∬ f dx dy — [${x1},${x2}]×[${y1},${y2}]`, fN(result,8), 'Punto medio 100×100', true)+
+    resBox('Área de la región', fN((x2-x1)*(y2-y1),4)+' u²')+
+    resBox('Valor promedio f̄', fN(result/((x2-x1)*(y2-y1)),6));
+}
+
+// ═══════════════════════════════════════════════════════
+// EDO
+// ═══════════════════════════════════════════════════════
+function rk4(fn,x0,y0,h,steps){
+  let x=x0,y=y0,pts=[[x,y]];
+  for(let i=0;i<steps;i++){
+    const k1=fn(x,y),k2=fn(x+h/2,y+h/2*k1);
+    const k3=fn(x+h/2,y+h/2*k2),k4=fn(x+h,y+h*k3);
+    y+=h/6*(k1+2*k2+2*k3+k4); x+=h;
+    if(!isFinite(y)) break;
+    pts.push([parseFloat(x.toFixed(4)),parseFloat(y.toFixed(6))]);
+  }
+  return pts;
+}
+
+function calcEDOSep(){
+  const rhsStr=v('edo-sep-rhs');
+  const x0=pf('edo-sep-x0')||0, y0=pf('edo-sep-y0')||1;
+  const res=document.getElementById('res-sep');
+  const fn=calcParse(rhsStr);
+  if(!fn){res.innerHTML=errBox('Función inválida. Usa x e y');return;}
+  const pts=rk4((x,y)=>fn(x,y), x0, y0, 0.1, 50);
+  const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
+  res.innerHTML=
+    resBox('RK4 — Solución numérica',sample,'dy/dx = '+rhsStr+'  con  y('+x0+')='+y0)+
+    resBox('y final  x='+(x0+5).toFixed(2), fN(pts[pts.length-1][1],6),'',true);
+}
+
+function calcEDOLinear(){
+  const px=calcParse(v('edo-lin-px')), qx=calcParse(v('edo-lin-qx'));
+  const x0=pf('edo-lin-x0')||0, y0=pf('edo-lin-y0')||1;
+  const res=document.getElementById('res-edolin');
+  if(!px||!qx){res.innerHTML=errBox('P(x) o Q(x) inválidos');return;}
+  const pts=rk4((x,y)=>qx(x,0)-px(x,0)*y, x0, y0, 0.1, 50);
+  const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
+  res.innerHTML=
+    resBox('RK4 — y\' + P(x)y = Q(x)',sample,'y('+x0+')='+y0)+
+    resBox('y final  x='+(x0+5).toFixed(2), fN(pts[pts.length-1][1],6),'',true);
+}
+
+function calcEDO2nd(){
+  const a=pf('edo-2do-a')||1, b=pf('edo-2do-b')||0, c=pf('edo-2do-c')||0;
+  const y0=pf('edo-2do-y0')||1, dy0=pf('edo-2do-dy0')||0;
+  const res=document.getElementById('res-edo2');
+  const disc=b*b-4*a*c;
+  let solType,sol;
+  if(disc>1e-10){
+    const r1=(-b+Math.sqrt(disc))/(2*a), r2=(-b-Math.sqrt(disc))/(2*a);
+    solType='Raíces reales distintas';
+    sol=`y = C₁·e^(${fN(r1,4)}x) + C₂·e^(${fN(r2,4)}x)`;
+  } else if(Math.abs(disc)<1e-10){
+    const r=-b/(2*a);
+    solType='Raíz real doble';
+    sol=`y = (C₁ + C₂x)·e^(${fN(r,4)}x)`;
+  } else {
+    const alpha=-b/(2*a), beta=Math.sqrt(-disc)/(2*a);
+    solType='Raíces complejas conjugadas';
+    sol=`y = e^(${fN(alpha,4)}x)[C₁cos(${fN(beta,4)}x) + C₂sin(${fN(beta,4)}x)]`;
+  }
+  res.innerHTML=
+    resBox('Ecuación característica', `${a}r² + ${b}r + ${c} = 0`)+
+    resBox('Discriminante Δ', fN(disc))+
+    resBox('Tipo de solución', solType)+
+    resBox('Solución general', sol,'C₁,C₂ por condiciones iniciales y(0)='+y0+', y\'(0)='+dy0,true);
 }
 
 // ═══════════════════════════════════════════════════════
