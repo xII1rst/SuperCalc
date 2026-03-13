@@ -1,4 +1,4 @@
-// SuperCalc v1.9.5 — Application Logic
+// SuperCalc v1.9.6 — Application Logic
 
 // ── BACKGROUND FÓRMULAS ─────────────────────────────
 (function scBg(){
@@ -166,7 +166,7 @@
 let deferredPrompt=null;
 if('serviceWorker' in navigator){
   const swCode=[
-    "const CACHE='supercalc-1.9.5';",
+    "const CACHE='supercalc-1.9.6';",
     "const PRECACHE=['./','./index.html','./style.css','./app.js','https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap'];",
     "self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(PRECACHE.map(url=>c.add(new Request(url,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));});",
     "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});",
@@ -3551,34 +3551,366 @@ function symbolicDeriv(exprStr, order=1, varName='x'){
 // CÁLCULO DIFERENCIAL
 // ═══════════════════════════════════════════════════════
 
-function calcLimit(){
-  const fxStr = document.getElementById('dif-lim-fx').value.trim();
-  const aStr  = document.getElementById('dif-lim-a').value.trim();
-  const side  = document.getElementById('dif-lim-side').value;
-  const res   = document.getElementById('res-lim');
-  const fn    = calcParse(fxStr);
-  if(!fn){res.innerHTML=errBox('Función inválida. Usa: sin(x), x^2, ln(x), etc.');return;}
-  const a = parseFloat(aStr);
-  if(isNaN(a)){res.innerHTML=errBox('Ingresa el valor de x → a');return;}
+// ── evalA: parsea 'a' como expresión (π/4, ln(2), sqrt(2), etc.) ──
+function evalA(aStr){
+  if(!aStr||!aStr.trim()) return NaN;
+  const s=aStr.trim();
+  if(s==='∞'||s==='Infinity'||s==='+∞') return Infinity;
+  if(s==='-∞'||s==='-Infinity') return -Infinity;
+  try{
+    const code=s
+      .replace(/π/g,'Math.PI').replace(/\^/g,'**')
+      .replace(/⁰/g,'**0').replace(/¹/g,'**1').replace(/²/g,'**2').replace(/³/g,'**3')
+      .replace(/⁴/g,'**4').replace(/⁵/g,'**5').replace(/⁶/g,'**6').replace(/⁷/g,'**7')
+      .replace(/⁸/g,'**8').replace(/⁹/g,'**9')
+      .replace(/\bln\b/g,'Math.log').replace(/\bsqrt\b/g,'Math.sqrt')
+      .replace(/\bsin\b/g,'Math.sin').replace(/\bcos\b/g,'Math.cos')
+      .replace(/\btan\b/g,'Math.tan').replace(/\babs\b/g,'Math.abs')
+      .replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g,'Math.E')
+      .replace(/(\d)([a-df-zA-DF-Z(])/g,'$1*$2').replace(/\)\(/g,')*(');
+    const v=Function('"use strict"; return ('+code+');')();
+    return (typeof v==='number')?v:NaN;
+  }catch(e){ return NaN; }
+}
 
-  function approach(dir){
-    const hs=[1e-3,1e-4,1e-5,1e-6,1e-7,1e-8];
-    const vals=hs.map(h=>{try{const v=fn(a+dir*h,0);return isFinite(v)?v:null;}catch{return null;}});
-    const finite=vals.filter(v=>v!==null);
-    return finite.length ? finite[finite.length-1] : NaN;
+// ── Aproximación numérica lateral ──
+function approach(fn,a,dir){
+  if(!isFinite(a)){
+    const pts=[1e3,1e4,1e5,1e6];
+    const v=pts.map(s=>{try{const r=fn(dir>0?s:-s,0);return isFinite(r)?r:null;}catch{return null;}});
+    const f=v.filter(x=>x!==null); return f.length?f[f.length-1]:NaN;
   }
+  const hs=[1e-3,1e-4,1e-5,1e-6,1e-7,1e-8];
+  const v=hs.map(h=>{try{const r=fn(a+dir*h,0);return isFinite(r)?r:null;}catch{return null;}});
+  const f=v.filter(x=>x!==null); return f.length?f[f.length-1]:NaN;
+}
+
+// ── Derivadas numéricas ──
+function nd(fn,a,h=1e-7){ return (fn(a+h,0)-fn(a-h,0))/(2*h); }
+function nd2(fn,a,h=1e-6){ return (fn(a+h,0)-2*fn(a,0)+fn(a-h,0))/(h*h); }
+
+// ── Resultado exacto: fracción / constante ──
+function toExact(v){
+  if(!isFinite(v)) return v>0?'+∞':'-∞';
+  if(Math.abs(v)<1e-10) return '0';
+  if(Math.abs(v)>1e12) return v>0?'+∞':'-∞';
+  if(Math.abs(v-Math.round(v))<1e-8) return String(Math.round(v));
+  const neg=v<0; const av=Math.abs(v);
+  for(let d=2;d<=200;d++){
+    const n=Math.round(av*d);
+    if(n>0&&Math.abs(n/d-av)<5e-8) return (neg?'-':'')+n+'/'+d;
+  }
+  for(let d=1;d<=16;d++){
+    const n=Math.round(v*d/Math.PI);
+    if(n!==0&&Math.abs(n*Math.PI/d-v)<1e-7){
+      const ns=Math.abs(n)===1?(n<0?'-':''):(n+'');
+      return ns+'π'+(d===1?'':'/'+d);
+    }
+  }
+  for(let r=2;r<=15;r++){
+    const sq=Math.sqrt(r);
+    for(let d=1;d<=30;d++){
+      const n=Math.round(av*d/sq);
+      if(n>0&&Math.abs(n*sq/d-av)<5e-8){
+        const ns=n===1?'':(n+'');
+        return (neg?'-':'')+ns+'√'+r+(d===1?'':'/'+d);
+      }
+    }
+  }
+  return null;
+}
+
+function fmtResult(v){
+  if(v===null||v===undefined||isNaN(v)) return null;
+  if(!isFinite(v)) return v>0?'+∞':'-∞';
+  if(Math.abs(v)>1e12) return v>0?'+∞':'-∞';
+  const ex=toExact(v); if(ex) return ex;
+  return parseFloat(v.toFixed(8)).toString();
+}
+
+function fmtNum(v,dp=6){
+  if(v===null||v===undefined||isNaN(v)) return 'indef.';
+  if(!isFinite(v)) return v>0?'+∞':'-∞';
+  if(Math.abs(v)<1e-10) return '0';
+  if(Math.abs(v)>1e12) return v>0?'+∞':'-∞';
+  return parseFloat(v.toFixed(dp)).toString();
+}
+
+function fmtA(s){ return (s||'').trim().replace('Infinity','∞').replace('-Infinity','-∞'); }
+
+// ── Índice de '/' en nivel 0 de paréntesis ──
+function findTopSlash(s){
+  let d=0;
+  for(let i=0;i<s.length;i++){
+    if(s[i]==='(') d++; else if(s[i]===')') d--;
+    else if(s[i]==='/'&&d===0) return i;
+  }
+  return -1;
+}
+
+// ── Resolver indeterminación 0/0 o ∞/∞ ──
+function resolveIndet(fxStr,a,stepsOut){
+  const fn=calcParse(fxStr); if(!fn) return NaN;
+  const idx=findTopSlash(fxStr);
+
+  if(idx>0){
+    const numStr=fxStr.slice(0,idx).trim();
+    const denStr=fxStr.slice(idx+1).trim();
+    const fnN=calcParse(numStr), fnD=calcParse(denStr);
+    if(!fnN||!fnD) return NaN;
+
+    // L'Hôpital orden 1
+    const na_=nd(fnN,a), da_=nd(fnD,a);
+    stepsOut.push({tipo:'lhopital',orden:1,numStr,denStr,numDeriv:na_,denDeriv:da_,
+      result:Math.abs(da_)>1e-12?na_/da_:NaN});
+    if(isFinite(da_)&&Math.abs(da_)>1e-12){
+      const r=na_/da_; if(isFinite(r)) return r;
+    }
+    // L'Hôpital orden 2
+    if(Math.abs(na_)<1e-9&&Math.abs(da_)<1e-9){
+      const na__=nd2(fnN,a), da__=nd2(fnD,a);
+      stepsOut.push({tipo:'lhopital',orden:2,numDeriv:na__,denDeriv:da__,
+        result:Math.abs(da__)>1e-12?na__/da__:NaN});
+      if(isFinite(da__)&&Math.abs(da__)>1e-12){
+        const r=na__/da__; if(isFinite(r)) return r;
+      }
+    }
+    // Cancelación numérica del factor (x-a)
+    const qN=(x)=>Math.abs(x-a)<1e-15?nd(fnN,a):fnN(x,0)/(x-a);
+    const qD=(x)=>Math.abs(x-a)<1e-15?nd(fnD,a):fnD(x,0)/(x-a);
+    const qna=qN(a+1e-7), qda=qD(a+1e-7);
+    if(isFinite(qna)&&isFinite(qda)&&Math.abs(qda)>1e-12){
+      stepsOut.push({tipo:'cancelacion',qnum:qna,qden:qda,result:qna/qda});
+      return qna/qda;
+    }
+  } else {
+    const fp=nd(fn,a);
+    stepsOut.push({tipo:'lhopital_simple',fp,result:fp});
+    if(isFinite(fp)) return fp;
+  }
+  const vr=approach(fn,a,1), vl=approach(fn,a,-1);
+  if(isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<1e-4) return (vr+vl)/2;
+  return NaN;
+}
+
+// ── COMPUTE LIMIT ──
+function computeLimit(fxStr,aStr,side){
+  const steps=[]; const r={steps,fxStr,aStr,side};
+  const a=evalA(aStr); r.a=a;
+  if(isNaN(a)){
+    r.error=aStr.trim()?
+      'No se pudo evaluar "'+aStr+'". Usa: 0, π/4, ln(2), sqrt(2), 2π…':
+      'Ingresa el valor de x → a';
+    return r;
+  }
+  const fn=calcParse(fxStr);
+  if(!fn){ r.error='Función inválida. Ej: sin(x)/x, (x^2-4)/(x-2), sqrt(x)'; return r; }
+
+  // Sustitución directa
+  let direct=null;
+  if(isFinite(a)){ try{ const v=fn(a,0); if(isFinite(v)) direct=v; }catch(e){} }
+  steps.push({tipo:'sustitucion',aDisplay:fmtA(aStr),direct});
+
+  if(direct!==null){
+    const ex=toExact(direct);
+    r.value=ex||fmtNum(direct,8); r.valueNum=direct;
+    r.exact=ex; r.exists=true; r.tipo='directo';
+    r.vr=direct; r.vl=direct; return r;
+  }
+
+  // Detectar indeterminación
+  const idx=findTopSlash(fxStr);
+  let isZZ=false, isII=false, faNum=NaN, faDen=NaN;
+  if(idx>0&&isFinite(a)){
+    const fnN=calcParse(fxStr.slice(0,idx).trim());
+    const fnD=calcParse(fxStr.slice(idx+1).trim());
+    if(fnN&&fnD){
+      faNum=fnN(a,0); faDen=fnD(a,0);
+      isZZ=Math.abs(faNum)<1e-9&&Math.abs(faDen)<1e-9;
+      isII=!isFinite(faNum)&&!isFinite(faDen);
+    }
+  }
+  if(isZZ) steps.push({tipo:'indet_00',faNum,faDen});
+  else if(isII) steps.push({tipo:'indet_inf',faNum,faDen});
+  r.isIndet=isZZ||isII;
+
+  // Laterales
+  const vr=approach(fn,a,1), vl=approach(fn,a,-1);
+  r.vrRaw=vr; r.vlRaw=vl;
+  steps.push({tipo:'laterales',vr,vl,aDisplay:fmtA(aStr)});
+
+  // Resolver
+  let resolved=NaN;
+  if(r.isIndet){
+    resolved=resolveIndet(fxStr,a,steps);
+  } else if(isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<5e-5){
+    resolved=(vr+vl)/2;
+  } else if(side==='right') resolved=vr;
+  else if(side==='left')  resolved=vl;
+
+  r.vr=isNaN(resolved)?vr:resolved;
+  r.vl=isNaN(resolved)?vl:resolved;
+
+  const pick=(u)=>{ r.exists=isFinite(u); r.valueNum=u;
+    r.value=fmtResult(u)||'No existe'; r.exact=toExact(u)||null; };
+
+  if(side==='right')     pick(isNaN(resolved)?vr:resolved);
+  else if(side==='left') pick(isNaN(resolved)?vl:resolved);
+  else {
+    const ev=!isNaN(resolved)?resolved:(isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<5e-5?(vr+vl)/2:NaN);
+    if(!isNaN(ev)) pick(ev);
+    else if(!isFinite(vr)||!isFinite(vl)){
+      const inf=!isFinite(vr)?vr:vl;
+      r.exists=false; r.valueNum=inf;
+      r.value=fmtResult(inf)||'+∞'; r.exact=null; r.isInfinity=true;
+    } else {
+      r.exists=false; r.value='No existe'; r.exact=null;
+      steps.push({tipo:'no_existe',vr,vl});
+    }
+  }
+  r.tipo=isZZ?'indet_00':isII?'indet_inf':(!isFinite(vr)||!isFinite(vl)?'infinito':'lateral');
+  return r;
+}
+
+// ── HTML DE PASOS ──
+function limitStepsHTML(r){
+  if(r.error) return errBox(r.error);
+  const S=r.steps, a=fmtA(r.aStr), fx=r.fxStr;
+  let html='<div class="lim-steps">';
+  let n=1;
+
+  // Planteamiento
+  html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+    <div class="lim-step-title">Planteamiento</div>
+    <div class="lim-step-expr">lim <sub>x→${a}</sub> [ ${fx} ]</div>
+  </div></div>`;
+
+  // Sustitución
+  const sub=S.find(s=>s.tipo==='sustitucion');
+  if(sub){
+    if(sub.direct!==null){
+      html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+        <div class="lim-step-title">Sustitución directa x = ${a}</div>
+        <div class="lim-step-expr">f(${a}) = <span class="lim-ok">${fmtResult(sub.direct)}</span></div>
+      </div></div>`;
+    } else {
+      html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+        <div class="lim-step-title">Sustitución directa x = ${a}</div>
+        <div class="lim-step-expr"><span class="lim-warn">Forma indeterminada — se requiere análisis adicional</span></div>
+      </div></div>`;
+    }
+  }
+
+  // Tipo de indeterminación
+  const i00=S.find(s=>s.tipo==='indet_00');
+  const iII=S.find(s=>s.tipo==='indet_inf');
+  if(i00){
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Indeterminación 0/0 detectada</div>
+      <div class="lim-step-expr">N(${a}) = ${fmtNum(i00.faNum,4)} &nbsp;,&nbsp; D(${a}) = ${fmtNum(i00.faDen,4)}</div>
+      <div class="lim-step-hint">Se aplica L'Hôpital o cancelación del factor (x − ${a})</div>
+    </div></div>`;
+  } else if(iII){
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Indeterminación ∞/∞ detectada</div>
+      <div class="lim-step-hint">Se aplica Regla de L'Hôpital</div>
+    </div></div>`;
+  }
+
+  // L'Hôpital
+  S.filter(s=>s.tipo==='lhopital').forEach(lh=>{
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Regla de L'Hôpital — orden ${lh.orden}</div>
+      <div class="lim-step-expr">N'(${a}) = ${fmtNum(lh.numDeriv)} &nbsp;,&nbsp; D'(${a}) = ${fmtNum(lh.denDeriv)}</div>
+      <div class="lim-step-expr">lim = ${fmtNum(lh.numDeriv)} / ${fmtNum(lh.denDeriv)} = <strong>${isFinite(lh.result)?fmtResult(lh.result):fmtNum(lh.result)}</strong></div>
+    </div></div>`;
+  });
+
+  // Cancelación
+  const canc=S.find(s=>s.tipo==='cancelacion');
+  if(canc){
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Cancelación del factor (x − ${a})</div>
+      <div class="lim-step-expr">Q_N(${a}) ≈ ${fmtNum(canc.qnum)} &nbsp;,&nbsp; Q_D(${a}) ≈ ${fmtNum(canc.qden)}</div>
+      <div class="lim-step-expr">lim = <strong>${fmtResult(canc.result)}</strong></div>
+    </div></div>`;
+  }
+
+  // Laterales (si no fue directo)
+  if(r.tipo!=='directo'){
+    const lat=S.find(s=>s.tipo==='laterales');
+    if(lat){
+      html+=`<div class="lim-step"><div class="lim-step-num">✓</div><div class="lim-step-body">
+        <div class="lim-step-title">Verificación lateral</div>
+        <div class="lim-step-expr">x→${a}⁺ = ${fmtNum(lat.vr)} &nbsp;,&nbsp; x→${a}⁻ = ${fmtNum(lat.vl)}</div>
+      </div></div>`;
+    }
+  }
+
+  html+='</div>';
+
+  // Caja de resultado
+  const ex=r.exact&&r.exact!==r.value;
+  html+=`<div class="calc-res-box" style="margin-top:8px;${r.exists?'border-color:var(--ca2)':''}">
+    <div class="calc-res-label">lim <sub>x→${a}</sub> [ ${fx} ]</div>
+    <div class="calc-res-val big">${r.value||'No existe'}</div>
+    ${ex?`<div class="calc-res-hint">≈ ${fmtNum(r.valueNum,8)}</div>`:''}
+    <div class="calc-res-hint">${
+      r.exists
+        ?(r.tipo==='directo'?'✓ Sustitución directa'
+          :r.tipo==='indet_00'?'✓ Resuelto por L\'Hôpital / cancelación'
+          :'✓ Límite existe')
+        :(r.isInfinity?'La función diverge (límite infinito)'
+          :'⚠ El límite no existe — límites laterales distintos')
+    }</div>
+  </div>`;
+  return html;
+}
+
+// ── CALCULAR LÍMITE (callback del botón) ──
+function calcLimit(){
+  const fxStr=document.getElementById('dif-lim-fx').value.trim();
+  const aStr =document.getElementById('dif-lim-a').value.trim();
+  const side =document.getElementById('dif-lim-side').value;
+  const res  =document.getElementById('res-lim');
+  if(!fxStr){ res.innerHTML=errBox('Ingresa una función f(x)'); return; }
+  const r=computeLimit(fxStr,aStr,side);
+  res.innerHTML=limitStepsHTML(r);
+}
+
+// ── OPERACIÓN ENTRE DOS LÍMITES ──
+function calcLimitOp(){
+  const fx1  =document.getElementById('lim-op-fx1').value.trim();
+  const a1Str=document.getElementById('lim-op-a1').value.trim();
+  const s1   =document.getElementById('lim-op-side1').value;
+  const op   =document.getElementById('lim-op-op').value;
+  const fx2  =document.getElementById('lim-op-fx2').value.trim();
+  const a2Str=document.getElementById('lim-op-a2').value.trim();
+  const s2   =document.getElementById('lim-op-side2').value;
+  const res  =document.getElementById('res-lim-op');
+  if(!fx1||!fx2){ res.innerHTML=errBox('Ingresa ambas funciones'); return; }
+
+  const r1=computeLimit(fx1,a1Str,s1);
+  const r2=computeLimit(fx2,a2Str,s2);
+  const v1=r1.valueNum, v2=r2.valueNum;
+  const a1=fmtA(a1Str), a2=fmtA(a2Str);
+  const opSym={'+':'+','−':'−','*':'·','/':'÷'}[op]||op;
+
+  let resVal=NaN;
+  if(op==='+') resVal=v1+v2;
+  else if(op==='−') resVal=v1-v2;
+  else if(op==='*') resVal=v1*v2;
+  else if(op==='/') resVal=Math.abs(v2)>1e-12?v1/v2:NaN;
+  const resStr=fmtResult(resVal)||'Indefinido';
 
   let html='';
-  const vr=approach(1), vl=approach(-1);
-  if(side==='both'||side==='right')
-    html+=resBox('Límite por la derecha (x→a⁺)', isFinite(vr)?fN(vr,8):'∞ / no existe');
-  if(side==='both'||side==='left')
-    html+=resBox('Límite por la izquierda (x→a⁻)', isFinite(vl)?fN(vl,8):'∞ / no existe');
-  if(side==='both'){
-    const exists=isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<1e-5;
-    html+=resBox('Límite bilateral', exists?fN((vr+vl)/2,8):'No existe',
-      exists?'✓ Límites laterales coinciden':'⚠ Límites laterales distintos', exists);
-  }
+  html+=`<div class="lim-op-block"><div class="lim-op-label">Límite A — lim<sub>x→${a1}</sub> [${fx1}]</div>${limitStepsHTML(r1)}</div>`;
+  html+=`<div class="lim-op-block"><div class="lim-op-label">Límite B — lim<sub>x→${a2}</sub> [${fx2}]</div>${limitStepsHTML(r2)}</div>`;
+  html+=`<div class="calc-res-box" style="border-color:var(--gold);margin-top:8px">
+    <div class="calc-res-label">L_A ${opSym} L_B</div>
+    <div class="calc-res-val big">${resStr}</div>
+    <div class="calc-res-hint">${fmtResult(v1)||'?'} ${opSym} ${fmtResult(v2)||'?'} = ${resStr}</div>
+  </div>`;
   res.innerHTML=html;
 }
 
@@ -3591,30 +3923,24 @@ function calcDerivative(){
 
   const labels = ["Primera","Segunda","Tercera"];
   const primes = ["f'(x)","f''(x)","f'''(x)"];
-
-  // Derivada simbólica
   const sym = symbolicDeriv(fxStr, ord);
   let html = '';
 
   if(sym){
     html += resBox(primes[ord-1]+' — derivada simbólica', sym, labels[ord-1]+' derivada', true);
-    // Evaluar en punto si se pide
     if(ptStr!==''&&ptStr!=='opcional'){
       const x0 = parseFloat(ptStr);
       if(!isNaN(x0)){
-        // Evaluar la derivada simbólica numéricamente
         const symFn = calcParse(sym.replace(/\^/g,'**'));
         if(symFn){
           const val = symFn(x0,0);
           if(isFinite(val))
-            html+=resBox(`${primes[ord-1]} en x = ${x0}`, fN(val,8),
+            html+=resBox(`${primes[ord-1]} en x = ${x0}`, fmtResult(val)||fN(val,8),
               `Sustituyendo en ${sym}`);
         } else {
-          // Fallback numérico
           const fn = calcParse(fxStr);
           if(fn){
-            const h=1e-6;
-            let v;
+            const h=1e-6; let v;
             if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
             else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
             else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
@@ -3624,15 +3950,13 @@ function calcDerivative(){
       }
     }
   } else {
-    // Fallback numérico
     const fn = calcParse(fxStr);
     if(!fn){res.innerHTML=errBox('Función inválida');return;}
-    html+=resBox('No se pudo derivar simbólicamente — resultado numérico','','',false);
+    html+=resBox('Resultado numérico (no simbólico)','','',false);
     if(ptStr.trim()!==''&&ptStr.trim()!=='opcional'){
       const x0=parseFloat(ptStr);
       if(!isNaN(x0)){
-        const h=1e-6;
-        let v;
+        const h=1e-6; let v;
         if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
         else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
         else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
@@ -3648,71 +3972,81 @@ function calcImplicit(){
   const x0 = parseFloat(document.getElementById('dif-imp-x0').value);
   const y0 = parseFloat(document.getElementById('dif-imp-y0').value);
   const res = document.getElementById('res-imp');
-  const fn  = calcParse(fxyStr);
-  if(!fn){res.innerHTML=errBox('F(x,y) inválida. Ej: x^2 + y^2 - 25');return;}
-  if(isNaN(x0)||isNaN(y0)){res.innerHTML=errBox('Ingresa el punto (x₀, y₀)');return;}
+  if(!fxyStr){res.innerHTML=errBox('Ingresa F(x,y)');return;}
+
+  const Fxy = calcParse(fxyStr.replace(/y/g,'$2'));
+  if(!Fxy){res.innerHTML=errBox('Función inválida. Usa x e y como variables');return;}
 
   const h=1e-7;
-  const Fx=(fn(x0+h,y0)-fn(x0-h,y0))/(2*h);
-  const Fy=(fn(x0,y0+h)-fn(x0,y0-h))/(2*h);
+  const Fx=(x,y)=>(Fxy(x+h,y)-Fxy(x-h,y))/(2*h);
+  const Fy=(x,y)=>(Fxy(x,y+h)-Fxy(x,y-h))/(2*h);
 
-  if(Math.abs(Fy)<1e-10){
-    res.innerHTML=errBox('∂F/∂y ≈ 0 — tangente vertical, dy/dx no está definida');return;
+  let html='';
+  html+=resBox('dy/dx = −∂F/∂x ÷ ∂F/∂y','— fórmula implícita —','F(x,y)=0',true);
+
+  if(!isNaN(x0)&&!isNaN(y0)){
+    const fval=Fxy(x0,y0);
+    const fx0=Fx(x0,y0), fy0=Fy(x0,y0);
+    const slope=fy0!==0?-fx0/fy0:NaN;
+    if(Math.abs(fval)>0.1)
+      html+=resBox('Verificación',`F(${x0},${y0}) ≈ ${fN(fval,4)}`,'⚠ El punto puede no estar en la curva');
+    html+=resBox(`∂F/∂x en (${x0},${y0})`, fN(fx0,6));
+    html+=resBox(`∂F/∂y en (${x0},${y0})`, fN(fy0,6));
+    html+=resBox(`dy/dx en (${x0},${y0})`, isFinite(slope)?fmtResult(slope)||fN(slope,6):'indefinido',
+      isFinite(slope)?'':'∂F/∂y ≈ 0 en este punto',true);
+  } else {
+    html+=resBox('Necesito un punto','Ingresa x₀ e y₀ para evaluar dy/dx');
   }
-  const dydx=-Fx/Fy;
-  const Fval=fn(x0,y0);
-
-  res.innerHTML=
-    resBox('∂F/∂x en ('+x0+','+y0+')', fN(Fx))+
-    resBox('∂F/∂y en ('+x0+','+y0+')', fN(Fy))+
-    resBox('dy/dx = −(∂F/∂x) / (∂F/∂y)', fN(dydx,8), 'Regla de la función implícita', true)+
-    resBox('F(x₀,y₀) =', fN(Fval,6),
-      Math.abs(Fval)<1e-3?'✓ Punto sobre la curva F=0':'⚠ El punto puede no pertenecer a F=0');
+  res.innerHTML=html;
 }
 
 function calcAnalysis(){
-  const fxStr = document.getElementById('dif-ana-fx').value.trim();
-  const res   = document.getElementById('res-ana');
-  const fn    = calcParse(fxStr);
+  const fxStr=document.getElementById('dif-ana-fx').value.trim();
+  const res=document.getElementById('res-ana');
+  if(!fxStr){res.innerHTML=errBox('Ingresa una función');return;}
+  const fn=calcParse(fxStr);
   if(!fn){res.innerHTML=errBox('Función inválida');return;}
 
-  const h=1e-5, dx=0.05;
-  const pts=[];
-  for(let x=-8;x<=8;x+=dx){
+  const h=1e-6, N=400, a=-8, b=8, dx=(b-a)/N;
+  let incr=0, decr=0;
+  const maxs=[], mins=[], infs=[];
+  let prevFp=(fn(a+h,0)-fn(a-h,0))/(2*h);
+  let prevFpp=(fn(a+h,0)-2*fn(a,0)+fn(a-h,0))/(h*h);
+
+  for(let i=1;i<=N;i++){
+    const x=a+i*dx;
     const fp=(fn(x+h,0)-fn(x-h,0))/(2*h);
     const fpp=(fn(x+h,0)-2*fn(x,0)+fn(x-h,0))/(h*h);
-    pts.push({x:parseFloat(x.toFixed(3)),fp,fpp});
+    if(isFinite(fp)){
+      if(fp>0) incr++; else decr++;
+      if(prevFp*fp<0&&isFinite(prevFp))
+        (prevFp>0?maxs:mins).push(parseFloat(x.toFixed(3)));
+    }
+    if(isFinite(fpp)&&isFinite(prevFpp)&&prevFpp*fpp<0)
+      infs.push(parseFloat(x.toFixed(3)));
+    prevFp=fp; prevFpp=fpp;
   }
-
-  const maxs=[],mins=[],infs=[];
-  for(let i=1;i<pts.length-1;i++){
-    if(pts[i-1].fp>0&&pts[i+1].fp<0) maxs.push(pts[i].x);
-    if(pts[i-1].fp<0&&pts[i+1].fp>0) mins.push(pts[i].x);
-    if(pts[i-1].fpp*pts[i+1].fpp<0)  infs.push(pts[i].x);
-  }
-
-  const incr=pts.filter(p=>p.fp>0.01).length, decr=pts.filter(p=>p.fp<-0.01).length;
-  const sym1=symbolicDeriv(fxStr,1), sym2=symbolicDeriv(fxStr,2);
-
   let html='';
-  if(sym1) html+=resBox("f'(x) =", sym1);
-  if(sym2) html+=resBox("f''(x) =", sym2);
   html+=resBox('Monotonía en [−8,8]',
     `↑ Crece: ${incr} puntos  ↓ Decrece: ${decr} puntos`);
-  html+=resBox('Máximos locales (x donde f\' cambia +→−)',
-    maxs.length?maxs.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
-  html+=resBox('Mínimos locales (x donde f\' cambia −→+)',
-    mins.length?mins.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
-  html+=resBox('Puntos de inflexión (f\'\' cambia signo)',
-    infs.length?infs.map(x=>`x≈${x}`).join(', '):'Ninguno detectado');
+  html+=resBox('Máximos locales',maxs.length?maxs.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
+  html+=resBox('Mínimos locales',mins.length?mins.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
+  html+=resBox('Puntos de inflexión',infs.length?infs.map(x=>`x≈${x}`).join(', '):'Ninguno detectado');
   res.innerHTML=html;
 }
+
+
 
 // ═══════════════════════════════════════════════════════
 // APLICACIONES DE DERIVADAS
 // ═══════════════════════════════════════════════════════
 let currentApp = 'opt';
 let appsVisible = false;
+
+function toggleLimOp(){
+  const p=document.getElementById('lim-op-panel');
+  if(p) p.style.display=p.style.display==='none'?'block':'none';
+}
 
 function toggleApps(){
   appsVisible=!appsVisible;
@@ -4159,6 +4493,15 @@ function calcEDO2nd(){
     resBox('Discriminante Δ', fN(disc))+
     resBox('Tipo de solución', solType)+
     resBox('Solución general', sol,'C₁,C₂ por condiciones iniciales y(0)='+y0+', y\'(0)='+dy0,true);
+}
+
+// ═══════════════════════════════════════════════════════
+// CALC INIT
+// ═══════════════════════════════════════════════════════
+function calcInit(){
+  ['dif','int','mul','edo'].forEach(id=>buildKB('calc-kb-'+id));
+  initInputTracking();
+  calcTab('dif');
 }
 
 // ═══════════════════════════════════════════════════════

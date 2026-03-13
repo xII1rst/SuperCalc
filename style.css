@@ -731,7 +731,7 @@ canvas:active{cursor:grabbing}
 #ineq-numline { width:100%;height:72px;border-radius:8px;margin-top:10px;display:block; }
 
   
-/* ══════ CÁLCULO MODULE v1.9.5 ══════ */
+/* ══════ CÁLCULO MODULE v1.9.6 ══════ */
 :root {
   --ca: #10b981; --ca2: #34d399;  /* esmeralda — Cálculo */
 }
@@ -939,7 +939,25 @@ canvas:active{cursor:grabbing}
 .graf-step-block .gs-y { color:#34d399;font-weight:700; }
 .graf-step-block .gs-op { color:#a594ff; }
 
-/* ── Módulo Cálculo v1.9.5 ── */
+/* ── Pasos de Límites v1.9.6 ── */
+.lim-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.lim-step{display:flex;gap:8px;align-items:flex-start;}
+.lim-step-num{min-width:22px;height:22px;border-radius:50%;background:var(--ca3);
+  color:var(--ca2);font-size:9px;font-family:'Space Mono',monospace;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.lim-step-body{flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;}
+.lim-step-title{font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
+.lim-step-expr{font-size:11px;color:var(--text1);font-family:'Space Mono',monospace;
+  line-height:1.6;}
+.lim-step-hint{font-size:9px;color:var(--text3);margin-top:3px;line-height:1.4;}
+.lim-ok{color:var(--ca2);font-weight:700;}
+.lim-warn{color:#f0a040;}
+.lim-op-block{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.lim-op-label{font-size:9px;font-family:'Space Mono',monospace;color:var(--gold);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+
 .calc-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
   margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
 .calc-card.active{border-color:var(--ca2);}
