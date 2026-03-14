@@ -4098,14 +4098,13 @@ function limitStepsHTML(r){
     <div class="calc-res-hint">${
       r.exists
         ?(r.tipo==='directo'?'✓ Sustitución directa'
-          :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'✓ Resuelto por L'Hôpital'
+          :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'✓ Resuelto por L\u2019H\u00f4pital'
           :'✓ Límite existe')
         :(r.isInfinity?'Límite infinito — la función diverge'
           :'⚠ El límite no existe (laterales distintos)')
     }</div>
   </div>`;
   return html;
-}
 }
 
 // ── CALCULAR LÍMITE (callback del botón) ──
