@@ -1,4 +1,4 @@
-// SuperCalc v1.9.6 — Application Logic
+// SuperCalc v2.0.0 — Application Logic
 
 // ── BACKGROUND FÓRMULAS ─────────────────────────────
 (function scBg(){
@@ -166,7 +166,7 @@
 let deferredPrompt=null;
 if('serviceWorker' in navigator){
   const swCode=[
-    "const CACHE='supercalc-1.9.6';",
+    "const CACHE='supercalc-2.0.0';",
     "const PRECACHE=['./','./index.html','./style.css','./app.js','https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap'];",
     "self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(PRECACHE.map(url=>c.add(new Request(url,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()));});",
     "self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});",
@@ -1972,7 +1972,9 @@ const SUBMOD_CONFIG = {
     cards: [
       { icon:'⟶', name:'Vectores 3D', desc:'Operaciones, graficación y cálculo vectorial', id:'vectors', cls:'al-sub' },
       { icon:'▦',  name:'Matrices & Ec. Lineales', desc:'Operaciones, sistemas, determinantes, eigenvalores', id:'mat', cls:'al-sub' },
-      { icon:'≠',  name:'Inecuaciones', desc:'Lineal, cuadrática, sistemas, valor absoluto', id:'ineq', cls:'al-sub' },
+      { icon:'≠',  name:'Inecuaciones', desc:'Libre, cuadrática, racional, sistemas, valor absoluto', id:'ineq', cls:'al-sub' },
+      { icon:'f(x)', name:'Funciones', desc:'Dominio, rango y gráfica por tipo', id:'fn', cls:'al-sub' },
+      { icon:'Σ',  name:'Sucesiones & Prog.', desc:'Término n-ésimo, PA, PG, clasificación, acotamiento', id:'seq', cls:'al-sub' },
     ]
   },
   fi: {
@@ -2010,7 +2012,7 @@ function navPush(state){
 window.addEventListener('popstate', (e) => {
   const state = e.state;
   // Determinar dónde estamos ahora y retroceder un nivel
-  const moduleIds = ['app','em-app','mat-app','calc-app','ineq-app'];
+  const moduleIds = ['app','em-app','mat-app','calc-app','ineq-app','fn-app','seq-app'];
   const activeModule = moduleIds.find(id => {
     const el = document.getElementById(id);
     return el && (el.style.display === 'flex' || el.classList.contains('visible'));
@@ -2057,6 +2059,8 @@ function _closeModuleNoHistory(id){
   else if(id==='em')      document.getElementById('em-app').classList.remove('visible');
   else if(id==='mat')     document.getElementById('mat-app').classList.remove('visible');
   else if(id==='ineq'){   document.getElementById('ineq-app').classList.remove('visible'); setTimeout(()=>ineqBack(),350); }
+  else if(id==='fn'){    document.getElementById('fn-app').classList.remove('visible'); setTimeout(()=>fnBack(),350); }
+  else if(id==='seq'){   document.getElementById('seq-app').classList.remove('visible'); }
   else if(id==='calc')    document.getElementById('calc-app').classList.remove('visible');
   setTimeout(() => {
     document.getElementById('submod-screen').classList.add('visible');
@@ -2149,6 +2153,17 @@ function launchSubmod(id) {
     setTimeout(() => {
       document.getElementById('ineq-app').classList.add('visible');
     }, 300);
+  } else if (id === 'fn') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('fn-app').classList.add('visible');
+    }, 300);
+  } else if (id === 'seq') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    setTimeout(() => {
+      document.getElementById('seq-app').classList.add('visible');
+      seqSetMode('terminos');
+    }, 300);
   }
   navPush({sc:'module', id});
 }
@@ -2163,6 +2178,11 @@ function closeModule(id) {
   } else if (id === 'ineq') {
     document.getElementById('ineq-app').classList.remove('visible');
     setTimeout(() => ineqBack(), 350);
+  } else if (id === 'fn') {
+    document.getElementById('fn-app').classList.remove('visible');
+    setTimeout(() => fnBack(), 350);
+  } else if (id === 'seq') {
+    document.getElementById('seq-app').classList.remove('visible');
   } else if (id === 'calc') {
     document.getElementById('calc-app').classList.remove('visible');
   }
@@ -2623,7 +2643,7 @@ function matCalcEig() {
 function matClearEig() { document.querySelectorAll('#mat-eig-grid .mat-cell').forEach(el=>el.value=0); document.getElementById('mat-res-eig').innerHTML=''; }
 
 // ═══════════════════════════════════════════════════════
-// INECUACIONES MODULE
+// INECUACIONES MODULE v2.0
 // ═══════════════════════════════════════════════════════
 let ineqType = null;
 
@@ -2632,7 +2652,13 @@ function ineqSetType(type) {
   document.getElementById('ineq-pick-screen').style.display = 'none';
   const solver = document.getElementById('ineq-solver');
   solver.classList.add('on');
-  const titles = {linear:'Lineal: ax + b ⊳ c', quad:'Cuadrática: ax² + bx + c ⊳ 0', system:'Sistema de Inecuaciones', abs:'Valor Absoluto: |ax + b| ⊳ c'};
+  const titles = {
+    libre:    'Expresión libre: f(x) ⊳ g(x)',
+    quad:     'Cuadrática: ax² + bx + c ⊳ 0',
+    rational: 'Racional: P(x)/Q(x) ⊳ 0',
+    system:   'Sistema de Inecuaciones',
+    abs:      'Valor Absoluto: |f(x)| ⊳ c',
+  };
   document.getElementById('ineq-solver-title').textContent = titles[type]||type;
   buildIneqForm(type);
 }
@@ -2640,8 +2666,7 @@ function ineqSetType(type) {
 function ineqBack() {
   ineqType = null;
   document.getElementById('ineq-pick-screen').style.display = '';
-  const solver = document.getElementById('ineq-solver');
-  solver.classList.remove('on');
+  document.getElementById('ineq-solver').classList.remove('on');
 }
 
 function ineqSymCycle(btnId, symbols) {
@@ -2653,51 +2678,80 @@ function ineqSymCycle(btnId, symbols) {
 
 function buildIneqForm(type) {
   const body = document.getElementById('ineq-solver-body');
-  const syms = ['<', '≤', '>', '≥'];
-  if(type==='linear') {
+  if(type==='libre') {
     body.innerHTML = `
-      <div class="mat-sec">Inecuación Lineal</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax + b  ⊳  c</div>
-      <div class="ineq-row">
-        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>
-        <span style="font-size:14px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
-        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="3" type="number" step="any"></div>
-        <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&gt;</button>
-        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="7" type="number" step="any"></div>
+      <div class="mat-sec">Inecuación — expresión libre</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">
+        Escribe ambos lados como expresiones en x. Ej: (x+3)(x-1) &lt; (x-1)^2+3x
       </div>
-      <button class="ineq-btn" onclick="ineqSolveLinear()">Resolver</button>
+      <div class="ineq-libre-row">
+        <div class="ineq-libre-grp">
+          <label class="ineq-libre-lbl">Lado izquierdo f(x)</label>
+          <input class="ineq-inp-libre" id="iq-lhs" placeholder="ej: (x+3)(x-1)"/>
+        </div>
+        <button class="ineq-sym-btn on" id="iq-sym-libre"
+          onclick="ineqSymCycle('iq-sym-libre',['<','≤','>','≥'])"><</button>
+        <div class="ineq-libre-grp">
+          <label class="ineq-libre-lbl">Lado derecho g(x)</label>
+          <input class="ineq-inp-libre" id="iq-rhs" placeholder="ej: (x-1)^2+3x"/>
+        </div>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveLibre()">Resolver</button>
       <div id="ineq-res"></div>
       <canvas id="ineq-numline" height="72"></canvas>`;
   } else if(type==='quad') {
     body.innerHTML = `
       <div class="mat-sec">Inecuación Cuadrática</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax² + bx + c  ⊳  0</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax² + bx + c ⊳ 0</div>
       <div class="ineq-row">
         <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="1" type="number" step="any"></div>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x² +</span>
+        <span class="ineq-lbl-mid">x² +</span>
         <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-3" type="number" step="any"></div>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <span class="ineq-lbl-mid">x +</span>
         <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="2" type="number" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">0</span>
+        <span class="ineq-lbl-mid">0</span>
       </div>
       <button class="ineq-btn" onclick="ineqSolveQuad()">Resolver</button>
+      <div id="ineq-res"></div>
+      <canvas id="ineq-numline" height="72"></canvas>`;
+  } else if(type==='rational') {
+    body.innerHTML = `
+      <div class="mat-sec">Inecuación Racional</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">
+        P(x)/Q(x) ⊳ 0 — tabla de signos automática
+      </div>
+      <div class="ineq-libre-row">
+        <div class="ineq-libre-grp">
+          <label class="ineq-libre-lbl">Numerador P(x)</label>
+          <input class="ineq-inp-libre" id="iq-rat-num" placeholder="ej: x^2+3x-10"/>
+        </div>
+        <span class="ineq-lbl-mid" style="padding-top:24px;font-size:18px">/</span>
+        <div class="ineq-libre-grp">
+          <label class="ineq-libre-lbl">Denominador Q(x)</label>
+          <input class="ineq-inp-libre" id="iq-rat-den" placeholder="ej: x^2+x-2"/>
+        </div>
+        <button class="ineq-sym-btn on" id="iq-rat-sym"
+          onclick="ineqSymCycle('iq-rat-sym',['<','≤','>','≥'])" style="align-self:flex-end;margin-bottom:4px">&lt;</button>
+        <span class="ineq-lbl-mid" style="padding-top:24px">0</span>
+      </div>
+      <button class="ineq-btn" onclick="ineqSolveRational()">Tabla de signos</button>
       <div id="ineq-res"></div>
       <canvas id="ineq-numline" height="72"></canvas>`;
   } else if(type==='system') {
     body.innerHTML = `
       <div class="mat-sec">Sistema de Inecuaciones</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">Dos inecuaciones lineales simultáneas</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">Dos inecuaciones lineales — se calcula la intersección</div>
       <div class="ineq-row" style="margin-bottom:6px">
         <div class="ineq-inp-grp"><label>a₁</label><input class="ineq-inp" id="iq-a1" value="1" type="number" step="any"></div>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <span class="ineq-lbl-mid">x +</span>
         <div class="ineq-inp-grp"><label>b₁</label><input class="ineq-inp" id="iq-b1" value="-2" type="number" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-s1" onclick="ineqSymCycle('iq-s1',['<','≤','>','≥'])">&gt;</button>
         <div class="ineq-inp-grp"><label>c₁</label><input class="ineq-inp" id="iq-c1" value="-1" type="number" step="any"></div>
       </div>
       <div class="ineq-row">
         <div class="ineq-inp-grp"><label>a₂</label><input class="ineq-inp" id="iq-a2" value="1" type="number" step="any"></div>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <span class="ineq-lbl-mid">x +</span>
         <div class="ineq-inp-grp"><label>b₂</label><input class="ineq-inp" id="iq-b2" value="3" type="number" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-s2" onclick="ineqSymCycle('iq-s2',['<','≤','>','≥'])">&lt;</button>
         <div class="ineq-inp-grp"><label>c₂</label><input class="ineq-inp" id="iq-c2" value="10" type="number" step="any"></div>
@@ -2708,13 +2762,13 @@ function buildIneqForm(type) {
   } else if(type==='abs') {
     body.innerHTML = `
       <div class="mat-sec">Valor Absoluto</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">|ax + b|  ⊳  c</div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">|ax + b| ⊳ c</div>
       <div class="ineq-row">
-        <span style="font-size:16px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">|</span>
+        <span class="ineq-lbl-mid" style="font-size:16px">|</span>
         <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>
-        <span style="font-size:13px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">x +</span>
+        <span class="ineq-lbl-mid">x +</span>
         <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-1" type="number" step="any"></div>
-        <span style="font-size:16px;font-family:'Space Mono',monospace;color:#a0b4cc;padding-top:16px">|</span>
+        <span class="ineq-lbl-mid" style="font-size:16px">|</span>
         <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
         <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="5" type="number" step="any"></div>
       </div>
@@ -2722,138 +2776,9 @@ function buildIneqForm(type) {
       <div id="ineq-res"></div>
       <canvas id="ineq-numline" height="72"></canvas>`;
   }
-  // Add missing CSS for ineq-inp-grp
-  if(!document.getElementById('ineq-inp-grp-style')){
-    const st=document.createElement('style');
-    st.id='ineq-inp-grp-style';
-    st.textContent=`.ineq-inp-grp{display:flex;flex-direction:column;gap:4px}.ineq-inp-grp label{font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;text-align:center}`;
-    document.head.appendChild(st);
-  }
 }
 
-function ineqShowResult(html, intervals, steps) {
-  let out=`<div class="ineq-res">`;
-  out+=`<div class="ineq-res-expr">${html}</div>`;
-  if(intervals) out+=`<div class="ineq-res-interval">Solución: ${intervals}</div>`;
-  if(steps) steps.forEach(s=>{ out+=`<div class="ineq-res-step">${s}</div>`; });
-  out+=`</div>`;
-  document.getElementById('ineq-res').innerHTML=out;
-}
-
-function ineqSolveLinear() {
-  const a=parseFloat(document.getElementById('iq-a').value)||0;
-  const b=parseFloat(document.getElementById('iq-b').value)||0;
-  const c=parseFloat(document.getElementById('iq-c').value)||0;
-  let sym=document.getElementById('iq-sym').textContent;
-  const steps=[];
-  steps.push(`${a}x + ${b} ${sym} ${c}`);
-  steps.push(`${a}x ${sym} ${c - b}`);
-  let sol, symFinal=sym;
-  const rhs=(c-b);
-  if(Math.abs(a)<1e-12){
-    const lhs=b;
-    const sat=checkIneq(lhs,sym,c);
-    sol=sat?'x ∈ ℝ (toda la recta real)':'No hay solución';
-    steps.push(sat?'Siempre verdadero':'Siempre falso');
-  } else {
-    let x=rhs/a;
-    if(a<0){ symFinal=flipSym(sym); steps.push(`÷ ${a} (negativo — invierte desigualdad)`); }
-    else steps.push(`÷ ${a}`);
-    steps.push(`x ${symFinal} ${matFmtNum(x)}`);
-    sol=ineqIntervalLinear(symFinal,x);
-    drawNumLine([{val:x,sym:symFinal,color:'#f472b6'}],[sol]);
-  }
-  ineqShowResult(`${a}x + ${b} ${sym} ${c}`, sol, steps);
-}
-
-function ineqSolveQuad() {
-  const a=parseFloat(document.getElementById('iq-a').value)||1;
-  const b=parseFloat(document.getElementById('iq-b').value)||0;
-  const c=parseFloat(document.getElementById('iq-c').value)||0;
-  const sym=document.getElementById('iq-sym').textContent;
-  const disc=b*b-4*a*c;
-  const steps=[`${a}x² + ${b}x + ${c} ${sym} 0`];
-  steps.push(`Discriminante: b²−4ac = ${matFmtNum(disc)}`);
-  let sol, roots=[];
-  if(disc<0){
-    const alwaysPos=a>0;
-    if((sym==='>'||sym==='≥')===alwaysPos){ sol='x ∈ ℝ'; steps.push('Sin raíces reales — parábola siempre '+(a>0?'positiva':'negativa')); }
-    else { sol='Sin solución'; steps.push('Sin raíces reales — no cumple la desigualdad'); }
-  } else if(Math.abs(disc)<1e-12){
-    const r=-b/(2*a);
-    roots=[r];
-    steps.push(`Raíz doble: x = ${matFmtNum(r)}`);
-    sol=sym==='<'?'Sin solución':sym==='≤'?`x = ${matFmtNum(r)}`:`x ∈ ℝ \\ {${matFmtNum(r)}}`;
-  } else {
-    const r1=(-b-Math.sqrt(disc))/(2*a), r2=(-b+Math.sqrt(disc))/(2*a);
-    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
-    roots=[lo,hi];
-    steps.push(`Raíces: x₁ = ${matFmtNum(lo)}, x₂ = ${matFmtNum(hi)}`);
-    const inside=(sym==='<'||sym==='≤');
-    const closed=(sym==='≤'||sym==='≥');
-    if((a>0&&inside)||(a<0&&!inside)){
-      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`; 
-      steps.push(`a${a>0?'>':'<'}0 → solución interior al intervalo`);
-    } else {
-      const br=closed?']':')';const bl=closed?'[':'(';
-      sol=`(-∞, ${matFmtNum(lo)}${br} ∪ ${bl}${matFmtNum(hi)}, +∞)`;
-      steps.push(`a${a>0?'>':'<'}0 → solución exterior al intervalo`);
-    }
-  }
-  ineqShowResult(`${a}x² + ${b}x + ${c} ${sym} 0`, sol, steps);
-  drawNumLine(roots.map(r=>({val:r,sym:'root',color:'#f472b6'})),[sol]);
-}
-
-function ineqSolveSystem() {
-  const a1=parseFloat(document.getElementById('iq-a1').value)||1;
-  const b1=parseFloat(document.getElementById('iq-b1').value)||0;
-  const c1=parseFloat(document.getElementById('iq-c1').value)||0;
-  const s1=document.getElementById('iq-s1').textContent;
-  const a2=parseFloat(document.getElementById('iq-a2').value)||1;
-  const b2=parseFloat(document.getElementById('iq-b2').value)||0;
-  const c2=parseFloat(document.getElementById('iq-c2').value)||0;
-  const s2=document.getElementById('iq-s2').textContent;
-  const steps=[`Inecuación 1: ${a1}x + ${b1} ${s1} ${c1}`,`Inecuación 2: ${a2}x + ${b2} ${s2} ${c2}`];
-  const solve1=ineqLinearBound(a1,b1,c1,s1);
-  const solve2=ineqLinearBound(a2,b2,c2,s2);
-  steps.push(`I1 → x ${solve1.sym} ${matFmtNum(solve1.val)}`);
-  steps.push(`I2 → x ${solve2.sym} ${matFmtNum(solve2.val)}`);
-  const inter=ineqIntersect(solve1,solve2);
-  const sol=inter||'Sin solución (intersección vacía)';
-  steps.push(`Intersección: ${sol}`);
-  ineqShowResult(`Sistema`,sol,steps);
-  drawNumLine([{val:solve1.val,sym:solve1.sym,color:'#7c6af7'},{val:solve2.val,sym:solve2.sym,color:'#22d3ee'}],[sol]);
-}
-
-function ineqSolveAbs() {
-  const a=parseFloat(document.getElementById('iq-a').value)||1;
-  const b=parseFloat(document.getElementById('iq-b').value)||0;
-  const c=parseFloat(document.getElementById('iq-c').value)||0;
-  const sym=document.getElementById('iq-sym').textContent;
-  const steps=[`|${a}x + ${b}| ${sym} ${c}`];
-  let sol;
-  if(c<0&&(sym==='<'||sym==='≤')){ sol='Sin solución (|·| ≥ 0)'; steps.push('El valor absoluto nunca es negativo'); }
-  else if(c<0&&(sym==='>'||sym==='≥')){ sol='x ∈ ℝ'; steps.push('|·| siempre ≥ 0 > c'); }
-  else {
-    const r1=(-b+c)/a, r2=(-b-c)/a;
-    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
-    const closed=(sym==='≤'||sym==='≥');
-    if(sym==='<'||sym==='≤'){
-      steps.push(`−${c} ${flipSym(sym)} ${a}x + ${b} ${sym} ${c}`);
-      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
-      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`;
-    } else {
-      steps.push(`${a}x + ${b} ${sym} ${c}  ó  ${a}x + ${b} ${flipSym(sym)} −${c}`);
-      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
-      const br=closed?']':')';const bl=closed?'[':'(';
-      sol=`(-∞, ${matFmtNum(lo)}${br} ∪ ${bl}${matFmtNum(hi)}, +∞)`;
-    }
-  }
-  ineqShowResult(`|${a}x + ${b}| ${sym} ${c}`,sol,steps);
-  drawNumLine([{val:(-b+c)/a,sym:'root',color:'#f472b6'},{val:(-b-c)/a,sym:'root',color:'#f472b6'}],[sol]);
-}
-
-// ── Ineq helpers ──
+// ── helpers comunes ──
 function flipSym(s){ return {'>':'<','<':'>','≥':'≤','≤':'≥'}[s]||s; }
 function checkIneq(a,sym,b){ return {'>':a>b,'<':a<b,'≥':a>=b,'≤':a<=b}[sym]; }
 function ineqIntervalLinear(sym,x){
@@ -2869,7 +2794,6 @@ function ineqLinearBound(a,b,c,sym){
   return {val:x,sym:s};
 }
 function ineqIntersect(s1,s2){
-  // Both as intervals [lo,hi], compute intersection
   const lo1=(s1.sym==='>'||s1.sym==='≥')?s1.val:-Infinity;
   const hi1=(s1.sym==='<'||s1.sym==='≤')?s1.val:Infinity;
   const lo2=(s2.sym==='>'||s2.sym==='≥')?s2.val:-Infinity;
@@ -2882,53 +2806,310 @@ function ineqIntersect(s1,s2){
   return `${loBr}${loS}, ${hiS}${hiBr}`;
 }
 
-// ── Number line canvas ──
+function ineqShowResult(expr, sol, steps) {
+  let out=`<div class="ineq-res">`;
+  out+=`<div class="ineq-res-expr">${expr}</div>`;
+  steps.forEach(s=>{ out+=`<div class="ineq-res-step">${s}</div>`; });
+  if(sol) out+=`<div class="ineq-res-interval">Solución: <strong>${sol}</strong></div>`;
+  out+=`</div>`;
+  document.getElementById('ineq-res').innerHTML=out;
+}
+
+// ── evalúa expresión con x ──
+function ineqEval(exprStr, x){
+  try{
+    const code=exprStr.trim()
+      .replace(/\^/g,'**')
+      .replace(/π/g,'Math.PI')
+      .replace(/\bsqrt\b/g,'Math.sqrt')
+      .replace(/\babs\b/g,'Math.abs')
+      .replace(/(?<![a-zA-Z\.])ln\b/g,'Math.log')
+      .replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g,'Math.E')
+      .replace(/(\d)\s*\(/g,'$1*(')
+      .replace(/\)\s*\(/g,')*(')
+      .replace(/(\d)x/g,'$1*x')
+      .replace(/\bx\b/g,'('+x+')');
+    return Function('"use strict"; return ('+code+');')();
+  }catch(e){ return NaN; }
+}
+
+// ── SOLVER LIBRE — reduce f(x) < g(x) a h(x)=f(x)-g(x) < 0 ──
+function ineqSolveLibre(){
+  const lhsStr = document.getElementById('iq-lhs').value.trim();
+  const rhsStr = document.getElementById('iq-rhs').value.trim();
+  const sym    = document.getElementById('iq-sym-libre').textContent;
+  if(!lhsStr||!rhsStr){ ineqShowResult('','',['Ingresa ambos lados de la inecuación']); return; }
+
+  const steps=[];
+  steps.push(`Inecuación: ${lhsStr} ${sym} ${rhsStr}`);
+  steps.push(`Pasando todo al lado izquierdo: h(x) = (${lhsStr}) − (${rhsStr}) ${sym} 0`);
+
+  // Muestrear h(x) = lhs - rhs en [-20,20] para encontrar raíces y signos
+  const N=2000, a=-20, b=20, dx=(b-a)/N;
+  const hx=x=>{ const l=ineqEval(lhsStr,x), r=ineqEval(rhsStr,x); return isFinite(l)&&isFinite(r)?l-r:NaN; };
+
+  // Encontrar raíces por cambio de signo
+  const roots=[];
+  let prev=hx(a);
+  for(let i=1;i<=N;i++){
+    const x=a+i*dx;
+    const cur=hx(x);
+    if(isFinite(prev)&&isFinite(cur)&&prev*cur<0){
+      // Bisección rápida
+      let lo=x-dx, hi=x, fl=prev;
+      for(let j=0;j<30;j++){
+        const mid=(lo+hi)/2, fm=hx(mid);
+        if(!isFinite(fm)) break;
+        if(fl*fm<=0) hi=mid; else { lo=mid; fl=fm; }
+      }
+      const root=(lo+hi)/2;
+      if(!roots.some(r=>Math.abs(r-root)<1e-6)) roots.push(root);
+    }
+    prev=cur;
+  }
+  // Agregar x donde h(x)=0 exacto si no está ya
+  roots.sort((x,y)=>x-y);
+  steps.push(`Raíces de h(x): ${roots.length?roots.map(r=>matFmtNum(r)).join(', '):'ninguna en [-20, 20]'}`);
+
+  // Determinar signo en cada intervalo
+  const allPts=[-Infinity,...roots,Infinity];
+  const solParts=[];
+  for(let i=0;i<allPts.length-1;i++){
+    const lo=allPts[i], hi=allPts[i+1];
+    const mid=isFinite(lo)&&isFinite(hi)?(lo+hi)/2:isFinite(lo)?lo+1:isFinite(hi)?hi-1:0;
+    const val=hx(mid);
+    if(!isFinite(val)) continue;
+    const inSol=checkIneq(val,sym,0);
+    if(inSol){
+      const closed=(sym==='≤'||sym==='≥');
+      const lBr=isFinite(lo)?(closed?'[':'('):'(';
+      const rBr=isFinite(hi)?(closed?']':')'):')'
+      const lStr=isFinite(lo)?matFmtNum(lo):'-∞';
+      const rStr=isFinite(hi)?matFmtNum(hi):'+∞';
+      solParts.push(lBr+lStr+', '+rStr+rBr);
+    }
+  }
+  const sol=solParts.length?solParts.join(' ∪ '):'∅ (sin solución en [-20, 20])';
+  steps.push('Evaluando signo de h(x) en cada intervalo...');
+  ineqShowResult(`${lhsStr} ${sym} ${rhsStr}`, sol, steps);
+  drawNumLine(roots.map(r=>({val:r,sym:'root',color:'#f472b6'})),[sol]);
+}
+
+// ── CUADRÁTICA ──
+function ineqSolveQuad() {
+  const a=parseFloat(document.getElementById('iq-a').value)||1;
+  const b=parseFloat(document.getElementById('iq-b').value)||0;
+  const c=parseFloat(document.getElementById('iq-c').value)||0;
+  const sym=document.getElementById('iq-sym').textContent;
+  const disc=b*b-4*a*c;
+  const steps=[`${a}x² + ${b}x + ${c} ${sym} 0`, `Discriminante: Δ = b²−4ac = ${matFmtNum(disc)}`];
+  let sol, roots=[];
+  if(disc<0){
+    const alwaysPos=a>0;
+    if((sym==='>'||sym==='≥')===alwaysPos){ sol='x ∈ ℝ'; steps.push('Δ<0 — parábola siempre '+(a>0?'positiva':'negativa')+' → toda la recta'); }
+    else { sol='∅ (sin solución)'; steps.push('Δ<0 — parábola siempre '+(a>0?'positiva':'negativa')+' → no cumple'); }
+  } else if(Math.abs(disc)<1e-12){
+    const r=-b/(2*a); roots=[r];
+    steps.push(`Raíz doble: x = ${matFmtNum(r)}`);
+    sol=sym==='<'?'∅':sym==='≤'?`x = ${matFmtNum(r)}`:`x ∈ ℝ \\ {${matFmtNum(r)}}`;
+  } else {
+    const r1=(-b-Math.sqrt(disc))/(2*a), r2=(-b+Math.sqrt(disc))/(2*a);
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
+    roots=[lo,hi];
+    steps.push(`Raíces: x₁ = ${matFmtNum(lo)},  x₂ = ${matFmtNum(hi)}`);
+    const inside=(sym==='<'||sym==='≤');
+    const closed=(sym==='≤'||sym==='≥');
+    if((a>0&&inside)||(a<0&&!inside)){
+      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`;
+      steps.push(`a${a>0?'>':'<'}0 → solución interior`);
+    } else {
+      sol=`(-∞, ${matFmtNum(lo)}${closed?']':')'} ∪ ${closed?'[':'('}${matFmtNum(hi)}, +∞)`;
+      steps.push(`a${a>0?'>':'<'}0 → solución exterior`);
+    }
+  }
+  ineqShowResult(`${a}x² + ${b}x + ${c} ${sym} 0`, sol, steps);
+  drawNumLine(roots.map(r=>({val:r,sym:'root',color:'#f472b6'})),[sol]);
+}
+
+// ── RACIONAL con tabla de signos ──
+function quadRoots(a,b,c){
+  if(Math.abs(a)<1e-12) return Math.abs(b)<1e-12?[]:[-c/b];
+  const d=b*b-4*a*c; if(d<0) return [];
+  if(Math.abs(d)<1e-12) return [-b/(2*a)];
+  const sq=Math.sqrt(d);
+  return [(-b-sq)/(2*a),(-b+sq)/(2*a)].sort((x,y)=>x-y);
+}
+function parseSimplePoly(s){
+  s=s.trim().replace(/\s+/g,'').replace(/\^/g,'**');
+  let a=0,b=0,c=0;
+  const ma=s.match(/([+-]?\d*\.?\d*)\*?x\*\*2|([+-]?\d*\.?\d*)\*?x²/);
+  if(ma){ const v=(ma[1]||ma[2]||'').replace('**',''); a=(v===''||v==='+')?1:(v==='-'?-1:parseFloat(v)||0); }
+  const noX2=s.replace(/[+-]?\d*\.?\d*\*?x\*\*2/g,'').replace(/[+-]?\d*\.?\d*\*?x²/g,'');
+  const mb=noX2.match(/([+-]?\d*\.?\d*)\*?x(?!\*\*)(?!\d)/);
+  if(mb){ const v=(mb[1]||''); b=(v===''||v==='+')?1:(v==='-'?-1:parseFloat(v)||0); }
+  const noX=noX2.replace(/[+-]?\d*\.?\d*\*?x(?!\*\*)(?!\d)/g,'').trim();
+  if(noX) c=parseFloat(noX)||0;
+  return {a,b,c};
+}
+function signTableSolve(numRoots, denRoots, numLead, denLead, sym){
+  // Puntos críticos ordenados
+  const crits=[...numRoots.map(v=>({v,type:'N'})),...denRoots.map(v=>({v,type:'D'}))]
+    .sort((a,b)=>a.v-b.v)
+    .filter((c,i,arr)=>i===0||Math.abs(c.v-arr[i-1].v)>1e-9);
+
+  const allPts=[-Infinity,...crits.map(c=>c.v),Infinity];
+  const solParts=[];
+  const closed=(sym==='≤'||sym==='≥');
+  const denSet=new Set(denRoots.map(r=>matFmtNum(r)));
+
+  for(let i=0;i<allPts.length-1;i++){
+    const lo=allPts[i], hi=allPts[i+1];
+    const mid=isFinite(lo)&&isFinite(hi)?(lo+hi)/2:isFinite(lo)?lo+1:isFinite(hi)?hi-1:0;
+    // sign of num
+    let sn=numLead>0?1:-1; numRoots.forEach(r=>{ if(mid<r) sn*=-1; });
+    // sign of den
+    let sd=denLead>0?1:-1; denRoots.forEach(r=>{ if(mid<r) sd*=-1; });
+    const sc=sn*sd;
+    const sat=checkIneq(sc,sym,0);
+    if(sat){
+      const isLoNum=isFinite(lo)&&!denSet.has(matFmtNum(lo));
+      const isHiNum=isFinite(hi)&&!denSet.has(matFmtNum(hi));
+      const lBr=isFinite(lo)?(closed&&isLoNum?'[':'('):'(';
+      const rBr=isFinite(hi)?(closed&&isHiNum?']':')'):')'
+      solParts.push(lBr+(isFinite(lo)?matFmtNum(lo):'-∞')+', '+(isFinite(hi)?matFmtNum(hi):'+∞')+rBr);
+    }
+  }
+  return solParts.length?solParts.join(' ∪ '):'∅ (sin solución)';
+}
+
+function ineqSolveRational(){
+  const numStr=document.getElementById('iq-rat-num').value.trim();
+  const denStr=document.getElementById('iq-rat-den').value.trim();
+  const sym=document.getElementById('iq-rat-sym').textContent;
+  if(!numStr||!denStr){ ineqShowResult('','',['Ingresa numerador y denominador']); return; }
+
+  const num=parseSimplePoly(numStr), den=parseSimplePoly(denStr);
+  const numRoots=quadRoots(num.a,num.b,num.c);
+  const denRoots=quadRoots(den.a,den.b,den.c);
+  const numLead=num.a||num.b||1, denLead=den.a||den.b||1;
+
+  const steps=[
+    `Inecuación: (${numStr}) / (${denStr}) ${sym} 0`,
+    `Raíces del num: ${numRoots.length?numRoots.map(matFmtNum).join(', '):'ninguna real'}`,
+    `Raíces del den (excluidas): ${denRoots.length?denRoots.map(matFmtNum).join(', '):'ninguna'}`,
+    'Tabla de signos por intervalos:'
+  ];
+
+  // Generar tabla legible
+  const allCrits=[...numRoots.map(v=>({v,t:'N'})),...denRoots.map(v=>({v,t:'D'}))]
+    .sort((a,b)=>a.v-b.v);
+  if(allCrits.length){
+    let row='Intervalo: ';
+    const allPts=[-Infinity,...allCrits.map(c=>c.v),Infinity];
+    for(let i=0;i<allPts.length-1;i++){
+      const lo=allPts[i],hi=allPts[i+1];
+      const mid=isFinite(lo)&&isFinite(hi)?(lo+hi)/2:isFinite(lo)?lo+1:hi-1;
+      let sn=numLead>0?1:-1; numRoots.forEach(r=>{ if(mid<r) sn*=-1; });
+      let sd=denLead>0?1:-1; denRoots.forEach(r=>{ if(mid<r) sd*=-1; });
+      const sc=sn*sd;
+      const lbl=isFinite(lo)?matFmtNum(lo):'-∞';
+      const sat=checkIneq(sc,sym,0);
+      steps.push(`  (${lbl}, ${isFinite(hi)?matFmtNum(hi):'+∞'}) → signo = ${sc>0?'+':'−'} → ${sat?'✓':'✗'}`);
+    }
+  }
+
+  const sol=signTableSolve(numRoots,denRoots,numLead,denLead,sym);
+  ineqShowResult(`(${numStr}) / (${denStr}) ${sym} 0`, sol, steps);
+  const allRoots=[...numRoots,...denRoots];
+  drawNumLine(allRoots.map(r=>({val:r,sym:'root',color:'#f472b6'})),[sol]);
+}
+
+// ── SISTEMA ──
+function ineqSolveSystem() {
+  const a1=parseFloat(document.getElementById('iq-a1').value)||1;
+  const b1=parseFloat(document.getElementById('iq-b1').value)||0;
+  const c1=parseFloat(document.getElementById('iq-c1').value)||0;
+  const s1=document.getElementById('iq-s1').textContent;
+  const a2=parseFloat(document.getElementById('iq-a2').value)||1;
+  const b2=parseFloat(document.getElementById('iq-b2').value)||0;
+  const c2=parseFloat(document.getElementById('iq-c2').value)||0;
+  const s2=document.getElementById('iq-s2').textContent;
+  const steps=[`I₁: ${a1}x + ${b1} ${s1} ${c1}`, `I₂: ${a2}x + ${b2} ${s2} ${c2}`];
+  const r1=ineqLinearBound(a1,b1,c1,s1);
+  const r2=ineqLinearBound(a2,b2,c2,s2);
+  steps.push(`I₁ → x ${r1.sym} ${matFmtNum(r1.val)}`);
+  steps.push(`I₂ → x ${r2.sym} ${matFmtNum(r2.val)}`);
+  const inter=ineqIntersect(r1,r2);
+  const sol=inter||'∅ (intersección vacía — sin solución)';
+  steps.push(`Intersección: ${sol}`);
+  ineqShowResult('Sistema', sol, steps);
+  drawNumLine([{val:r1.val,sym:r1.sym,color:'#7c6af7'},{val:r2.val,sym:r2.sym,color:'#22d3ee'}],[sol]);
+}
+
+// ── VALOR ABSOLUTO ──
+function ineqSolveAbs() {
+  const a=parseFloat(document.getElementById('iq-a').value)||1;
+  const b=parseFloat(document.getElementById('iq-b').value)||0;
+  const c=parseFloat(document.getElementById('iq-c').value)||0;
+  const sym=document.getElementById('iq-sym').textContent;
+  const steps=[`|${a}x + ${b}| ${sym} ${c}`];
+  let sol;
+  if(c<0&&(sym==='<'||sym==='≤')){ sol='∅ (sin solución — |·| ≥ 0)'; steps.push('|·| nunca es negativo'); }
+  else if(c<0&&(sym==='>'||sym==='≥')){ sol='x ∈ ℝ'; steps.push('|·| ≥ 0 > c siempre verdadero'); }
+  else {
+    const r1=(-b+c)/a, r2=(-b-c)/a;
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
+    const closed=(sym==='≤'||sym==='≥');
+    if(sym==='<'||sym==='≤'){
+      steps.push(`−${c} ${flipSym(sym)} ${a}x + ${b} ${sym} ${c}`);
+      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
+      sol=`${closed?'[':'('}${matFmtNum(lo)}, ${matFmtNum(hi)}${closed?']':')'}`;
+    } else {
+      steps.push(`${a}x + ${b} ${sym} ${c}  ó  ${a}x + ${b} ${flipSym(sym)} −${c}`);
+      steps.push(`Raíces: ${matFmtNum(lo)}, ${matFmtNum(hi)}`);
+      sol=`(-∞, ${matFmtNum(lo)}${closed?']':')'} ∪ ${closed?'[':'('}${matFmtNum(hi)}, +∞)`;
+    }
+  }
+  ineqShowResult(`|${a}x + ${b}| ${sym} ${c}`, sol, steps);
+  drawNumLine([{val:r1,sym:'root',color:'#f472b6'},{val:r2,sym:'root',color:'#f472b6'}],[sol]);
+}
+
+// ── RECTA NUMÉRICA ──
 function drawNumLine(points, solutionLabels) {
   const canvas=document.getElementById('ineq-numline');
   if(!canvas) return;
   const W=canvas.offsetWidth||320; canvas.width=W; canvas.height=72;
   const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,72);
-  // Background
   ctx.fillStyle='#111827'; ctx.fillRect(0,0,W,72);
-  // Compute range
   const vals=points.map(p=>p.val).filter(v=>isFinite(v));
   if(!vals.length) return;
   const ctr=(Math.min(...vals)+Math.max(...vals))/2;
-  const span=Math.max(Math.max(...vals)-Math.min(...vals),4)*1.6;
+  const span=Math.max(Math.max(...vals)-Math.min(...vals),4)*1.8;
   const lo=ctr-span/2, hi=ctr+span/2;
   const toX=v=>16+(v-lo)/(hi-lo)*(W-32);
-  // Axis line
   const ay=38;
   ctx.strokeStyle='#1e2d45'; ctx.lineWidth=2; ctx.beginPath();
   ctx.moveTo(12,ay); ctx.lineTo(W-12,ay); ctx.stroke();
-  ctx.fillStyle='#3a5a7a';ctx.font='10px Space Mono';ctx.textAlign='center';
-  // Ticks
+  ctx.fillStyle='#3a5a7a'; ctx.font='10px Space Mono'; ctx.textAlign='center';
   for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){
     const x=toX(v);
-    ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,ay-4);ctx.lineTo(x,ay+4);ctx.stroke();
+    ctx.strokeStyle='#1e2d45'; ctx.lineWidth=1; ctx.beginPath();
+    ctx.moveTo(x,ay-4); ctx.lineTo(x,ay+4); ctx.stroke();
     if((hi-lo)<20) ctx.fillText(v,x,ay+16);
   }
-  // Points
   points.forEach(({val,sym,color})=>{
     if(!isFinite(val)) return;
     const x=toX(val);
     const filled=(sym==='≤'||sym==='≥'||sym==='root');
-    ctx.beginPath();ctx.arc(x,ay,7,0,Math.PI*2);
-    ctx.strokeStyle=color;ctx.lineWidth=2;
-    if(filled){ ctx.fillStyle=color;ctx.fill(); }
-    else { ctx.fillStyle='#111827';ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x,ay,7,0,Math.PI*2);
+    ctx.strokeStyle=color; ctx.lineWidth=2;
+    if(filled){ ctx.fillStyle=color; ctx.fill(); }
+    else { ctx.fillStyle='#111827'; ctx.fill(); ctx.stroke(); }
     ctx.stroke();
-    ctx.fillStyle=color;ctx.font='bold 10px Space Mono';ctx.textAlign='center';
+    ctx.fillStyle=color; ctx.font='bold 10px Space Mono'; ctx.textAlign='center';
     ctx.fillText(matFmtNum(val),x,ay-14);
   });
-  // Arrows for unbounded
-  ctx.strokeStyle='#f472b6';ctx.lineWidth=2;ctx.setLineDash([4,3]);
-  // (simplified — just show colored region hint)
-  ctx.setLineDash([]);
 }
-
-
 
 
 
@@ -3640,22 +3821,62 @@ function fmtA(s){ return (s||'').trim().replace('Infinity','∞').replace('-Infi
 
 // ── Índice de '/' en nivel 0 de paréntesis ──
 function findTopSlash(s){
-  let d=0;
-  for(let i=0;i<s.length;i++){
-    if(s[i]==='(') d++; else if(s[i]===')') d--;
-    else if(s[i]==='/'&&d===0) return i;
+  // Si la expresión está envuelta en paréntesis externos, quitarlos para buscar el /
+  function stripOuter(str){
+    str=str.trim();
+    if(str[0]!=='(') return str;
+    let d=0;
+    for(let i=0;i<str.length;i++){
+      if(str[i]==='(') d++; else if(str[i]===')') d--;
+      if(d===0) return i===str.length-1 ? str.slice(1,-1) : str;
+    }
+    return str;
   }
-  return -1;
+  const inner=stripOuter(s);
+  // Buscar / en nivel 0 del inner
+  let d=0;
+  for(let i=0;i<inner.length;i++){
+    if(inner[i]==='(') d++; else if(inner[i]===')') d--;
+    else if(inner[i]==='/'&&d===0) return {idx:i, str:inner};
+  }
+  return {idx:-1, str:s};
 }
 
-// ── Resolver indeterminación 0/0 o ∞/∞ ──
+// ── Sustitución visual: reemplaza x por el valor para mostrar pasos ──
+function visSubstitute(fxStr, a){
+  let aFmt;
+  if(Number.isInteger(a)) aFmt=String(a);
+  else if(Math.abs(a-Math.PI)<1e-9)     aFmt='π';
+  else if(Math.abs(a-Math.PI/4)<1e-9)   aFmt='π/4';
+  else if(Math.abs(a-Math.PI/2)<1e-9)   aFmt='π/2';
+  else if(Math.abs(a-2*Math.PI)<1e-9)   aFmt='2π';
+  else if(Math.abs(a-Math.E)<1e-9)      aFmt='e';
+  else if(Math.abs(a-Math.SQRT2)<1e-9)  aFmt='√2';
+  else aFmt=parseFloat(a.toFixed(4)).toString();
+  const needsParen=a<0||aFmt.includes('/');
+  const aN=needsParen?'('+aFmt+')':aFmt;
+  let result='';
+  for(let i=0;i<fxStr.length;i++){
+    const c=fxStr[i];
+    if(c==='x'){
+      const prev=i>0?fxStr[i-1]:'';
+      const next=i<fxStr.length-1?fxStr[i+1]:'';
+      if(/[a-zA-Z]/.test(prev)||/[a-zA-Z]/.test(next)) result+=c;
+      else if(/\d/.test(prev)) result+='·'+aN;
+      else result+=aN;
+    } else result+=c;
+  }
+  return result;
+}
+
+
 function resolveIndet(fxStr,a,stepsOut){
   const fn=calcParse(fxStr); if(!fn) return NaN;
-  const idx=findTopSlash(fxStr);
+  const {idx, str:normStr}=findTopSlash(fxStr);
 
   if(idx>0){
-    const numStr=fxStr.slice(0,idx).trim();
-    const denStr=fxStr.slice(idx+1).trim();
+    const numStr=normStr.slice(0,idx).trim();
+    const denStr=normStr.slice(idx+1).trim();
     const fnN=calcParse(numStr), fnD=calcParse(denStr);
     if(!fnN||!fnD) return NaN;
 
@@ -3709,7 +3930,8 @@ function computeLimit(fxStr,aStr,side){
   // Sustitución directa
   let direct=null;
   if(isFinite(a)){ try{ const v=fn(a,0); if(isFinite(v)) direct=v; }catch(e){} }
-  steps.push({tipo:'sustitucion',aDisplay:fmtA(aStr),direct});
+  const _visDirect=isFinite(a)?visSubstitute(fxStr,a):null;
+  steps.push({tipo:'sustitucion',aDisplay:fmtA(aStr),direct,visSub:_visDirect});
 
   if(direct!==null){
     const ex=toExact(direct);
@@ -3719,18 +3941,32 @@ function computeLimit(fxStr,aStr,side){
   }
 
   // Detectar indeterminación
-  const idx=findTopSlash(fxStr);
+  const {idx, str:normFx}=findTopSlash(fxStr);
   let isZZ=false, isII=false, faNum=NaN, faDen=NaN;
+  let numStr='', denStr='';
   if(idx>0&&isFinite(a)){
-    const fnN=calcParse(fxStr.slice(0,idx).trim());
-    const fnD=calcParse(fxStr.slice(idx+1).trim());
+    numStr=normFx.slice(0,idx).trim();
+    denStr=normFx.slice(idx+1).trim();
+    const fnN=calcParse(numStr);
+    const fnD=calcParse(denStr);
     if(fnN&&fnD){
       faNum=fnN(a,0); faDen=fnD(a,0);
       isZZ=Math.abs(faNum)<1e-9&&Math.abs(faDen)<1e-9;
       isII=!isFinite(faNum)&&!isFinite(faDen);
     }
   }
-  if(isZZ) steps.push({tipo:'indet_00',faNum,faDen});
+  // Sustitución visual
+  const visSub = idx>0
+    ? visSubstitute(numStr,a)+' / '+visSubstitute(denStr,a)
+    : visSubstitute(fxStr,a);
+  // Guardar numStr/denStr en el step de sustitución para los pasos
+  if(steps.length>0) steps[0].visSub=visSub;
+  if(steps.length>0) steps[0].numStr=numStr; 
+  if(steps.length>0) steps[0].denStr=denStr;
+  if(steps.length>0&&faNum!==undefined) steps[0].faNum=faNum;
+  if(steps.length>0&&faDen!==undefined) steps[0].faDen=faDen;
+
+  if(isZZ) steps.push({tipo:'indet_00',faNum,faDen,numStr,denStr,visSub});
   else if(isII) steps.push({tipo:'indet_inf',faNum,faDen});
   r.isIndet=isZZ||isII;
 
@@ -3779,50 +4015,55 @@ function limitStepsHTML(r){
   let html='<div class="lim-steps">';
   let n=1;
 
-  // Planteamiento
+  // 1 Planteamiento
   html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
     <div class="lim-step-title">Planteamiento</div>
-    <div class="lim-step-expr">lim <sub>x→${a}</sub> [ ${fx} ]</div>
+    <div class="lim-step-expr">lim<sub>x→${a}</sub> [ ${fx} ]</div>
   </div></div>`;
 
-  // Sustitución
+  // 2 Sustitución con desarrollo numérico
   const sub=S.find(s=>s.tipo==='sustitucion');
   if(sub){
+    const visSub=sub.visSub||visSubstitute(fx,r.a);
     if(sub.direct!==null){
       html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-        <div class="lim-step-title">Sustitución directa x = ${a}</div>
-        <div class="lim-step-expr">f(${a}) = <span class="lim-ok">${fmtResult(sub.direct)}</span></div>
+        <div class="lim-step-title">Sustitución x = ${a}</div>
+        <div class="lim-step-expr">${visSub}</div>
+        <div class="lim-step-expr lim-ok">= ${fmtResult(sub.direct)}</div>
       </div></div>`;
     } else {
+      const i00=S.find(s=>s.tipo==='indet_00');
+      const numV=i00?fmtNum(i00.faNum,4):'0';
+      const denV=i00?fmtNum(i00.faDen,4):'0';
       html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-        <div class="lim-step-title">Sustitución directa x = ${a}</div>
-        <div class="lim-step-expr"><span class="lim-warn">Forma indeterminada — se requiere análisis adicional</span></div>
+        <div class="lim-step-title">Sustitución x = ${a}</div>
+        <div class="lim-step-expr">${visSub}</div>
+        ${i00?`<div class="lim-step-expr">= ${numV} / ${denV}</div>`:''}
+        <div class="lim-step-expr"><span class="lim-warn">→ 0/0 Forma indeterminada</span></div>
       </div></div>`;
     }
   }
 
-  // Tipo de indeterminación
+  // 3 Estrategia
   const i00=S.find(s=>s.tipo==='indet_00');
   const iII=S.find(s=>s.tipo==='indet_inf');
   if(i00){
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-      <div class="lim-step-title">Indeterminación 0/0 detectada</div>
-      <div class="lim-step-expr">N(${a}) = ${fmtNum(i00.faNum,4)} &nbsp;,&nbsp; D(${a}) = ${fmtNum(i00.faDen,4)}</div>
-      <div class="lim-step-hint">Se aplica L'Hôpital o cancelación del factor (x − ${a})</div>
+      <div class="lim-step-title">Estrategia: L'Hôpital / Cancelación</div>
+      <div class="lim-step-hint">Forma 0/0 — se deriva num. y den. por separado</div>
     </div></div>`;
   } else if(iII){
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-      <div class="lim-step-title">Indeterminación ∞/∞ detectada</div>
-      <div class="lim-step-hint">Se aplica Regla de L'Hôpital</div>
+      <div class="lim-step-title">Estrategia: L'Hôpital (forma ∞/∞)</div>
     </div></div>`;
   }
 
   // L'Hôpital
   S.filter(s=>s.tipo==='lhopital').forEach(lh=>{
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-      <div class="lim-step-title">Regla de L'Hôpital — orden ${lh.orden}</div>
-      <div class="lim-step-expr">N'(${a}) = ${fmtNum(lh.numDeriv)} &nbsp;,&nbsp; D'(${a}) = ${fmtNum(lh.denDeriv)}</div>
-      <div class="lim-step-expr">lim = ${fmtNum(lh.numDeriv)} / ${fmtNum(lh.denDeriv)} = <strong>${isFinite(lh.result)?fmtResult(lh.result):fmtNum(lh.result)}</strong></div>
+      <div class="lim-step-title">L'Hôpital — orden ${lh.orden}</div>
+      <div class="lim-step-expr">N'(${a}) = ${fmtNum(lh.numDeriv)} , D'(${a}) = ${fmtNum(lh.denDeriv)}</div>
+      <div class="lim-step-expr">lim = ${fmtNum(lh.numDeriv)} / ${fmtNum(lh.denDeriv)} = <strong class="lim-ok">${isFinite(lh.result)?fmtResult(lh.result):'∞'}</strong></div>
     </div></div>`;
   });
 
@@ -3830,41 +4071,41 @@ function limitStepsHTML(r){
   const canc=S.find(s=>s.tipo==='cancelacion');
   if(canc){
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-      <div class="lim-step-title">Cancelación del factor (x − ${a})</div>
-      <div class="lim-step-expr">Q_N(${a}) ≈ ${fmtNum(canc.qnum)} &nbsp;,&nbsp; Q_D(${a}) ≈ ${fmtNum(canc.qden)}</div>
-      <div class="lim-step-expr">lim = <strong>${fmtResult(canc.result)}</strong></div>
+      <div class="lim-step-title">Cancelación factor (x − ${a})</div>
+      <div class="lim-step-expr">Q_N ≈ ${fmtNum(canc.qnum)} , Q_D ≈ ${fmtNum(canc.qden)}</div>
+      <div class="lim-step-expr">lim = <strong class="lim-ok">${fmtResult(canc.result)}</strong></div>
     </div></div>`;
   }
 
-  // Laterales (si no fue directo)
+  // Verificación lateral
   if(r.tipo!=='directo'){
     const lat=S.find(s=>s.tipo==='laterales');
     if(lat){
       html+=`<div class="lim-step"><div class="lim-step-num">✓</div><div class="lim-step-body">
-        <div class="lim-step-title">Verificación lateral</div>
-        <div class="lim-step-expr">x→${a}⁺ = ${fmtNum(lat.vr)} &nbsp;,&nbsp; x→${a}⁻ = ${fmtNum(lat.vl)}</div>
+        <div class="lim-step-title">Verificación numérica</div>
+        <div class="lim-step-expr">x→${a}⁺ ≈ ${fmtNum(lat.vr)} , x→${a}⁻ ≈ ${fmtNum(lat.vl)}</div>
       </div></div>`;
     }
   }
-
   html+='</div>';
 
-  // Caja de resultado
-  const ex=r.exact&&r.exact!==r.value;
+  // Caja resultado
+  const showApprox=r.exact&&r.valueNum&&Math.abs(r.valueNum)>1e-10&&r.tipo!=='directo';
   html+=`<div class="calc-res-box" style="margin-top:8px;${r.exists?'border-color:var(--ca2)':''}">
-    <div class="calc-res-label">lim <sub>x→${a}</sub> [ ${fx} ]</div>
+    <div class="calc-res-label">lim<sub>x→${a}</sub> [ ${fx} ]</div>
     <div class="calc-res-val big">${r.value||'No existe'}</div>
-    ${ex?`<div class="calc-res-hint">≈ ${fmtNum(r.valueNum,8)}</div>`:''}
+    ${showApprox?`<div class="calc-res-hint">≈ ${fmtNum(r.valueNum,8)}</div>`:''}
     <div class="calc-res-hint">${
       r.exists
         ?(r.tipo==='directo'?'✓ Sustitución directa'
-          :r.tipo==='indet_00'?'✓ Resuelto por L\'Hôpital / cancelación'
+          :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'✓ Resuelto por L'Hôpital'
           :'✓ Límite existe')
-        :(r.isInfinity?'La función diverge (límite infinito)'
-          :'⚠ El límite no existe — límites laterales distintos')
+        :(r.isInfinity?'Límite infinito — la función diverge'
+          :'⚠ El límite no existe (laterales distintos)')
     }</div>
   </div>`;
   return html;
+}
 }
 
 // ── CALCULAR LÍMITE (callback del botón) ──
@@ -4503,6 +4744,300 @@ function calcInit(){
   initInputTracking();
   calcTab('dif');
 }
+
+// ═══════════════════════════════════════════════════════
+// FUNCIONES — DOMINIO, RANGO Y GRÁFICA
+// ═══════════════════════════════════════════════════════
+let fnType=null;
+
+function fnSetType(type){
+  fnType=type;
+  document.getElementById('fn-pick-screen').style.display='none';
+  const solver=document.getElementById('fn-solver');
+  solver.style.display='';
+  const titles={
+    lineal:'f(x) = ax + b',cuad:'f(x) = ax² + bx + c',
+    raiz:'f(x) = √(ax + b)',abs:'f(x) = a|x + b| + c',
+    log:'f(x) = a·log_b(cx + d)',exp:'f(x) = a·b^(cx + d)',
+    parteEntera:'f(x) = a·⌊bx + c⌋',racional:'f(x) = P(x) / Q(x)',
+  };
+  document.getElementById('fn-solver-title').textContent=titles[type]||type;
+  const templates={
+    lineal:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/></div>`,
+    cuad:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div>`,
+    raiz:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = √(a·x + b)</div>`,
+    abs:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div>`,
+    log:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>base b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="10"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="1"/><label>d</label><input class="calc-inp calc-inp-sm" id="fn-d" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·log_b(c·x + d)</div>`,
+    exp:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="2"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="1"/><label>d</label><input class="calc-inp calc-inp-sm" id="fn-d" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·b^(c·x + d)</div>`,
+    parteEntera:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="1"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·⌊b·x + c⌋</div>`,
+    racional:`<div class="calc-field-row"><label>P(x)</label><input class="calc-inp" id="fn-num" placeholder="ej: x^2-1"/></div><div class="calc-field-row"><label>Q(x)</label><input class="calc-inp" id="fn-den" placeholder="ej: x-2"/></div>`,
+  };
+  document.getElementById('fn-form').innerHTML=templates[type]||'';
+}
+function fnBack(){
+  fnType=null;
+  document.getElementById('fn-pick-screen').style.display='';
+  document.getElementById('fn-solver').style.display='none';
+}
+function fnV(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+function fnF(v,dp){ return isNaN(v)?'?':Number.isInteger(v)?String(v):parseFloat(v.toFixed(dp||6)).toString(); }
+
+function fnAnalyze(){
+  const res=document.getElementById('fn-result');
+  const a=fnV('fn-a'),b=fnV('fn-b'),c=fnV('fn-c'),d=fnV('fn-d');
+  let domain='',range='',formula='',steps=[],pts=[];
+
+  if(fnType==='lineal'){
+    formula=`f(x) = ${a===1?'':(a===-1?'−':fnF(a)+'·')}x ${b>=0?'+ '+fnF(b):'− '+fnF(Math.abs(b))}`;
+    domain='(-∞, +∞)'; range=Math.abs(a)<1e-12?`{${fnF(b)}}`:'(-∞, +∞)';
+    steps.push('Función lineal — dominio siempre ℝ.');
+    if(Math.abs(a)>1e-12){ steps.push(`Cero: x = ${fnF(-b/a)}`); }
+    else steps.push('a = 0 → función constante, rango puntual.');
+    for(let x=-5;x<=5;x++) pts.push({x,y:a*x+b});
+  }
+  else if(fnType==='cuad'){
+    const vx=-b/(2*a||1e-12), vy=a*vx*vx+b*vx+c;
+    formula=`f(x) = ${fnF(a)}x² + ${fnF(b)}x + ${fnF(c)}`;
+    domain='(-∞, +∞)';
+    range=a>0?`[${fnF(vy)}, +∞)`:`(-∞, ${fnF(vy)}]`;
+    steps.push(`Vértice: (${fnF(vx,4)}, ${fnF(vy,4)})`);
+    steps.push(a>0?'Parábola ↑ → mínimo en vértice':'Parábola ↓ → máximo en vértice');
+    const disc=b*b-4*a*c;
+    if(disc>0){ const sq=Math.sqrt(disc); steps.push(`Raíces: x = ${fnF((-b-sq)/(2*a),4)}, x = ${fnF((-b+sq)/(2*a),4)}`); }
+    else if(Math.abs(disc)<1e-12) steps.push(`Raíz doble: x = ${fnF(vx,4)}`);
+    else steps.push('Sin raíces reales (Δ < 0)');
+    for(let x=vx-5;x<=vx+5;x+=0.2) pts.push({x,y:a*x*x+b*x+c});
+  }
+  else if(fnType==='raiz'){
+    formula=`f(x) = √(${fnF(a)}x + ${fnF(b)})`;
+    const xMin=-b/(a||1e-12);
+    steps.push(`Condición: ${fnF(a)}x + ${fnF(b)} ≥ 0`);
+    if(a>0){ domain=`[${fnF(xMin)}, +∞)`; range='[0, +∞)'; steps.push(`x ≥ ${fnF(xMin)}`); }
+    else if(a<0){ domain=`(-∞, ${fnF(xMin)}]`; range='[0, +∞)'; steps.push(`x ≤ ${fnF(xMin)}`); }
+    else { domain=b>=0?'(-∞,+∞)':'∅'; range=b>=0?'[0,+∞)':'∅'; }
+    for(let x=xMin;x<=xMin+10;x+=0.1){ const v=a*x+b; if(v>=0) pts.push({x,y:Math.sqrt(v)}); }
+  }
+  else if(fnType==='abs'){
+    formula=`f(x) = ${fnF(a)}|x + ${fnF(b)}| + ${fnF(c)}`;
+    domain='(-∞, +∞)';
+    range=a>0?`[${fnF(c)}, +∞)`:`(-∞, ${fnF(c)}]`;
+    steps.push(`Vértice: (${fnF(-b)}, ${fnF(c)})`);
+    steps.push(a>0?'a > 0 → mínimo':'a < 0 → máximo');
+    for(let x=-6;x<=6;x+=0.2) pts.push({x,y:a*Math.abs(x+b)+c});
+  }
+  else if(fnType==='log'){
+    const base=b<=0||b===1?10:b;
+    formula=`f(x) = ${fnF(a)}·log_${fnF(base)}(${fnF(c)}x + ${fnF(d)})`;
+    const xMin=-d/(c||1e-12);
+    steps.push(`Arg > 0: ${fnF(c)}x + ${fnF(d)} > 0`);
+    domain=c>0?`(${fnF(xMin)}, +∞)`:c<0?`(-∞, ${fnF(xMin)})`:d>0?'(-∞,+∞)':'∅';
+    range='(-∞, +∞)';
+    const logB=Math.log(base);
+    for(let x=xMin+0.01;x<=xMin+12;x+=0.15){ const arg=c*x+d; if(arg>0) pts.push({x,y:a*Math.log(arg)/logB}); }
+  }
+  else if(fnType==='exp'){
+    const base=b<=0?2:b;
+    formula=`f(x) = ${fnF(a)}·${fnF(base)}^(${fnF(c)}x + ${fnF(d)})`;
+    domain='(-∞, +∞)'; range=a>0?'(0, +∞)':'(-∞, 0)';
+    steps.push('Exponencial — dominio ℝ.');
+    steps.push(`Asíntota horizontal: y = 0${a>0?' por abajo':' por arriba'}`);
+    for(let x=-4;x<=4;x+=0.2) pts.push({x,y:a*Math.pow(base,c*x+d)});
+  }
+  else if(fnType==='parteEntera'){
+    formula=`f(x) = ${fnF(a)}·⌊${fnF(b)}x + ${fnF(c)}⌋`;
+    domain='(-∞, +∞)'; range='ℤ (enteros)';
+    steps.push('Dominio ℝ, rango subconjunto de ℤ.');
+    for(let x=-5;x<=5;x+=0.05) pts.push({x,y:a*Math.floor(b*x+c)});
+  }
+  else if(fnType==='racional'){
+    const numStr=(document.getElementById('fn-num')||{value:''}).value.trim();
+    const denStr=(document.getElementById('fn-den')||{value:''}).value.trim();
+    formula=`f(x) = (${numStr}) / (${denStr})`;
+    const dp=parseSimplePoly(denStr);
+    const excl=dp.a!==0?quadRoots(dp.a,dp.b,dp.c):(Math.abs(dp.b)>1e-12?[-dp.c/dp.b]:[]);
+    if(!excl.length) domain='(-∞, +∞)';
+    else if(excl.length===1) domain=`(-∞, ${fnF(excl[0])}) ∪ (${fnF(excl[0])}, +∞)`;
+    else domain=`(-∞,${fnF(excl[0])})∪(${fnF(excl[0])},${fnF(excl[1])})∪(${fnF(excl[1])},+∞)`;
+    range='(análisis completo por álgebra)';
+    excl.forEach(r=>steps.push(`Q(${fnF(r)}) = 0 → x = ${fnF(r)} excluido`));
+    const fn=calcParse(numStr+'/'+denStr);
+    if(fn) for(let x=-8;x<=8;x+=0.05){ const y=fn(x,0); if(isFinite(y)&&Math.abs(y)<60) pts.push({x,y}); }
+  }
+
+  fnDrawGraph(pts,formula);
+  let html=`<div class="fn-result-wrap">`;
+  html+=`<div class="fn-formula">${formula}</div>`;
+  html+=`<div class="fn-prop-row"><span class="fn-prop-label">Dominio</span><span class="fn-prop-val">${domain}</span></div>`;
+  html+=`<div class="fn-prop-row"><span class="fn-prop-label">Rango</span><span class="fn-prop-val">${range}</span></div>`;
+  if(steps.length) html+=`<div class="fn-steps-list">${steps.map(s=>`<div class="fn-step">${s}</div>`).join('')}</div>`;
+  html+=`<canvas id="fn-graph-canvas" width="320" height="160" style="width:100%;border-radius:8px;background:#0d1220;margin-top:8px;display:block"></canvas>`;
+  html+=`</div>`;
+  res.innerHTML=html;
+  setTimeout(()=>fnDrawGraph(pts,formula),50);
+}
+
+function fnDrawGraph(pts,label){
+  const canvas=document.getElementById('fn-graph-canvas');
+  if(!canvas||!pts.length) return;
+  const W=canvas.offsetWidth||320, H=160;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,W,H);
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
+  const px=(xMax-xMin)*0.05||1, py=(yMax-yMin)*0.1||1;
+  const xl=xMin-px,xr=xMax+px,yl=yMin-py,yr=yMax+py;
+  const toX=x=>14+(x-xl)/(xr-xl)*(W-28);
+  const toY=y=>H-6-(y-yl)/(yr-yl)*(H-12);
+  if(yl<=0&&yr>=0){ const ay=toY(0); ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ay);ctx.lineTo(W,ay);ctx.stroke(); }
+  if(xl<=0&&xr>=0){ const ax=toX(0); ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,0);ctx.lineTo(ax,H);ctx.stroke(); }
+  ctx.strokeStyle='#10b981'; ctx.lineWidth=2.5; ctx.beginPath();
+  let pen=false;
+  pts.forEach((p,i)=>{
+    const x=toX(p.x),y=toY(p.y);
+    const jump=i>0&&Math.abs(p.y-pts[i-1].y)>(yr-yl)*0.4;
+    if(!pen||jump) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    pen=true;
+  });
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════
+// SUCESIONES Y PROGRESIONES
+// ═══════════════════════════════════════════════════════
+let seqMode='terminos';
+
+function seqSetMode(mode){
+  seqMode=mode;
+  ['terminos','pa','pg'].forEach(m=>{
+    const tab=document.getElementById('seq-tab-'+m);
+    const pan=document.getElementById('seq-panel-'+m);
+    if(tab) tab.classList.toggle('on',m===mode);
+    if(pan) pan.style.display=m===mode?'':'none';
+  });
+}
+
+function evalTermN(exprStr, nVal){
+  try{
+    let code=exprStr.trim()
+      .replace(/\^/g,'**')
+      .replace(/(\d)n(?![a-zA-Z])/g,'$1*n')
+      .replace(/π/g,'Math.PI')
+      .replace(/(?<![a-zA-Z\.])ln\b/g,'Math.log')
+      .replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g,'Math.E')
+      .replace(/(?<![a-zA-Z])n(?![a-zA-Z])/g,'('+String(nVal)+')');
+    // Fix JS: unary minus before ** not allowed
+    code=code.replace(/-([()\d.]+)\*\*/g,'(0-$1)**');
+    return Function('"use strict"; return ('+code+');')();
+  }catch(e){ return NaN; }
+}
+
+function seqFmt(v){
+  if(isNaN(v)||!isFinite(v)) return '?';
+  if(Number.isInteger(v)) return String(v);
+  for(let d=1;d<=360;d++){
+    const n=Math.round(v*d);
+    if(n!==0&&Math.abs(n/d-v)<1e-9) return n+'/'+d;
+  }
+  return parseFloat(v.toFixed(6)).toString();
+}
+
+function seqClassify(terms){
+  if(terms.length<2) return '—';
+  const diffs=terms.slice(1).map((t,i)=>t-terms[i]);
+  const altSign=terms.every((t,i)=>i===0||t*terms[i-1]<0);
+  if(diffs.every(d=>d>1e-9)) return 'Creciente';
+  if(diffs.every(d=>d<-1e-9)) return 'Decreciente';
+  if(altSign) return 'Alternante';
+  return 'No monótona';
+}
+
+function seqAnalyzeTerminos(){
+  const expr=document.getElementById('seq-expr').value.trim();
+  const nMax=parseInt(document.getElementById('seq-n').value)||5;
+  const res=document.getElementById('seq-result');
+  if(!expr){ res.innerHTML=errBox('Ingresa la expresión del término Sₙ'); return; }
+
+  const terms=Array.from({length:nMax},(_,i)=>evalTermN(expr,i+1));
+  const cls=seqClassify(terms);
+  const finite=terms.filter(v=>isFinite(v));
+  const acot=finite.length?`Inf = ${seqFmt(Math.min(...finite))}, Sup = ${seqFmt(Math.max(...finite))} (en ${nMax} términos)`:'—';
+
+  // ¿PA o PG?
+  let badge='';
+  if(terms.length>=2){
+    const diffs=terms.slice(1).map((t,i)=>t-terms[i]);
+    const d0=diffs[0];
+    if(diffs.every(d=>Math.abs(d-d0)<1e-6)){
+      badge=`<div class="seq-badge pa-badge">Progresión Aritmética — d = ${seqFmt(d0)}</div>`;
+    } else {
+      const ratios=terms.slice(1).map((t,i)=>Math.abs(terms[i])>1e-12?t/terms[i]:NaN);
+      const r0=ratios[0];
+      if(ratios.every(r=>isFinite(r)&&Math.abs(r-r0)<1e-6)){
+        badge=`<div class="seq-badge pg-badge">Progresión Geométrica — r = ${seqFmt(r0)}</div>`;
+      }
+    }
+  }
+
+  let html=`<div class="seq-result-wrap">`;
+  html+=`<div class="seq-expr-display">Sₙ = ${expr}</div>`;
+  html+=badge;
+  html+=`<div class="seq-terms-grid">`;
+  terms.forEach((t,i)=>html+=`<div class="seq-term-cell"><span class="seq-term-n">n=${i+1}</span><span class="seq-term-v">${seqFmt(t)}</span></div>`);
+  html+=`</div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Clasificación</span><span class="seq-prop-val">${cls}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Acotamiento</span><span class="seq-prop-val">${acot}</span></div>`;
+  html+=`</div>`;
+  res.innerHTML=html;
+}
+
+function seqAnalyzePA(){
+  const a1=parseFloat(document.getElementById('pa-a1').value);
+  const d=parseFloat(document.getElementById('pa-d').value);
+  const n=parseInt(document.getElementById('pa-n').value)||10;
+  const res=document.getElementById('seq-result');
+  if(isNaN(a1)||isNaN(d)){ res.innerHTML=errBox('Ingresa a₁ y diferencia d'); return; }
+  const an=a1+(n-1)*d, sn=n*(a1+an)/2;
+  const terms=Array.from({length:Math.min(n,8)},(_,i)=>a1+i*d);
+  const cls=d>0?'Creciente':d<0?'Decreciente':'Constante';
+  const acot=d===0?`Acotada: Sₙ = ${seqFmt(a1)}`:'No acotada (tiende a '+(d>0?'+∞':'-∞')+')';
+  let html=`<div class="seq-result-wrap">`;
+  html+=`<div class="seq-expr-display">PA: a₁ = ${seqFmt(a1)},  d = ${seqFmt(d)}</div>`;
+  html+=`<div class="seq-terms-grid">${terms.map((t,i)=>`<div class="seq-term-cell"><span class="seq-term-n">a<sub>${i+1}</sub></span><span class="seq-term-v">${seqFmt(t)}</span></div>`).join('')}${n>8?'<div class="seq-term-cell"><span class="seq-term-n">…</span></div>':''}</div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Fórmula aₙ</span><span class="seq-prop-val">${seqFmt(a1)} + (n−1)·${seqFmt(d)}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">a<sub>${n}</sub></span><span class="seq-prop-val">${seqFmt(an)}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">S<sub>${n}</sub> = n(a₁+aₙ)/2</span><span class="seq-prop-val">${seqFmt(sn)}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Clasificación</span><span class="seq-prop-val">${cls}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Acotamiento</span><span class="seq-prop-val">${acot}</span></div>`;
+  html+=`</div>`;
+  res.innerHTML=html;
+}
+
+function seqAnalyzePG(){
+  const a1=parseFloat(document.getElementById('pg-a1').value);
+  const r=parseFloat(document.getElementById('pg-r').value);
+  const n=parseInt(document.getElementById('pg-n').value)||10;
+  const res=document.getElementById('seq-result');
+  if(isNaN(a1)||isNaN(r)){ res.innerHTML=errBox('Ingresa a₁ y razón r'); return; }
+  const an=a1*Math.pow(r,n-1);
+  const sn=Math.abs(r-1)<1e-12?a1*n:a1*(1-Math.pow(r,n))/(1-r);
+  const sInf=Math.abs(r)<1?a1/(1-r):NaN;
+  const terms=Array.from({length:Math.min(n,8)},(_,i)=>a1*Math.pow(r,i));
+  const cls=Math.abs(r)>1?'Divergente (|r|>1)':r===1?'Constante':r===-1?'Alternante (r=−1)':'Convergente (|r|<1)';
+  let html=`<div class="seq-result-wrap">`;
+  html+=`<div class="seq-expr-display">PG: a₁ = ${seqFmt(a1)},  r = ${seqFmt(r)}</div>`;
+  html+=`<div class="seq-terms-grid">${terms.map((t,i)=>`<div class="seq-term-cell"><span class="seq-term-n">a<sub>${i+1}</sub></span><span class="seq-term-v">${seqFmt(t)}</span></div>`).join('')}${n>8?'<div class="seq-term-cell"><span class="seq-term-n">…</span></div>':''}</div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Fórmula aₙ</span><span class="seq-prop-val">${seqFmt(a1)}·${seqFmt(r)}^(n−1)</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">a<sub>${n}</sub></span><span class="seq-prop-val">${seqFmt(an)}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">S<sub>${n}</sub></span><span class="seq-prop-val">${seqFmt(sn)}</span></div>`;
+  if(isFinite(sInf)) html+=`<div class="seq-prop"><span class="seq-prop-label">S∞</span><span class="seq-prop-val">${seqFmt(sInf)}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Clasificación</span><span class="seq-prop-val">${cls}</span></div>`;
+  html+=`<div class="seq-prop"><span class="seq-prop-label">Acotamiento</span><span class="seq-prop-val">${Math.abs(r)<1?`Acotada — converge a S∞ = ${seqFmt(sInf)}`:'No acotada'}</span></div>`;
+  html+=`</div>`;
+  res.innerHTML=html;
+}
+
+
 
 // ═══════════════════════════════════════════════════════
 // GRAFICACIÓN MODULE
