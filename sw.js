@@ -1,65 +1,87 @@
-// SuperCalc Service Worker v2.0.0
-const CACHE = 'supercalc-2.0.0';
-const PRECACHE = [
+// SuperCalc — Service Worker v1.11.0
+// ═══════════════════════════════════════════════════════
+// Estrategia: Cache-first con network fallback.
+// Al deployar una nueva versión, bumpear CACHE_VER
+// para invalidar el caché anterior automáticamente.
+// ═══════════════════════════════════════════════════════
+
+const CACHE_VER  = 'supercalc-v1.11.0';
+
+const CORE_ASSETS = [
   './',
   './index.html',
-  './style.css',
   './app.js',
-  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap'
+  './style.css',
 ];
 
-self.addEventListener('install', e => {
+const FONT_ASSETS = [
+  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap',
+];
+
+// ── INSTALL: precachear archivos core ─────────────────
+self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => Promise.allSettled(
-        PRECACHE.map(url => c.add(new Request(url, {cache: 'reload'})).catch(() => {}))
-      ))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_VER).then(cache =>
+      cache.addAll([...CORE_ASSETS, ...FONT_ASSETS])
+        .catch(err => {
+          // Si fonts fallan (CORS), no romper la instalación
+          console.warn('[SW] Some assets failed to cache:', err);
+          return cache.addAll(CORE_ASSETS);
+        })
+    )
   );
+  // Activar inmediatamente sin esperar que tabs viejas cierren
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
+// ── ACTIVATE: limpiar cachés viejos ───────────────────
+self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_VER)
+          .map(k => caches.delete(k))
+      )
+    )
   );
+  // Tomar control de todas las tabs abiertas inmediatamente
+  self.clients.claim();
 });
 
-const APP_FILES = ['/', '/index.html', '/style.css', '/app.js'];
+// ── FETCH: cache-first, network fallback ──────────────
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  const isApp = APP_FILES.some(f => url.pathname === f || url.pathname.endsWith(f)) 
-                || url.pathname === '/SuperCalc/' 
-                || url.pathname.endsWith('/SuperCalc/');
+  // Solo cachear GET requests
+  if (req.method !== 'GET') return;
 
-  if (isApp) {
-    // Network-first para los archivos principales — siempre intenta actualizar
+  // Navegación (HTML): network-first para siempre tener la última versión
+  if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request, {cache: 'no-store'})
+      fetch(req)
         .then(res => {
-          if (res && res.status === 200) {
-            caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-          }
+          const clone = res.clone();
+          caches.open(CACHE_VER).then(c => c.put(req, clone));
           return res;
         })
-        .catch(() => caches.match(e.request))
+        .catch(() => caches.match(req))
     );
     return;
   }
 
-  // Cache-first para fuentes y recursos externos
+  // Assets estáticos: cache-first
   e.respondWith(
-    caches.match(e.request).then(cached => {
+    caches.match(req).then(cached => {
       if (cached) return cached;
-      return fetch(e.request).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+      return fetch(req).then(res => {
+        // Cachear solo respuestas válidas del mismo origen o fonts
+        if (res.ok && (req.url.startsWith(self.location.origin) || req.url.includes('fonts.g'))) {
+          const clone = res.clone();
+          caches.open(CACHE_VER).then(c => c.put(req, clone));
         }
         return res;
-      }).catch(() => caches.match(e.request));
+      });
     })
   );
 });

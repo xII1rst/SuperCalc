@@ -1,41 +1,100 @@
-// SuperCalc v2.0.0 — Application Logic
+// SuperCalc v1.11.0 — Application Logic
 
 // ── BACKGROUND FÓRMULAS ─────────────────────────────
 (function scBg(){
+  // ── FONDO DE FÓRMULAS CON PARALLAX — 3 capas con drift ───────────────────
+  // Capa 0: grandes, blur fuerte, muy lentas — profundidad máxima
+  // Capa 1: medianas, opacidad media — plano intermedio
+  // Capa 2: pequeñas, más visibles, más rápidas — primer plano
+  // El sistema corre a 60fps con throttle de blur para rendimiento
   const cv = document.getElementById('sc-bg-canvas');
   if(!cv) return;
   const ctx = cv.getContext('2d');
 
   const FORMULAS = [
+    // ── Mecánica clásica ──
     'E = mc²','F = ma','PV = nRT','a² + b² = c²',
-    '∇·E = ρ/ε₀','∇×B = μ₀J','λ = h/p','∂f/∂x',
-    '∮E·dA = Q/ε₀','eⁱᵖ + 1 = 0','F = kq₁q₂/r²',
-    'sin²θ + cos²θ = 1','v = λf','p = mv',
-    '∫₀^∞ e⁻ˣ dx','lim(x→0)','dy/dx','∇²φ = 0',
-    'τ = r × F','W = ΔKE','n! = n(n-1)!','i² = -1',
-    '|v| = √(x²+y²)','T = 2π√(L/g)','β = v/c',
-    'Ψ(x,t)','ΔxΔp ≥ ħ/2','∂²u/∂t²',
-    'f(x) = Σ aₙxⁿ','ω = 2πf','Z = R + jX',
-    'A·B = |A||B|cosθ','A×B = |A||B|sinθ',
+    'p = mv','τ = r × F','W = ΔKE','v = λf',
+    'v² = u² + 2as','s = ut + ½at²','T = 2π√(L/g)',
+    'F = −kx','L = Iω','K = ½mv²','P = Fv',
+    'J = FΔt','ω = dθ/dt','ac = v²/r',
+    // ── Electromagnetismo ──
+    '∇·E = ρ/ε₀','∇×B = μ₀J','F = kq₁q₂/r²',
+    '∮E·dA = Q/ε₀','V = IR','P = IV',
+    'Z = R + jX','ε = −dΦ/dt','B = μ₀I/2πr',
+    'C = Q/V','U = ½CV²','τ = RC',
+    // ── Cuántica & ondas ──
+    'λ = h/p','Ψ(x,t)','ΔxΔp ≥ ħ/2','β = v/c',
+    'E = hf','ψ = Ae^(ikx)','⟨x⟩ = ∫ψ*xψ dx',
+    'Ĥψ = Eψ','S = ħ/2','n² = n(n+1)',
+    // ── Cálculo ──
+    '∂f/∂x','dy/dx','∇²φ = 0','∂²u/∂t²',
+    '∫₀^∞ e⁻ˣ dx','lim(x→0)','f(x) = Σ aₙxⁿ',
+    'd/dx[eˣ] = eˣ','∫sin(x)dx = −cos(x)',
+    '∂z/∂x','∬f dA','∇f = ⟨fₓ,fᵧ⟩',
+    'L{f} = ∫e⁻ˢᵗf dt','Γ(n) = (n−1)!',
+    // ── Álgebra lineal ──
+    'det(A)','A·B = |A||B|cosθ','A×B = |A||B|sinθ',
+    'Ax = λx','tr(A)','A⁻¹A = I',
+    'rank(A)','‖v‖ = √(Σvᵢ²)','proj_u v',
+    // ── Termodinámica ──
     'q = mcΔT','S = k·ln W','η = W/Q_H',
-    'v² = u² + 2as','s = ut + ½at²',
-    'det(A)','Σᵢ xᵢ/n','P(A|B)','E[X]',
-    'cosh²x − sinh²x = 1','log_b(xy)',
+    'ΔG = ΔH − TΔS','dU = δQ − δW','PV^γ = C',
+    // ── Probabilidad & estadística ──
+    'Σᵢ xᵢ/n','P(A|B)','E[X]','σ² = E[(X−μ)²]',
+    'P(A∪B)','Cov(X,Y)','ρ = σ_xy/σ_xσ_y',
+    'n! = n(n-1)!','C(n,k) = n!/k!(n-k)!',
+    // ── Identidades & constantes ──
+    'eⁱᵖ + 1 = 0','sin²θ + cos²θ = 1','i² = -1',
+    'cosh²x − sinh²x = 1','log_b(xy)','ω = 2πf',
+    '|v| = √(x²+y²)','e = lim(1+1/n)ⁿ',
+    'sin(2θ) = 2sinθcosθ','ln(ab) = ln a + ln b',
+    // ── Símbolos sueltos ──
     'α','β','γ','δ','ε','θ','λ','μ','ν','ρ','σ','τ','φ','ψ','ω','ξ',
-    '∞','∫','∂','∇','∑','Π','√','±','≈','≠','∈','∅','ħ','Δ','∮',
+    '∞','∫','∂','∇','∑','Π','√','±','≈','≠','∈','∅','ħ','Δ','∮','ℝ','ℂ','ℕ',
   ];
 
-  const COLORS = [
-    'rgba(124,106,247,',
-    'rgba(165,148,255,',
-    'rgba(34,211,238,',
-    'rgba(240,192,64,',
-    'rgba(16,185,129,',
+  const COLORS_DARK = [
+    'rgba(124,106,247,',  // púrpura
+    'rgba(165,148,255,',  // púrpura claro
+    'rgba(34,211,238,',   // cyan
+    'rgba(240,192,64,',   // dorado
+    'rgba(16,185,129,',   // verde
+  ];
+  const COLORS_LIGHT = [
+    'rgba(216,56,112,',   // rosa principal
+    'rgba(232,120,152,',  // rosa coral
+    'rgba(184,152,0,',    // dorado cálido
+    'rgba(192,112,56,',   // naranja cálido
+    'rgba(176,40,88,',    // rosa profundo
+  ];
+
+  let currentPalette = COLORS_DARK;
+  let opacityMult = 1;  // dark = 1x, light = 3x para compensar fondo claro
+  function refreshPalette(){
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    currentPalette = isLight ? COLORS_LIGHT : COLORS_DARK;
+    opacityMult    = isLight ? 3 : 1;
+  }
+  // Exponer para que el theme system lo llame al cambiar tema
+  window.scBgRefreshTheme = refreshPalette;
+
+  // Configuración de las 3 capas
+  const LAYERS = [
+    // Capa 0: fondo — grandes, muy tenues, muy lentas
+    { count: 0.3, sizeMin:18, sizeMax:32, opMin:.022, opMax:.055, speedX:.12, speedY:.06 },
+    // Capa 1: intermedio — medianas, velocidad media
+    { count: 0.45, sizeMin:10, sizeMax:18, opMin:.04,  opMax:.09,  speedX:.24, speedY:.13 },
+    // Capa 2: primer plano — pequeñas, más visibles, más rápidas
+    { count: 0.25, sizeMin:7,  sizeMax:12, opMin:.055, opMax:.13,  speedX:.38, speedY:.20 },
   ];
 
   let items = [];
-  let needsRedraw = true;
   let W = 0, H = 0;
+
+  function rand(min, max){ return min + Math.random() * (max - min); }
+  function randFormula(){ return FORMULAS[Math.floor(Math.random() * FORMULAS.length)]; }
+  function randColorIdx(){ return Math.floor(Math.random() * COLORS_DARK.length); }
 
   function build(){
     W = window.innerWidth;
@@ -44,82 +103,72 @@
     cv.height = H;
     items = [];
 
-    // Medimos el ancho aproximado de cada texto sin renderizar al DOM
-    // usando un canvas offscreen temporal
     const measure = document.createElement('canvas').getContext('2d');
+    const totalCount = Math.floor((W * H) / 6900); // ~30% más densidad que /9000
 
-    // Lista de bounding boxes ya ocupados {x1,y1,x2,y2}
-    const placed = [];
-    const PAD = 6; // espacio mínimo entre items
-
-    function overlaps(nx1, ny1, nx2, ny2){
-      for(let i = 0; i < placed.length; i++){
-        const b = placed[i];
-        if(nx1 - PAD < b.x2 && nx2 + PAD > b.x1 &&
-           ny1 - PAD < b.y2 && ny2 + PAD > b.y1) return true;
+    LAYERS.forEach((layer, li) => {
+      const n = Math.round(totalCount * layer.count);
+      for(let i = 0; i < n; i++){
+        const text  = randFormula();
+        const size  = rand(layer.sizeMin, layer.sizeMax);
+        const angle = (Math.random() - 0.5) * 0.45;
+        // Dirección de drift aleatoria por item
+        const dir   = Math.random() * Math.PI * 2;
+        const speed = rand(0.7, 1.3); // multiplicador individual
+        items.push({
+          text,
+          x:    rand(0, W),
+          y:    rand(0, H),
+          size,
+          opacity: rand(layer.opMin, layer.opMax),
+          angle,
+          color:  randColorIdx(),
+          layer:  li,
+          vx: Math.cos(dir) * layer.speedX * speed,
+          vy: Math.sin(dir) * layer.speedY * speed,
+        });
       }
-      return false;
-    }
-
-    const count   = Math.floor((W * H) / 8500);
-    const maxTries = 20; // intentos por item antes de descartar
-
-    for(let i = 0; i < count; i++){
-      const text  = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
-      const size  = 9 + Math.random() * 11;
-      const angle = (Math.random() - 0.5) * 0.5;
-      measure.font = `${size}px "Space Mono", monospace`;
-      const tw = measure.measureText(text).width;
-      const th = size; // altura aproximada = font-size
-
-      // Calcular AABB conservador considerando la rotación
-      const cos = Math.abs(Math.cos(angle));
-      const sin = Math.abs(Math.sin(angle));
-      const bw  = tw * cos + th * sin;
-      const bh  = tw * sin + th * cos;
-
-      let placed_ok = false;
-      for(let t = 0; t < maxTries; t++){
-        const x = bw/2  + Math.random() * (W - bw);
-        const y = bh    + Math.random() * (H - bh);
-        const x1 = x - bw/2, y1 = y - bh;
-        const x2 = x + bw/2, y2 = y;
-
-        if(!overlaps(x1, y1, x2, y2)){
-          placed.push({x1, y1, x2, y2});
-          items.push({
-            text,
-            x, y,
-            size,
-            opacity: 0.045 + Math.random() * 0.09,
-            angle,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-          });
-          placed_ok = true;
-          break;
-        }
-      }
-      // Si no encontró espacio en maxTries intentos, simplemente omite ese item
-    }
-    needsRedraw = true;
+    });
   }
 
   function draw(){
-    if(!needsRedraw) return;
     ctx.clearRect(0, 0, W, H);
     items.forEach(it => {
+      const baseColor = currentPalette[it.color];
+      const op = Math.min(it.opacity * opacityMult, 1);
       ctx.save();
       ctx.translate(it.x, it.y);
       ctx.rotate(it.angle);
       ctx.font = `${it.size}px "Space Mono", monospace`;
-      ctx.fillStyle = it.color + it.opacity + ')';
+      if(it.layer === 0){
+        const layerOp = op * 0.6;
+        ctx.globalAlpha = layerOp;
+        ctx.fillStyle = baseColor + layerOp + ')';
+      } else {
+        ctx.fillStyle = baseColor + op + ')';
+      }
       ctx.fillText(it.text, 0, 0);
       ctx.restore();
     });
-    needsRedraw = false;
   }
 
-  function loop(){ draw(); requestAnimationFrame(loop); }
+  function update(){
+    items.forEach(it => {
+      it.x += it.vx;
+      it.y += it.vy;
+      // Wrap around — reaparece en el lado opuesto
+      if(it.x > W + 40) it.x = -40;
+      if(it.x < -40)    it.x = W + 40;
+      if(it.y > H + 20) it.y = -20;
+      if(it.y < -20)    it.y = H + 20;
+    });
+  }
+
+  function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
 
   let resizeTimer;
   window.addEventListener('resize', () => {
@@ -127,6 +176,8 @@
     resizeTimer = setTimeout(() => { build(); }, 120);
   });
 
+  // Inicializar paleta según tema guardado (si hay) antes del primer build
+  refreshPalette();
   build();
   loop();
 })();
@@ -163,6 +214,7 @@
 })();
 
 
+// ── PWA: Service Worker + Install Prompt ─────────────
 let deferredPrompt=null;
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js', {scope: './'}).then(reg => {
@@ -175,7 +227,6 @@ if('serviceWorker' in navigator){
   }).catch(() => {});
 }
 
-
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault(); deferredPrompt=e; showInstallBanner();
 });
@@ -185,8 +236,16 @@ function showInstallBanner(){
   if(document.getElementById('install-banner'))return;
   const b=document.createElement('div');
   b.id='install-banner';
-  b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#0f1729;border-top:2px solid #f0c040;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:Space Grotesk,sans-serif;box-shadow:0 -4px 20px rgba(0,0,0,.5)';
-  b.innerHTML='<div style="font-size:13px;color:#e2eaf8;font-weight:600">📲 Añadir <span style="color:#a594ff">SuperCalc</span> a inicio</div><div style="display:flex;gap:8px"><button onclick="installApp()" style="padding:7px 16px;background:#f0c040;color:#0a0f1a;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Instalar</button><button onclick="dismissInstall()" style="padding:7px 12px;background:none;border:1px solid #1e3356;color:#8ba3cc;border-radius:8px;font-size:12px;cursor:pointer">Ahora no</button></div>';
+  b.classList.add('install-banner-ui');
+  b.innerHTML='<div class="install-banner-text">📲 Añadir <span>SuperCalc</span> a inicio</div><div class="install-banner-actions"><button class="install-banner-btn-primary" onclick="installApp()">Instalar</button><button class="install-banner-btn-secondary" onclick="dismissInstall()">Ahora no</button></div>';
+  document.body.appendChild(b);
+}
+function showUpdateBanner(){
+  if(document.getElementById('update-banner'))return;
+  const b=document.createElement('div');
+  b.id='update-banner';
+  b.classList.add('install-banner-ui');
+  b.innerHTML='<div class="install-banner-text">🔄 Nueva versión de <span>SuperCalc</span></div><div class="install-banner-actions"><button class="install-banner-btn-primary" onclick="location.reload()">Actualizar</button><button class="install-banner-btn-secondary" onclick="this.closest(\'.install-banner-ui\').remove()">Luego</button></div>';
   document.body.appendChild(b);
 }
 function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{
@@ -271,11 +330,18 @@ function dismissInstall(){const b=document.getElementById('install-banner');if(b
   const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
   document.head.appendChild(l);
+  // Favicon — reutiliza el mismo ícono Ω del manifest
+  const fav=document.createElement('link');
+  fav.rel='icon'; fav.type='image/png'; fav.href=icon;
+  document.head.appendChild(fav);
+  // Apple touch icon
+  const atl=document.createElement('link');
+  atl.rel='apple-touch-icon'; atl.href=icon;
+  document.head.appendChild(atl);
 })();
 
 
 const PAL=['#f0c040','#ff6eb4','#4da6ff','#ff8c42','#2dd4a0','#ff5572','#b084fc','#34d4c8','#facc15','#a3e635'];
-function vc(i){ return PAL[i%PAL.length]; }
 const RC='#b084fc', SC='#2dd4a0';
 
 // ── STATE ─────────────────────────────────────────────
@@ -299,13 +365,35 @@ function toFrac(x){
   const g=gcd(bN,bD),n2=bN/g,d2=bD/g;
   return d2===1?sign+n2:sign+n2+'/'+d2;
 }
-function fN(x,dec=4){
-  if(fracMode) return toFrac(x);
-  if(isNaN(x)||!isFinite(x)) return '—';
-  const s=x.toFixed(dec);
-  // Quitar ceros finales y punto innecesario: 16.0000→16, 3.1400→3.14
-  return s.includes('.')?s.replace(/\.?0+$/,''):s;
+// ── FORMATO DE NÚMEROS — fmt(v, dec, opts) — función unificada
+const EPSILON = 1e-9;
+function fmt(v, dec=4, {frac=false, sci=false, empty='—'}={}){
+  if(v === undefined || v === null || isNaN(v)) return empty;
+  if(!isFinite(v)) return v > 0 ? '+∞' : '-∞';
+  if(Math.abs(v) < EPSILON) return '0';
+  if(frac || fracMode) return toFrac(v);
+  if(sci && (Math.abs(v) >= 1e6 || Math.abs(v) < 1e-4))
+    return v.toExponential(dec > 4 ? 4 : dec);
+  const s = v.toFixed(dec);
+  return s.includes('.') ? s.replace(/\.?0+$/, '') : s;
 }
+function fN(v, dec=4){ return fmt(v, dec, {frac:true}); }
+function fmtNum(v, dp=6){ return fmt(v, dp, {sci:true}); }
+function matFmtNum(n, d=4){ return fmt(n, d); }
+function grafFmt(n){ return fmt(n, 4); }
+function fnF(v, dp){ return fmt(v, dp||6); }
+
+// ── AUTO-SELECCIÓN DE INPUTS ──────────────────────────────────────────────
+// Al hacer tap/click en cualquier input numérico o de texto, selecciona todo
+// el contenido automáticamente para que el usuario pueda escribir de inmediato.
+// Event delegation global — funciona para inputs renderizados dinámicamente.
+document.addEventListener('focusin', e => {
+  if(e.target && (e.target.type === 'number' || e.target.type === 'text')) {
+    e.target.select();
+  }
+});
+
+
 function fV(vx,vy,vz){ return mode===3?`(${fN(vx)}, ${fN(vy)}, ${fN(vz)})`:`(${fN(vx)}, ${fN(vy)})`; }
 
 // Convierte grados decimales → grados°minutos'segundos"
@@ -352,19 +440,15 @@ function mathTogSteps(sid,tog){
   const cb=body.closest('.collapsible-body');
   if(cb&&on) cb.style.maxHeight=(cb.scrollHeight+body.scrollHeight+40)+'px';
 }
-function openAllSections(){
-  document.querySelectorAll('.collapsible-body').forEach(b=>{b.style.maxHeight=(b.scrollHeight+20)+'px';});
-  document.querySelectorAll('.collapsible-arrow').forEach(a=>a.classList.add('open'));
-}
-
-function togglePanel(){
-  if(window.innerWidth>=700) return; // en desktop el panel siempre visible
-  const bot=document.getElementById('bottom');
-  const btn=document.getElementById('panel-tog-btn');
+function _togglePanel(botId,btnId,resizeFn,desktopLock=false){
+  if(desktopLock&&window.innerWidth>=700)return;
+  const bot=document.getElementById(botId);
+  const btn=document.getElementById(btnId);
   const collapsed=bot.classList.toggle('collapsed');
   btn.classList.toggle('on',!collapsed);
-  setTimeout(()=>resize(),50);
+  setTimeout(resizeFn,50);
 }
+function togglePanel(){ _togglePanel('bottom','panel-tog-btn',resize,true); }
 function toggleFrac(){
   fracMode=!fracMode;
   document.getElementById('frac-tog').classList.toggle('on',fracMode);
@@ -382,6 +466,96 @@ function toggleFigure(){
 }
 
 // ── MATH HELPERS ──────────────────────────────────────
+
+// ── CANVAS COLOR HELPER ──────────────────────────────────────────────────
+// Lee variables CSS en runtime → el canvas respeta el tema activo
+// IMPORTANTE: _root, _canvasColors y refreshCanvasColors deben estar
+// ANTES de initTheme() para evitar Temporal Dead Zone (TDZ)
+const _root = document.documentElement;
+function cssVar(name){
+  return getComputedStyle(_root).getPropertyValue(name).trim() || name;
+}
+
+// Colores de canvas pre-cacheados — se actualizan al cambiar tema
+let _canvasColors = {};
+function refreshCanvasColors(){
+  _canvasColors = {
+    bg:        cssVar('--bg'),
+    surface:   cssVar('--surface'),
+    surface2:  cssVar('--surface2'),
+    border:    cssVar('--border'),
+    text:      cssVar('--text'),
+    text3:     cssVar('--text3'),
+    origin:    cssVar('--canvas-origin'),
+    originDot: cssVar('--canvas-origin-dot'),
+    gridLine:  cssVar('--canvas-grid'),
+    canvasBg0: cssVar('--canvas-bg0'),
+    canvasBg1: cssVar('--canvas-bg1'),
+  };
+}
+
+// ── THEME SYSTEM ──────────────────────────────────────────────────────────
+// Persiste en localStorage. Aplica data-theme="light"|"dark" al <html>.
+// El CSS hace el resto vía [data-theme="light"] selectors.
+
+function applyTheme(theme, animate = true){
+  const root   = document.documentElement;
+  const sw     = document.getElementById('theme-switch');
+  const knob   = document.getElementById('theme-knob');
+
+  if(animate){
+    document.body.style.transition = 'background .3s, color .3s';
+  }
+
+  if(theme === 'light'){
+    root.setAttribute('data-theme', 'light');
+    if(sw) sw.setAttribute('aria-checked', 'true');
+  } else {
+    root.removeAttribute('data-theme');
+    if(sw) sw.setAttribute('aria-checked', 'false');
+  }
+
+  localStorage.setItem('sc-theme', theme);
+  refreshCanvasColors();
+  if(typeof scBgRefreshTheme === 'function') scBgRefreshTheme();
+
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme){
+    metaTheme.content = theme === 'light' ? '#fffdf7' : '#0a0f1a';
+  }
+}
+
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light', true);
+  setTimeout(() => {
+    refreshCanvasColors();
+    try { draw(); } catch(e){}
+    try { emDraw(); } catch(e){}
+  }, 50);
+}
+// ── END THEME SYSTEM ──────────────────────────────────────────────────────
+
+// Inicializar tema — DESPUÉS de declarar _root, _canvasColors, refreshCanvasColors y applyTheme
+(function initTheme(){
+  const saved = localStorage.getItem('sc-theme') || 'dark';
+  applyTheme(saved, false);
+})();
+
+// ── SISTEMA DE NOTIFICACIONES (reemplaza alert()) ────────────────────────
+function scToast(msg, type='info', duration=3200){
+  const el = document.createElement('div');
+  el.className = 'sc-toast sc-toast-' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  el.getBoundingClientRect(); // forzar reflow para activar la transición CSS
+  el.classList.add('sc-toast-visible');
+  setTimeout(() => {
+    el.classList.remove('sc-toast-visible');
+    el.addEventListener('transitionend', () => el.remove(), {once:true});
+  }, duration);
+}
+
 const vmag=(v,m)=>m===3?Math.sqrt(v.vx**2+v.vy**2+v.vz**2):Math.sqrt(v.vx**2+v.vy**2);
 const vdot=(a,b,m)=>a.vx*b.vx+a.vy*b.vy+(m===3?a.vz*b.vz:0);
 const vcross=(a,b)=>({x:a.vy*b.vz-a.vz*b.vy,y:a.vz*b.vx-a.vx*b.vz,z:a.vx*b.vy-a.vy*b.vx});
@@ -420,18 +594,18 @@ function renderVecs(){
     const c=v.cl;
     const mag2=Math.sqrt(v.vx**2+v.vy**2+(mode===3?v.vz**2:0));
     const zeroWarn=mag2<1e-9?'<span style="font-size:9px;color:var(--red);font-family:Space Mono,monospace;margin-left:auto">|v|=0</span>':'';
-    const zf=(l,val,k)=>mode===3?`<div class="inp-group"><label style="color:${c}">${l}</label><input type="number" value="${val}" oninput="uV(${v.id},'${k}',this.value)"/></div>`:'';
+    const zf=(l,val,k)=>mode===3?`<div class="inp-group"><label style="color:${c}">${l}</label><input type="number" onfocus="this.select()" value="${val}" oninput="uV(${v.id},'${k}',this.value)"/></div>`:'';
     h+=`<div class="vec-card" style="border-left-color:${c}">
       <div class="vec-card-header">
         <div class="vec-color-dot" style="background:${c}"></div>
-        <input class="vec-name-input" value="${v.nm}" maxlength="4" oninput="uN(${v.id},this.value)" style="color:${c}"/>
+        <input class="vec-name-input" value="${v.nm}" maxlength="4" oninput="uN(${v.id},this.value)" onfocus="this.select()" style="color:${c}"/>
         <button class="badge ${v.on?'badge-on':'badge-off'}" onclick="togV(${v.id})">${v.on?'ON':'OFF'}</button>
         ${zeroWarn}
         ${vecs.length>1?`<button class="badge badge-del" onclick="delV(${v.id})">✕</button>`:''}
       </div>
       <div class="vec-inputs">
-        <div class="inp-group"><label style="color:#ff5572">X</label><input type="number" value="${v.vx}" oninput="uV(${v.id},'vx',this.value)"/></div>
-        <div class="inp-group"><label style="color:#2dd4a0">Y</label><input type="number" value="${v.vy}" oninput="uV(${v.id},'vy',this.value)"/></div>
+        <div class="inp-group"><label style="color:#ff5572">X</label><input type="number" onfocus="this.select()" value="${v.vx}" oninput="uV(${v.id},'vx',this.value)"/></div>
+        <div class="inp-group"><label style="color:#2dd4a0">Y</label><input type="number" onfocus="this.select()" value="${v.vy}" oninput="uV(${v.id},'vy',this.value)"/></div>
         ${zf('Z',v.vz,'vz')}
       </div>
     </div>`;
@@ -443,12 +617,12 @@ function renderVecs(){
 function uV(id,k,val){const v=vecs.find(v=>v.id===id);if(v)v[k]=parseFloat(val)||0;draw();rLeg();if(document.getElementById('pM').classList.contains('on'))rM();}
 function uN(id,val){const v=vecs.find(v=>v.id===id);if(v)v.nm=val||'v';rLeg();if(document.getElementById('pO').classList.contains('on'))rO();if(document.getElementById('pE').classList.contains('on'))rE();if(document.getElementById('pI').classList.contains('on'))rI();}
 function togV(id){const v=vecs.find(v=>v.id===id);if(v)v.on=!v.on;renderVecs();draw();if(document.getElementById('pM').classList.contains('on'))rM();}
-function delV(id){if(vecs.length<=1){alert('Al menos 1 vector.');return;}vecs=vecs.filter(v=>v.id!==id);opI=opI.filter(i=>i!==id);renderVecs();draw();rO();rE();rI();}
+function delV(id){if(vecs.length<=1){scToast('Al menos 1 vector.', 'warn');return;}vecs=vecs.filter(v=>v.id!==id);opI=opI.filter(i=>i!==id);renderVecs();draw();rO();rE();rI();}
 function addV(){
   const used=vecs.map(v=>v.nm);
   const pool=['C','D','E','F','G','H','P','Q','R','S','T','U','W'];
   const nm=pool.find(n=>!used.includes(n))||'V'+nid;
-  vecs.push({id:nid++,on:true,nm,vx:1,vy:1,vz:1,cl:PAL[palIdx++%PAL.length]});
+  vecs.push({id:nid++,on:true,nm,vx:0,vy:0,vz:0,cl:PAL[palIdx++%PAL.length]});
   renderVecs();draw();
 }
 
@@ -466,6 +640,8 @@ function rLeg(){
 }
 
 // ── MATH PANEL ────────────────────────────────────────
+// Renderiza el panel de Cálculos (tab M) — reconstruye innerHTML completo.
+// Llama fN(), fMag(), fDMS(), eduHint(). Se dispara desde showTab y uV.
 function rM(){
   const mc=document.getElementById('pM');
   const act=vecs.filter(v=>v.on);
@@ -577,6 +753,8 @@ function rM(){
 }
 
 // ── OPS PANEL ─────────────────────────────────────────
+// Renderiza el panel de Operaciones (tab O) — selector de vectores + resultado.
+// rV (resultado vectorial) se dibuja en el canvas desde compute().
 function rO(){
   const p=document.getElementById('pO');
   const sb=vecs.map((v,i)=>{const c=v.cl,sel=opI.includes(v.id);return`<button class="ops-vec-btn ${sel?'on':''}" style="${sel?`color:${c};border-color:${c}`:''}" onclick="tO(${v.id})">${v.nm}</button>`;}).join('');
@@ -606,12 +784,12 @@ function rO(){
 function tO(id){const i=opI.indexOf(id);i>=0?opI.splice(i,1):opI.push(id);rO();}
 function sO(o){opS=o;rO();}
 function compute(){
-  if(opI.length<2){alert('Selecciona al menos 2 vectores.');return;}
+  if(opI.length<2){scToast('Selecciona al menos 2 vectores.', 'warn');return;}
   const sel=opI.map(id=>vecs.find(v=>v.id===id)).filter(Boolean);
   if(opS==='+')rV={vx:sel.reduce((s,v)=>s+v.vx,0),vy:sel.reduce((s,v)=>s+v.vy,0),vz:sel.reduce((s,v)=>s+v.vz,0),scalar:false};
   else if(opS==='−')rV={vx:sel.slice(1).reduce((s,v)=>s-v.vx,sel[0].vx),vy:sel.slice(1).reduce((s,v)=>s-v.vy,sel[0].vy),vz:sel.slice(1).reduce((s,v)=>s-v.vz,sel[0].vz),scalar:false};
-  else if(opS==='×'){if(mode===2){alert('Cruz solo en R³.');return;}if(sel.length!==2){alert('Exactamente 2 vectores.');return;}const cr=vcross(sel[0],sel[1]);rV={vx:cr.x,vy:cr.y,vz:cr.z,scalar:false};}
-  else if(opS==='·'){if(sel.length!==2){alert('Exactamente 2 vectores.');return;}rV={scalar:true,sv:vdot(sel[0],sel[1],mode)};}
+  else if(opS==='×'){if(mode===2){scToast('Producto cruz solo disponible en R³.', 'warn');return;}if(sel.length!==2){scToast('Selecciona exactamente 2 vectores.', 'warn');return;}const cr=vcross(sel[0],sel[1]);rV={vx:cr.x,vy:cr.y,vz:cr.z,scalar:false};}
+  else if(opS==='·'){if(sel.length!==2){scToast('Selecciona exactamente 2 vectores.', 'warn');return;}rV={scalar:true,sv:vdot(sel[0],sel[1],mode)};}
   rO();rLeg();draw();
 }
 function saveR(){if(!rV||rV.scalar)return;const used=vecs.map(v=>v.nm);const nm=['R','S','T','P','Q'].find(n=>!used.includes(n))||'R'+nid;vecs.push({id:nid++,on:true,nm,...rV,cl:PAL[palIdx++%PAL.length]});rV=null;renderVecs();rO();draw();}
@@ -653,6 +831,8 @@ function solveEq(eqStr,unknNm){
   }
   if(mode===2)res.vz=0;return{res,steps};
 }
+// Renderiza el panel de Ecuación (tab E) — solver vectorial lineal.
+// Depende de solveEq() y pLin() para parsear la expresión.
 function rE(){
   const p=document.getElementById('pE');
   const vn=vecs.map(v=>`<span style="color:${v.cl}">${v.nm}</span>`).join(', ');
@@ -672,17 +852,19 @@ function rE(){
     <input class="eq-input" id="ie" placeholder="${ex}" style="width:100%;margin-bottom:8px"/>
     <button class="action-btn" onclick="runSolve()">Resolver y graficar</button>${sh}`;
 }
-function runSolve(){const eq=document.getElementById('ie').value.trim();const unk=document.getElementById('iu').value.trim();if(!eq||!unk){alert('Completa ecuación e incógnita.');return;}const r=solveEq(eq,unk);if(r.err){sR={err:r.err};rE();return;}sR={nm:unk,steps:r.steps,vx:r.res.vx,vy:r.res.vy,vz:r.res.vz||0};rE();rLeg();draw();}
+function runSolve(){const eq=document.getElementById('ie').value.trim();const unk=document.getElementById('iu').value.trim();if(!eq||!unk){scToast('Completa la ecuación y la incógnita.', 'warn');return;}const r=solveEq(eq,unk);if(r.err){sR={err:r.err};rE();return;}sR={nm:unk,steps:r.steps,vx:r.res.vx,vy:r.res.vy,vz:r.res.vz||0};rE();rLeg();draw();}
 function saveSol(){if(!sR||sR.err)return;const used=vecs.map(v=>v.nm);const nm=!used.includes(sR.nm)?sR.nm:(['R','S','T'].find(n=>!used.includes(n))||'S'+nid);vecs.push({id:nid++,on:true,nm,vx:sR.vx,vy:sR.vy,vz:sR.vz||0,cl:PAL[palIdx++%PAL.length]});sR=null;renderVecs();rE();draw();}
 
 // ── INCÓGNITA (componente desconocida) ────────────────
 // Resuelve: operación(A,B) = target  donde A o B tienen componentes con variables
 // Variables como "x","k" en componentes, resuelve la(s) variable(s)
 let unkVecs=[
-  {nm:'A',comps:['3','5','0']},
-  {nm:'B',comps:['5','x','0']},
+  {nm:'A',comps:['0','0','0']},
+  {nm:'B',comps:['0','0','0']},
 ];
 
+// Renderiza el panel de Incógnita (tab I) — solver de componente variable.
+// Depende de parseComp() y runUnkSolve().
 function rI(){
   const p=document.getElementById('pI');
   const ops=['·','|A|','|B|','+','-'];
@@ -696,13 +878,13 @@ function rI(){
     for(let c=0;c<compsCount;c++){
       compInputs+=`<div class="unk-comp-group">
         <span class="unk-comp-lbl" style="color:${colors[c]}">${labels[c]}</span>
-        <input class="unk-comp" value="${v.comps[c]||'0'}" placeholder="${labels[c].toLowerCase()}" oninput="updUnkVec(${i},${c},this.value)" title="Número o variable (ej: x, 2k)"/>
+        <input class="unk-comp" value="${v.comps[c]||'0'}" placeholder="${labels[c].toLowerCase()}" oninput="updUnkVec(${i},${c},this.value)" onfocus="this.select()" title="Número o variable (ej: x, 2k)"/>
       </div>`;
     }
     const canDel=unkVecs.length>1;
     vecRows+=`<div class="unk-vec-item">
       <div class="unk-vec-name" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <input style="background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-family:'Space Mono',monospace;font-size:14px;font-weight:700;width:44px;outline:none;text-align:center;padding:1px 2px" value="${v.nm}" oninput="updUnkName(${i},this.value)"/>
+        <input style="background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-family:'Space Mono',monospace;font-size:14px;font-weight:700;width:44px;outline:none;text-align:center;padding:1px 2px" value="${v.nm}" oninput="updUnkName(${i},this.value)"/> onfocus="this.select()"
         <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">vector ${i+1}</span>
         ${canDel?`<button class="badge badge-del" onclick="delUnkVec(${i})" style="margin-left:auto">✕</button>`:''}
       </div>
@@ -731,7 +913,7 @@ function rI(){
     <div class="section-title">Operación y resultado esperado</div>
     <div class="unk-op-row">${opBtns}
       <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">=</span>
-      <input class="unk-result-input" id="unk-target" value="${unkTarget}" placeholder="0" oninput="unkTarget=this.value"/>
+      <input class="unk-result-input" id="unk-target" value="${unkTarget}" placeholder="0" oninput="unkTarget=this.value" onfocus="this.select()"/>
     </div>
     <button class="action-btn blue" onclick="runUnkSolve()">Resolver incógnita</button>
     ${resHtml}`;
@@ -849,22 +1031,51 @@ function parseComp(str,varSet){
 // ── CANVAS ────────────────────────────────────────────
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const toRad=d=>d*Math.PI/180;
-function p3(x,y,z,cx,cy,s){
-  const cY=Math.cos(toRad(rotY)),sY=Math.sin(toRad(rotY));
-  const x1=x*cY+z*sY,z1=-x*sY+z*cY;
-  const cX=Math.cos(toRad(rotX)),sX=Math.sin(toRad(rotX));
-  return{sx:cx+x1*s,sy:cy-(y*cX-z1*sX)*s};
+// ══════════════════════════════════════════════════════════════════════════
+// PROYECCIÓN 3D UNIFICADA — project3D / p3 / emP3
+// ══════════════════════════════════════════════════════════════════════════
+// Reemplaza p3() (AL) y emP3() (EM) — misma matemática, parámetros explícitos
+// ⚠ WARNING — FUNCIÓN CRÍTICA: project3D() — Proyección 3D isométrica.
+// • Matemática: rotY primero (en plano XZ), luego rotX (inclinación vertical).
+// • Retorna {sx, sy, z2}: sx/sy = coordenadas de pantalla, z2 = profundidad (painter's algorithm).
+// • Los alias p3() y emP3() leen estado global (rotX/rotY/emRotX/emRotY) — son wrappers de conveniencia.
+// • Cambiar el orden de rotaciones rompe toda la perspectiva del canvas. NO reordenar.
+function project3D(x,y,z,cx,cy,s,rX,rY){
+  const rYr=rY*Math.PI/180, rXr=rX*Math.PI/180;
+  const cY=Math.cos(rYr), sY=Math.sin(rYr);
+  const x1=x*cY+z*sY, z1=-x*sY+z*cY;
+  const cX=Math.cos(rXr), sX=Math.sin(rXr);
+  return{sx:cx+x1*s, sy:cy-(y*cX-z1*sX)*s, z2:-z1};
+}
+// Alias AL — usan estado global del módulo vectores
+function p3(x,y,z,cx,cy,s){ return project3D(x,y,z,cx,cy,s,rotX,rotY); }
+// Alias EM — usan estado global del módulo EM
+function emP3(x,y,z){
+  const W=emCanvas.width,H=emCanvas.height,cx=W/2,cy=H/2;
+  const s=Math.min(W,H)/22*emScl;
+  return project3D(x,y,z,cx,cy,s,emRotX,emRotY);
 }
 function p2(x,y,cx,cy,s){return{sx:cx+x*s,sy:cy-y*s};}
 
-function drawArrow(x1,y1,x2,y2,col,lw){
+// ══════════════════════════════════════════════════════════════════════════
+// FLECHA VECTORIAL UNIFICADA — drawArrowCtx / drawArrow / emDrawArrow
+// ══════════════════════════════════════════════════════════════════════════
+// ctx como parámetro → reutilizable por AL y EM
+// ⚠ WARNING — FUNCIÓN CRÍTICA: drawArrowCtx() — Dibuja flechas vectoriales con glow.
+// • Recibe ctx como parámetro (c) — compatible con canvas de AL y EM.
+// • shadowBlur genera el glow: resetear a 0 al final es OBLIGATORIO para no contaminar otros draws.
+// • hw/hl (cabeza de flecha): cambiarlos afecta la estética de TODOS los vectores del sistema.
+// • Los alias drawArrow() (ctx global AL) y emDrawArrow() (emCtx) llaman a esta función.
+function drawArrowCtx(c,x1,y1,x2,y2,col,lw){
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);if(len<2)return;
   const ux=dx/len,uy=dy/len,hw=9,hl=16,bx=x2-ux*hl,by=y2-uy*hl;
-  ctx.shadowColor=col;ctx.shadowBlur=18;
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(bx,by);ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(bx+uy*hw,by-ux*hw);ctx.lineTo(bx-uy*hw,by+ux*hw);
-  ctx.closePath();ctx.fillStyle=col;ctx.fill();ctx.shadowBlur=0;
+  c.shadowColor=col;c.shadowBlur=18;
+  c.beginPath();c.moveTo(x1,y1);c.lineTo(bx,by);c.strokeStyle=col;c.lineWidth=lw;c.lineCap='round';c.stroke();
+  c.beginPath();c.moveTo(x2,y2);c.lineTo(bx+uy*hw,by-ux*hw);c.lineTo(bx-uy*hw,by+ux*hw);
+  c.closePath();c.fillStyle=col;c.fill();c.shadowBlur=0;
 }
+// Alias AL (usa ctx global del canvas vectores)
+function drawArrow(x1,y1,x2,y2,col,lw){ drawArrowCtx(ctx,x1,y1,x2,y2,col,lw); }
 
 function drawAxis3(o,pp,pl,pn,nl,col,lbl,lw,axLen,s,cx,cy){
   // Negative dashed
@@ -897,10 +1108,10 @@ function drawAxisTicks3(o,dir,col,axLen,s,cx,cy,fn3){
     const lbl=String(v);
     const nx=pp.sx+11,ny=pp.sy+11;
     ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=.6;ctx.fillStyle='#060a10';ctx.fillRect(nx-9,ny-7,18,14);
+    ctx.globalAlpha=.6;ctx.fillStyle=_canvasColors.canvasBg1||'#060a10';ctx.fillRect(nx-9,ny-7,18,14);
     ctx.globalAlpha=1;ctx.fillStyle=col;ctx.fillText(lbl,nx,ny);
     const nnx=pn.sx+11,nny=pn.sy+11;
-    ctx.globalAlpha=.25;ctx.fillStyle='#060a10';ctx.fillRect(nnx-11,nny-7,22,14);
+    ctx.globalAlpha=.25;ctx.fillStyle=_canvasColors.canvasBg1||'#060a10';ctx.fillRect(nnx-11,nny-7,22,14);
     ctx.globalAlpha=.4;ctx.fillStyle=col;ctx.fillText('-'+lbl,nnx,nny);
   }
   ctx.globalAlpha=1;
@@ -916,15 +1127,21 @@ function drawAxisTicks2(o,isX,col,axLen,s,cx,cy){
     const lbl=String(v);
     const nx=pp.sx+(isX?0:-16), ny=pp.sy+(isX?14:0);
     ctx.font='bold 12px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=.6;ctx.fillStyle='#060a10';ctx.fillRect(nx-10,ny-8,20,16);
+    ctx.globalAlpha=.6;ctx.fillStyle=_canvasColors.canvasBg1||'#060a10';ctx.fillRect(nx-10,ny-8,20,16);
     ctx.globalAlpha=1;ctx.fillStyle=col;ctx.fillText(lbl,nx,ny);
     const nnx=pn.sx+(isX?0:-20), nny=pn.sy+(isX?14:0);
-    ctx.globalAlpha=.25;ctx.fillStyle='#060a10';ctx.fillRect(nnx-12,nny-8,24,16);
+    ctx.globalAlpha=.25;ctx.fillStyle=_canvasColors.canvasBg1||'#060a10';ctx.fillRect(nnx-12,nny-8,24,16);
     ctx.globalAlpha=.45;ctx.fillStyle=col;ctx.fillText('-'+lbl,nnx,nny);
   }
   ctx.globalAlpha=1;
 }
 
+// ⚠ WARNING — FUNCIÓN CRÍTICA: draw() — Renderizado principal del canvas de vectores.
+// • Toda modificación debe preservar el orden: fondo → grid → origen → ejes → vectores → figura.
+// • project3D / p3() depende de rotX, rotY, scl — no modificar esas variables fuera de resize/input.
+// • El ctx (canvas 2D context) es global de este módulo — no reutilizar en otros módulos.
+// • Rendimiento: no agregar loops O(n²) ni operaciones DOM aquí. Solo canvas API.
+// • Si se agrega una nueva capa visual, agregarla DESPUÉS de ejes y ANTES de vectores.
 function draw(){
   const W=cv.width,H=cv.height,cx=W/2,cy=H/2;
   const all=[...vecs.filter(v=>v.on)];
@@ -936,23 +1153,45 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   // Background gradient
   const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);
-  bg.addColorStop(0,'#0d1628');bg.addColorStop(1,'#060a10');
+  bg.addColorStop(0,_canvasColors.canvasBg0||'#0d1628');bg.addColorStop(1,_canvasColors.canvasBg1||'#060a10');
   ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 
+  // ── GRID DE REFERENCIA — líneas de cuadrícula (sin dots, solo líneas suaves) ──
+  // Sustituye el grid volumétrico de dots (9261 iter) por líneas CSS-style eficientes
   if(mode===3){
-    // 3D volumetric grid — full cube of dots every 1 unit, larger at every 2
-    for(let i=-10;i<=10;i++) for(let k=-10;k<=10;k++) for(let j=-10;j<=10;j++){
-      const isMain=(i%2===0&&j%2===0&&k%2===0);
-      const d=Math.sqrt(i*i+j*j+k*k)/14;
-      const alpha=isMain?(0.38-d*0.32):(0.10-d*0.09);
-      const r=isMain?1.6:0.7;
-      if(alpha<=0.015)continue;
-      const pp=p3(i,j,k,cx,cy,s);
-      ctx.fillStyle=`rgba(40,65,110,${alpha})`;ctx.beginPath();ctx.arc(pp.sx,pp.sy,r,0,Math.PI*2);ctx.fill();
+    // Plano XZ (suelo) — cuadrícula horizontal de referencia
+    const gridStep=adaptiveStep(axLen);
+    ctx.save();
+    ctx.strokeStyle=_canvasColors.gridLine||'rgba(40,65,110,0.22)';ctx.lineWidth=0.6;ctx.globalAlpha=1;
+    for(let v=-Math.floor(axLen);v<=Math.floor(axLen);v+=gridStep){
+      // Líneas paralelas al eje X en el plano Y=0
+      const a=p3(-axLen,0,v,cx,cy,s), b=p3(axLen,0,v,cx,cy,s);
+      ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();
+      // Líneas paralelas al eje Z en el plano Y=0
+      const c=p3(v,0,-axLen,cx,cy,s), d=p3(v,0,axLen,cx,cy,s);
+      ctx.beginPath();ctx.moveTo(c.sx,c.sy);ctx.lineTo(d.sx,d.sy);ctx.stroke();
     }
+    ctx.restore();
+  } else {
+    // Cuadrícula cartesiana R2 — líneas ortogonales suaves
+    const gridStep2=adaptiveStep(axLen);
+    ctx.save();
+    ctx.strokeStyle=_canvasColors.gridLine||'rgba(30,51,90,0.28)';ctx.lineWidth=0.5;ctx.globalAlpha=1;
+    for(let v=-Math.floor(axLen);v<=Math.floor(axLen);v+=gridStep2){
+      if(Math.abs(v)<0.001) continue; // los ejes se dibujan solos
+      const hL=p2(-axLen,v,cx,cy,s), hR=p2(axLen,v,cx,cy,s);
+      ctx.beginPath();ctx.moveTo(hL.sx,hL.sy);ctx.lineTo(hR.sx,hR.sy);ctx.stroke();
+      const vT=p2(v,axLen,cx,cy,s), vB=p2(v,-axLen,cx,cy,s);
+      ctx.beginPath();ctx.moveTo(vT.sx,vT.sy);ctx.lineTo(vB.sx,vB.sy);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  if(mode===3){
+
     const o=p3(0,0,0,cx,cy,s);
-    ctx.beginPath();ctx.arc(o.sx,o.sy,6,0,Math.PI*2);ctx.fillStyle='#c8d8f0';ctx.shadowColor='#c8d8f0';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
-ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.fill();
+    ctx.beginPath();ctx.arc(o.sx,o.sy,6,0,Math.PI*2);const _oc3=_canvasColors.origin;ctx.fillStyle=_oc3;ctx.shadowColor=_oc3;ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
+ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=_canvasColors.originDot;ctx.fill();
 
     const axes=[
       [[axLen,0,0],[-axLen,0,0],'#ff5572','X',[1,0,0]],
@@ -1015,18 +1254,10 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.f
     // Figura geométrica 3D
     if(figState) renderFigure(ctx, (x,y,z)=>{const pp=p3(x,y,z,cx,cy,s);return{sx:pp.sx,sy:pp.sy,z2:pp.z2??(-z)};}, figState);
   } else {
-    // R2 grid — sub dots every 1 unit, main dots every 2 units
-    for(let i=-16;i<=16;i++) for(let j=-16;j<=16;j++){
-      const isMain=(i%2===0&&j%2===0);
-      const pp=p2(i,j,cx,cy,s),d=Math.sqrt(i*i+j*j)/16;
-      const alpha=isMain?(0.65-d*0.45):(0.20-d*0.14);
-      const r=isMain?1.9:0.85;
-      if(alpha<=0.02)continue;
-      ctx.fillStyle=`rgba(30,51,90,${alpha})`;ctx.beginPath();ctx.arc(pp.sx,pp.sy,r,0,Math.PI*2);ctx.fill();
-    }
+
     const o=p2(0,0,cx,cy,s);
     ctx.beginPath();ctx.arc(o.sx,o.sy,6,0,Math.PI*2);ctx.fillStyle='#c8d8f0';ctx.shadowColor='#c8d8f0';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
-ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.fill();
+ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=_canvasColors.originDot;ctx.fill();
 
     // Axes R2
     [[[axLen,0],[-axLen,0],'#ff5572','X',true],[[0,axLen],[0,-axLen],'#2dd4a0','Y',false]].forEach(([pos,neg,col,lbl,isX])=>{
@@ -1093,11 +1324,24 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.f
 }
 
 // ── RESIZE & INPUT ────────────────────────────────────
-function resize(){
-  const w=document.getElementById('cw');
-  cv.width=w.clientWidth*devicePixelRatio;cv.height=w.clientHeight*devicePixelRatio;
-  cv.style.width=w.clientWidth+'px';cv.style.height=w.clientHeight+'px';draw();
+// ⚠ WARNING — FUNCIÓN CRÍTICA: resize() — Sincroniza canvas físico con el contenedor #cw.
+// • Usar getBoundingClientRect() en vez de clientWidth para mayor precisión con DPR.
+// • El guard w && rect.width && rect.height evita el crop cuando el módulo no está visible.
+// • Math.round() en las dimensiones evita subpíxeles en pantallas HiDPI.
+// • NO llamar desde fuera de este módulo — el ResizeObserver ya lo dispara automáticamente.
+function _resizeCanvas(cwId,canvas,drawFn){
+  const w=document.getElementById(cwId);
+  if(!w||!canvas)return;
+  const rect=w.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width =Math.round(rect.width *dpr);
+  canvas.height=Math.round(rect.height*dpr);
+  canvas.style.width =rect.width +'px';
+  canvas.style.height=rect.height+'px';
+  drawFn();
 }
+function resize(){ _resizeCanvas('cw',cv,draw); }
 cv.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY,rx:rotX,ry:rotY};});
 window.addEventListener('mousemove',e=>{if(!drag)return;if(mode===3){rotY=drag.ry+(e.clientX-drag.x)*.5;rotX=drag.rx-(e.clientY-drag.y)*.5;}draw();});
 window.addEventListener('mouseup',()=>{drag=null;});
@@ -1118,39 +1362,36 @@ cv.addEventListener('wheel',e=>{
   draw();
 },{passive:false});
 
-// AL vectors init — called when module opens
+// ── RESIZE OBSERVER (reemplaza setTimeout para canvas) ────────────────────
+const _cwObserver = new ResizeObserver(() => { resize(); });
+
+// ⚠ WARNING — FUNCIÓN DE INICIALIZACIÓN: initVectorsApp()
+// • Solo se llama una vez (_alInitDone). Los reinicios solo hacen resize.
+// • El doble requestAnimationFrame en launchSubmod es NECESARIO — garantiza layout real.
+// • _cwObserver dispara resize() en cada cambio de tamaño del #cw.
+// • NO llamar resize() directamente fuera de este flujo — usar el observer.
 function initVectorsApp(){
   if(!window._alInitDone){
     window._alInitDone=true;
     vecs=[]; palIdx=0; nid=0;
     renderVecs();
   }
-  // Double resize to ensure canvas fills correctly after mount
-  setTimeout(()=>{ resize(); }, 30);
-  setTimeout(()=>{ resize(); draw(); }, 120);
+  // Observar el contenedor — el observer llama resize() automáticamente al detectar tamaño
+  const cw = document.getElementById('cw');
+  if(cw && !window._cwObserving){
+    _cwObserver.observe(cw);
+    window._cwObserving = true;
+  }
+  // Forzar primer resize explícito — el guard en resize() lo protege si cw.clientWidth=0
+  // Un segundo intento con setTimeout asegura que el browser completó el paint
+  resize();
+  setTimeout(() => { if(cv.width === 0 || cv.height === 0) resize(); }, 150);
 }
 
 
 // ══════════════════════════════════════════════════════
 // LAUNCHER
 // ══════════════════════════════════════════════════════
-function launchModule(mod){
-  const launcher = document.getElementById('launcher');
-  launcher.classList.add('hidden');
-  if(mod==='al'){
-    setTimeout(()=>{ launcher.style.display='none'; },400);
-  } else if(mod==='em'){
-    setTimeout(()=>{
-      launcher.style.display='none';
-      document.getElementById('em-app').classList.add('visible');
-      emInit();
-      // Wait for CSS transition + layout to settle, then resize
-      setTimeout(()=>emResizeCanvas(), 50);
-      setTimeout(()=>emResizeCanvas(), 350);
-    },400);
-  }
-}
-
 
 // ══════════════════════════════════════════════════════
 // EM MODULE
@@ -1168,6 +1409,7 @@ let emResult = null;
 function emInit(){
   if(emInitDone) return;
   emInitDone = true;
+  emRenderPanels();
   emCanvas = document.getElementById('em-canvas');
   emCtx = emCanvas.getContext('2d');
   emResizeCanvas();
@@ -1212,55 +1454,27 @@ function emInit(){
   },{passive:false});
 
   emForceRenderAllPanels(); // primera carga: renderizar todos los paneles
-  // Double resize to ensure canvas fills correctly after mount
-  requestAnimationFrame(()=>{
-    emResizeCanvas();
-    requestAnimationFrame(()=>emResizeCanvas());
-  });
+  if(document.getElementById('em-cw')) _emCwObserver.observe(document.getElementById('em-cw'));
 }
 
-function emResizeCanvas(){
-  const cw=document.getElementById('em-cw');
-  if(!cw||!emCanvas)return;
-  const dpr=window.devicePixelRatio||1;
-  emCanvas.width=cw.clientWidth*dpr;
-  emCanvas.height=cw.clientHeight*dpr;
-  emCanvas.style.width=cw.clientWidth+'px';
-  emCanvas.style.height=cw.clientHeight+'px';
-  emDraw();
-}
+const _emCwObserver = new ResizeObserver(() => { emResizeCanvas(); });
+
+// ⚠ WARNING: emResizeCanvas() — igual que resize() en AL, no llamar con layout pendiente.
+function emResizeCanvas(){ _resizeCanvas('em-cw',emCanvas,emDraw); }
 
 // ── 3D PROJECTION (same as AL) ────────────────────────
-function emP3(x,y,z){
-  const W=emCanvas.width,H=emCanvas.height,cx=W/2,cy=H/2;
-  const s=Math.min(W,H)/22*emScl;
-  const rx=emRotX*Math.PI/180, ry=emRotY*Math.PI/180;
-  const y1=y*Math.cos(rx)-z*Math.sin(rx);
-  const z1=y*Math.sin(rx)+z*Math.cos(rx);
-  const x2=x*Math.cos(ry)+z1*Math.sin(ry);
-  const z2=-x*Math.sin(ry)+z1*Math.cos(ry);
-  return {sx:cx+x2*s, sy:cy-y1*s, z2};
-}
+// emP3() → alias de project3D() arriba
 
-function emDrawArrow(x1,y1,x2,y2,col,lw=2.5){
-  const ctx=emCtx;
-  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
-  if(len<2)return;
-  const hs=Math.min(12,len*.35), hw=hs*.55;
-  const ux=dx/len,uy=dy/len;
-  ctx.save();ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
-  ctx.shadowColor=col;ctx.shadowBlur=6;
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-ux*hs,y2-uy*hs);ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x2,y2);
-  ctx.lineTo(x2-ux*hs-uy*hw,y2-uy*hs+ux*hw);
-  ctx.lineTo(x2-ux*hs+uy*hw,y2-uy*hs-ux*hw);
-  ctx.closePath();ctx.fill();
-  ctx.shadowBlur=0;ctx.restore();
-}
+// emDrawArrow → usa drawArrowCtx con emCtx
+function emDrawArrow(x1,y1,x2,y2,col,lw=2.5){ drawArrowCtx(emCtx,x1,y1,x2,y2,col,lw); }
 
 // ── DRAW EM CANVAS ────────────────────────────────────
 
+// ⚠ WARNING — FUNCIÓN CRÍTICA: emDraw() — Renderizado 3D del canvas de Electromagnetismo.
+// • Usa emCtx (canvas EM), emRotX/emRotY/emScl — variables de estado SEPARADAS de AL.
+// • emP3() es alias de project3D() con estado EM — no intercambiar con p3() de vectores.
+// • Orden de render: fondo → ejes → objetos EM → etiquetas. No alterar.
+// • emDraw() se llama desde emResizeCanvas() — el guard de clientWidth/Height es obligatorio.
 function emDraw(){
   if(!emCanvas||!emCtx)return;
   const ctx=emCtx;
@@ -1269,19 +1483,9 @@ function emDraw(){
 
   // Background
   const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);
-  bg.addColorStop(0,'#0d1628');bg.addColorStop(1,'#060a10');
+  bg.addColorStop(0,_canvasColors.canvasBg0||'#0d1628');bg.addColorStop(1,_canvasColors.canvasBg1||'#060a10');
   ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 
-  // Reference dots along X axis only
-  for(let i=-8;i<=8;i++){
-    const isMain=(i%2===0);
-    const alpha=isMain?0.35:0.15;
-    const r=isMain?1.6:0.7;
-    const pp=emP3(i,0,0);
-    ctx.globalAlpha=alpha;
-    ctx.fillStyle='rgba(50,80,130,1)';
-    ctx.beginPath();ctx.arc(pp.sx,pp.sy,r,0,Math.PI*2);ctx.fill();
-  }
   ctx.globalAlpha=1;
 
   // Compute axis length based on objects
@@ -1321,10 +1525,10 @@ function emDraw(){
       ec.globalAlpha=.3;ec.beginPath();ec.arc(tn.sx,tn.sy,2,0,Math.PI*2);ec.fillStyle=col;ec.fill();
       const nx=tp.sx+11,ny=tp.sy+11;
       ec.font='bold 11px Space Mono';ec.textAlign='center';ec.textBaseline='middle';
-      ec.globalAlpha=.6;ec.fillStyle='#060a10';ec.fillRect(nx-9,ny-7,18,14);
+      ec.globalAlpha=.6;ec.fillStyle=_canvasColors.canvasBg1||'#060a10';ec.fillRect(nx-9,ny-7,18,14);
       ec.globalAlpha=1;ec.fillStyle=col;ec.fillText(String(v),nx,ny);
       const nnx=tn.sx+11,nny=tn.sy+11;
-      ec.globalAlpha=.25;ec.fillStyle='#060a10';ec.fillRect(nnx-11,nny-7,22,14);
+      ec.globalAlpha=.25;ec.fillStyle=_canvasColors.canvasBg1||'#060a10';ec.fillRect(nnx-11,nny-7,22,14);
       ec.globalAlpha=.4;ec.fillStyle=col;ec.fillText('-'+String(v),nnx,nny);
     }
     ec.globalAlpha=1;
@@ -1333,7 +1537,7 @@ function emDraw(){
   // Origin
   const o=emP3(0,0,0);
   ctx.beginPath();ctx.arc(o.sx,o.sy,6,0,Math.PI*2);ctx.fillStyle='#c8d8f0';ctx.shadowColor='#c8d8f0';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle='#0a0f1a';ctx.fill();
+  ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=_canvasColors.originDot;ctx.fill();
 
   // Draw EM objects
   emObjects.forEach(obj=>{
@@ -1374,13 +1578,7 @@ function emSetCoord(c){
 function emResetView(){
   emRotX=25; emRotY=-35; emScl=1; emDraw();
 }
-function emTogglePanel(){
-  const bot=document.getElementById('em-bottom');
-  const btn=document.getElementById('em-panel-tog-btn');
-  const collapsed=bot.classList.toggle('collapsed');
-  btn.classList.toggle('on',!collapsed);
-  setTimeout(()=>emResizeCanvas(),50);
-}
+function emTogglePanel(){ _togglePanel('em-bottom','em-panel-tog-btn',emResizeCanvas); }
 
 function emShowTab(tab){
   document.querySelectorAll('.em-tab').forEach((t,i)=>{
@@ -1395,564 +1593,372 @@ function emShowTab(tab){
 
 // ── PANEL RENDERERS ───────────────────────────────────
 // Renderiza todos los paneles solo si están vacíos (primera carga)
-function emRenderAllPanels(){
-  if(!document.getElementById('em-pCoulomb')?.innerHTML?.trim()) emRenderCoulomb();
-  if(!document.getElementById('em-pGauss')?.innerHTML?.trim())   emRenderGauss();
-  if(!document.getElementById('em-pPotential')?.innerHTML?.trim()) emRenderPotential();
-  if(!document.getElementById('em-pLorentz')?.innerHTML?.trim()) emRenderLorentz();
-  if(!document.getElementById('em-pFaraday')?.innerHTML?.trim()) emRenderFaraday();
-  if(!document.getElementById('em-pMaxwell')?.innerHTML?.trim()) emRenderMaxwell();
+
+// ── EM CONSTANTS — reutiliza EM_K, EM_EPS0, EM_MU0 ya declarados arriba ──
+
+function emFmt(v){
+  if(!isFinite(v)||isNaN(v)) return '—';
+  if(Math.abs(v)===0) return '0';
+  if(Math.abs(v)<0.001||Math.abs(v)>=1e6) return v.toExponential(4);
+  return parseFloat(v.toPrecision(6)).toString();
+}
+function emInp(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+function emRes(id,html){ const el=document.getElementById(id); if(el) el.innerHTML=html; }
+
+function emCard(id, icon, name, desc, fieldsHTML){
+  return `<div class="calc-card em-card" id="card-${id}">
+    <div class="calc-card-header" onclick="toggleCard('${id}')">
+      <div class="calc-card-icon em-card-icon">${icon}</div>
+      <div class="calc-card-info">
+        <div class="calc-card-name">${name}</div>
+        <div class="calc-card-desc">${desc}</div>
+      </div>
+      <div class="calc-card-arrow" id="arr-${id}">›</div>
+    </div>
+    <div class="calc-card-body" id="body-${id}">
+      <div class="calc-card-inner">${fieldsHTML}</div>
+    </div>
+  </div>`;
 }
 
-// Forzar re-render de todos los paneles (solo al abrir el módulo por 1a vez)
-function emForceRenderAllPanels(){
-  emRenderCoulomb(); emRenderGauss(); emRenderPotential();
-  emRenderLorentz(); emRenderFaraday(); emRenderMaxwell();
+function emRenderPanels(){
+  // ── COULOMB ──
+  document.getElementById('em-pCoulomb').innerHTML =
+    emCard('em-coul','⚡','Fuerza de Coulomb','F = k·q₁·q₂ / r²',`
+      <div class="calc-field-row"><label>q₁ (C) =</label><input class="calc-inp" id="em-coul-q1" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>q₂ (C) =</label><input class="calc-inp" id="em-coul-q2" placeholder="-2e-6"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-coul-r" placeholder="0.1"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcCoulomb()">Calcular F</button>
+        <button class="calc-btn sec" onclick="clearCard('em-coul')">Limpiar</button>
+      </div>
+      <div id="res-em-coul" class="calc-res"></div>
+    `) +
+    emCard('em-efield','E','Campo Eléctrico','E = k·Q / r² — carga puntual',`
+      <div class="calc-field-row"><label>Q (C) =</label><input class="calc-inp" id="em-ef-q" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-ef-r" placeholder="0.05"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcEField()">Calcular E</button>
+        <button class="calc-btn sec" onclick="clearCard('em-efield')">Limpiar</button>
+      </div>
+      <div id="res-em-efield" class="calc-res"></div>
+    `);
+
+  // ── GAUSS ──
+  document.getElementById('em-pGauss').innerHTML =
+    emCard('em-gauss-flux','Φ','Flujo Eléctrico','Φ = Q_enc / ε₀',`
+      <div class="calc-field-row"><label>Q_enc (C) =</label><input class="calc-inp" id="em-gf-q" placeholder="1e-9"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcGaussFlux()">Calcular Φ</button>
+        <button class="calc-btn sec" onclick="clearCard('em-gauss-flux')">Limpiar</button>
+      </div>
+      <div id="res-em-gauss-flux" class="calc-res"></div>
+    `) +
+    emCard('em-gauss-sph','○','E Esférica','Superficie esférica — E = Q / (4πε₀r²)',`
+      <div class="calc-field-row"><label>Q (C) =</label><input class="calc-inp" id="em-gs-q" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-gs-r" placeholder="0.1"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcGaussSph()">Calcular E</button>
+        <button class="calc-btn sec" onclick="clearCard('em-gauss-sph')">Limpiar</button>
+      </div>
+      <div id="res-em-gauss-sph" class="calc-res"></div>
+    `) +
+    emCard('em-gauss-cyl','‖','E Cilíndrica','Línea infinita — E = λ / (2πε₀r)',`
+      <div class="calc-field-row"><label>λ (C/m) =</label><input class="calc-inp" id="em-gc-l" placeholder="1e-9"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-gc-r" placeholder="0.05"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcGaussCyl()">Calcular E</button>
+        <button class="calc-btn sec" onclick="clearCard('em-gauss-cyl')">Limpiar</button>
+      </div>
+      <div id="res-em-gauss-cyl" class="calc-res"></div>
+    `);
+
+  // ── POTENCIAL ──
+  document.getElementById('em-pPotential').innerHTML =
+    emCard('em-pot','V','Potencial Eléctrico','V = k·Q / r',`
+      <div class="calc-field-row"><label>Q (C) =</label><input class="calc-inp" id="em-pot-q" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-pot-r" placeholder="0.1"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcPotential()">Calcular V</button>
+        <button class="calc-btn sec" onclick="clearCard('em-pot')">Limpiar</button>
+      </div>
+      <div id="res-em-pot" class="calc-res"></div>
+    `) +
+    emCard('em-epot','U','Energía Potencial','U = k·q₁·q₂ / r',`
+      <div class="calc-field-row"><label>q₁ (C) =</label><input class="calc-inp" id="em-ep-q1" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>q₂ (C) =</label><input class="calc-inp" id="em-ep-q2" placeholder="-1e-6"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-ep-r" placeholder="0.05"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcEPot()">Calcular U</button>
+        <button class="calc-btn sec" onclick="clearCard('em-epot')">Limpiar</button>
+      </div>
+      <div id="res-em-epot" class="calc-res"></div>
+    `) +
+    emCard('em-cap','C','Capacitancia','C = Q/V — placas paralelas C = ε₀A/d',`
+      <div class="calc-field-row"><label>A (m²) =</label><input class="calc-inp" id="em-cap-a" placeholder="0.01"/></div>
+      <div class="calc-field-row"><label>d (m) =</label><input class="calc-inp" id="em-cap-d" placeholder="0.001"/></div>
+      <div class="calc-field-row"><label>εᵣ =</label><input class="calc-inp calc-inp-sm" id="em-cap-er" placeholder="1" value="1"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcCap()">Calcular C</button>
+        <button class="calc-btn sec" onclick="clearCard('em-cap')">Limpiar</button>
+      </div>
+      <div id="res-em-cap" class="calc-res"></div>
+    `);
+
+  // ── LORENTZ ──
+  document.getElementById('em-pLorentz').innerHTML =
+    emCard('em-lor','F','Fuerza de Lorentz','F = q(E + v × B)',`
+      <div class="calc-field-row"><label>q (C) =</label><input class="calc-inp" id="em-lor-q" placeholder="1.6e-19"/></div>
+      <div class="calc-field-row">
+        <label>E =</label>
+        <input class="calc-inp calc-inp-sm" id="em-lor-ex" placeholder="Ex"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-ey" placeholder="Ey"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-ez" placeholder="Ez"/>
+      </div>
+      <div class="calc-field-row">
+        <label>v =</label>
+        <input class="calc-inp calc-inp-sm" id="em-lor-vx" placeholder="vx"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-vy" placeholder="vy"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-vz" placeholder="vz"/>
+      </div>
+      <div class="calc-field-row">
+        <label>B =</label>
+        <input class="calc-inp calc-inp-sm" id="em-lor-bx" placeholder="Bx"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-by" placeholder="By"/>
+        <input class="calc-inp calc-inp-sm" id="em-lor-bz" placeholder="Bz"/>
+      </div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcLorentz()">Calcular F</button>
+        <button class="calc-btn sec" onclick="clearCard('em-lor')">Limpiar</button>
+      </div>
+      <div id="res-em-lor" class="calc-res"></div>
+    `) +
+    emCard('em-bfield','B','Campo Magnético','B = μ₀I / (2πr) — hilo infinito',`
+      <div class="calc-field-row"><label>I (A) =</label><input class="calc-inp" id="em-bf-i" placeholder="10"/></div>
+      <div class="calc-field-row"><label>r (m) =</label><input class="calc-inp" id="em-bf-r" placeholder="0.05"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcBField()">Calcular B</button>
+        <button class="calc-btn sec" onclick="clearCard('em-bfield')">Limpiar</button>
+      </div>
+      <div id="res-em-bfield" class="calc-res"></div>
+    `);
+
+  // ── FARADAY ──
+  document.getElementById('em-pFaraday').innerHTML =
+    emCard('em-far','ε','FEM Inducida','ε = −N · ΔΦ/Δt',`
+      <div class="calc-field-row"><label>N (espiras) =</label><input class="calc-inp calc-inp-sm" id="em-far-n" placeholder="1" value="1"/></div>
+      <div class="calc-field-row"><label>Φ₁ (Wb) =</label><input class="calc-inp" id="em-far-p1" placeholder="0.01"/></div>
+      <div class="calc-field-row"><label>Φ₂ (Wb) =</label><input class="calc-inp" id="em-far-p2" placeholder="0.005"/></div>
+      <div class="calc-field-row"><label>Δt (s) =</label><input class="calc-inp" id="em-far-dt" placeholder="0.1"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcFaraday()">Calcular ε</button>
+        <button class="calc-btn sec" onclick="clearCard('em-far')">Limpiar</button>
+      </div>
+      <div id="res-em-far" class="calc-res"></div>
+    `) +
+    emCard('em-ind','L','Inductancia','L = NΦ / I — y energía U = ½LI²',`
+      <div class="calc-field-row"><label>N =</label><input class="calc-inp calc-inp-sm" id="em-ind-n" placeholder="100"/></div>
+      <div class="calc-field-row"><label>Φ (Wb) =</label><input class="calc-inp" id="em-ind-p" placeholder="0.001"/></div>
+      <div class="calc-field-row"><label>I (A) =</label><input class="calc-inp" id="em-ind-i" placeholder="2"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcInductance()">Calcular L</button>
+        <button class="calc-btn sec" onclick="clearCard('em-ind')">Limpiar</button>
+      </div>
+      <div id="res-em-ind" class="calc-res"></div>
+    `);
+
+  // ── MAXWELL ──
+  document.getElementById('em-pMaxwell').innerHTML =
+    emCard('em-mxw-ohm','Ω','Ley de Ohm & Potencia','V = IR, P = IV, P = I²R',`
+      <div class="calc-field-row"><label>V (V) =</label><input class="calc-inp" id="em-ohm-v" placeholder=""/></div>
+      <div class="calc-field-row"><label>I (A) =</label><input class="calc-inp" id="em-ohm-i" placeholder=""/></div>
+      <div class="calc-field-row"><label>R (Ω) =</label><input class="calc-inp" id="em-ohm-r" placeholder=""/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcOhm()">Resolver</button>
+        <button class="calc-btn sec" onclick="clearCard('em-mxw-ohm')">Limpiar</button>
+      </div>
+      <div id="res-em-mxw-ohm" class="calc-res"></div>
+    `) +
+    emCard('em-mxw-rc','τ','Circuito RC','τ = RC — carga/descarga',`
+      <div class="calc-field-row"><label>R (Ω) =</label><input class="calc-inp" id="em-rc-r" placeholder="1000"/></div>
+      <div class="calc-field-row"><label>C (F) =</label><input class="calc-inp" id="em-rc-c" placeholder="1e-6"/></div>
+      <div class="calc-field-row"><label>V₀ (V) =</label><input class="calc-inp" id="em-rc-v0" placeholder="12"/></div>
+      <div class="calc-field-row"><label>t (s) =</label><input class="calc-inp" id="em-rc-t" placeholder="0.001"/></div>
+      <div class="calc-btn-row">
+        <button class="calc-btn em-btn" onclick="emCalcRC()">Calcular</button>
+        <button class="calc-btn sec" onclick="clearCard('em-mxw-rc')">Limpiar</button>
+      </div>
+      <div id="res-em-mxw-rc" class="calc-res"></div>
+    `) +
+    `<div class="calc-card em-card" style="padding:14px;opacity:.7">
+      <div style="font-size:11px;font-family:'Space Mono',monospace;color:var(--text2);line-height:1.8">
+        <div style="font-weight:700;color:var(--fi);margin-bottom:6px">Ecuaciones de Maxwell</div>
+        <div>∇·E = ρ/ε₀ <span style="color:var(--text3);margin-left:8px">— Ley de Gauss</span></div>
+        <div>∇·B = 0 <span style="color:var(--text3);margin-left:8px">— No monopolos</span></div>
+        <div>∇×E = −∂B/∂t <span style="color:var(--text3);margin-left:8px">— Faraday</span></div>
+        <div>∇×B = μ₀J + μ₀ε₀∂E/∂t <span style="color:var(--text3);margin-left:8px">— Ampère-Maxwell</span></div>
+      </div>
+    </div>`;
 }
 
-// Al cambiar coordenadas: solo actualiza labels sin destruir resultados
-function emRefreshCoordLabels(){
-  const cl = emCoord==='cart'?['x','y','z']:emCoord==='cyl'?['ρ','φ°','z']:['r','θ°','φ°'];
-  ['q1','q2'].forEach(qid=>{
-    ['x','y','z'].forEach((ax,i)=>{
-      const inp=document.getElementById('em-'+qid+ax);
-      if(inp?.previousElementSibling) inp.previousElementSibling.textContent=cl[i];
-    });
-  });
-}
-
-// helper — format scientific notation
-function emFmt(v,dec=4){
-  if(v===null||v===undefined||isNaN(v))return '—';
-  if(Math.abs(v)===0)return '0';
-  if(Math.abs(v)>=1e4||Math.abs(v)<1e-3&&v!==0){
-    return v.toExponential(dec);
-  }
-  return parseFloat(v.toFixed(dec)).toString();
-}
-
-// ─────────────────────────────────────────────────────
-// COULOMB — Ley de Coulomb & Campo Eléctrico
-// ─────────────────────────────────────────────────────
-function emRenderCoulomb(){
-  const p=document.getElementById('em-pCoulomb');
-  if(!p)return;
-  const coordLabels=emCoord==='cart'?['x','y','z']:emCoord==='cyl'?['ρ','φ°','z']:['r','θ°','φ°'];
-  const [l1,l2,l3]=coordLabels;
-  p.innerHTML=`
-  <div class="em-section-title">Ley de Coulomb — Fuerza entre cargas</div>
-  <div class="em-formula">F = k&middot;q<sub>1</sub>&middot;q<sub>2</sub> / r&sup2; &nbsp;|&nbsp; k = 8.9875&times;10&#8313; N&middot;m&sup2;/C&sup2;</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>q₁ (C)</label><input id="em-q1" value="1e-6" placeholder="1e-6"></div>
-    <div class="em-input-group"><label>q₂ (C)</label><input id="em-q2" value="-2e-6" placeholder="-2e-6"></div>
-  </div>
-  <div class="em-section-title" style="margin-top:10px">Posici&oacute;n de q<sub>1</sub> (${l1},${l2},${l3})</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>${l1}</label><input id="em-q1x" value="0"></div>
-    <div class="em-input-group"><label>${l2}</label><input id="em-q1y" value="0"></div>
-    <div class="em-input-group"><label>${l3}</label><input id="em-q1z" value="0"></div>
-  </div>
-  <div class="em-section-title">Posici&oacute;n de q<sub>2</sub> (${l1},${l2},${l3})</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>${l1}</label><input id="em-q2x" value="2"></div>
-    <div class="em-input-group"><label>${l2}</label><input id="em-q2y" value="1"></div>
-    <div class="em-input-group"><label>${l3}</label><input id="em-q2z" value="0"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcCoulomb()">Calcular y graficar</button>
-  <div id="em-res-coulomb"></div>
-  `;
-}
-
-function emToCart(a,b,c){
-  if(emCoord==='cart') return [a,b,c];
-  if(emCoord==='cyl'){
-    const phi=b*Math.PI/180;
-    return [a*Math.cos(phi), a*Math.sin(phi), c];
-  }
-  // spherical r,theta,phi
-  const th=b*Math.PI/180, ph=c*Math.PI/180;
-  return [a*Math.sin(th)*Math.cos(ph), a*Math.sin(th)*Math.sin(ph), a*Math.cos(th)];
-}
-
+// ── EM CALCULATION FUNCTIONS ─────────────────────────
 function emCalcCoulomb(){
-  const q1=parseFloat(document.getElementById('em-q1').value)||0;
-  const q2=parseFloat(document.getElementById('em-q2').value)||0;
-
-  const [x1,y1,z1]=emToCart(
-    parseFloat(document.getElementById('em-q1x').value)||0,
-    parseFloat(document.getElementById('em-q1y').value)||0,
-    parseFloat(document.getElementById('em-q1z').value)||0
-  );
-  const [x2,y2,z2]=emToCart(
-    parseFloat(document.getElementById('em-q2x').value)||0,
-    parseFloat(document.getElementById('em-q2y').value)||0,
-    parseFloat(document.getElementById('em-q2z').value)||0
-  );
-
-  const dx=x2-x1, dy=y2-y1, dz=z2-z1;
-  const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
-
-  // Validar que las cargas no estén en el mismo punto
-  if(dist<1e-10){
-    document.getElementById('em-res-coulomb').innerHTML=
-      '<div class="em-result-hint" style="color:#ff5572;margin-top:10px">⚠ Las posiciones de q₁ y q₂ son iguales — la distancia es indefinida.</div>';
-    return;
-  }
-
-  const F=EM_K*Math.abs(q1)*Math.abs(q2)/(dist*dist);
-  const sign=q1*q2<0?'Atractiva':'Repulsiva';
-  const attract=q1*q2<0;
-
-  // Vector unitario q1→q2
-  const ux=dx/dist, uy=dy/dist, uz=dz/dist;
-  // Signo de la fuerza sobre q2: repulsiva (+) si mismo signo, atractiva (−)
-  const fSign=q1*q2>0?1:-1;
-
-  // Campo eléctrico en q2 debido a q1
-  const E=EM_K*Math.abs(q1)/(dist*dist);
-  // Dirección del campo: desde q1 si q1>0, hacia q1 si q1<0
-  const eDir=q1>0?1:-1;
-
-  // Escala visual: normalizar a longitud 2.5 unidades en canvas
-  const sc=2.5;
-  emObjects=[
-    {type:'charge',x:x1,y:y1,z:z1,q:q1,label:'q₁'},
-    {type:'charge',x:x2,y:y2,z:z2,q:q2,label:'q₂'},
-    // Vector fuerza sobre q2
-    {type:'vector',ox:x2,oy:y2,oz:z2,
-      vx:fSign*ux*sc, vy:fSign*uy*sc, vz:fSign*uz*sc,
-      color:'#ff8c42',label:'F'},
-    // Campo eléctrico en q2 (dirección desde q1)
-    {type:'vector',ox:x2,oy:y2,oz:z2,
-      vx:eDir*ux*sc*0.6, vy:eDir*uy*sc*0.6, vz:eDir*uz*sc*0.6,
-      color:'#f0c040',label:'E'},
-  ];
-  emDraw();
-
-  document.getElementById('em-res-coulomb').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card full">
-      <div class="em-math-label">Fuerza de Coulomb</div>
-      <div class="em-math-value big">${emFmt(F)} N</div>
-      <div class="em-result-hint">${sign} — ${attract?'Las cargas se atraen':'Las cargas se repelen'}</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Distancia r (calculada)</div>
-      <div class="em-math-value">${emFmt(dist)} m</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Campo E en q₂</div>
-      <div class="em-math-value">${emFmt(E)} N/C</div>
-    </div>
-    <div class="em-math-card full">
-      <div class="em-math-label">Vector unitario r̂ (q₁→q₂)</div>
-      <div class="em-math-value sm">(${emFmt(ux,3)}, ${emFmt(uy,3)}, ${emFmt(uz,3)})</div>
-    </div>
-    <div class="em-math-card full">
-      <div class="em-math-label">Vector fuerza F⃗ sobre q₂</div>
-      <div class="em-math-value sm">${emFmt(fSign*F*ux)} x̂ + ${emFmt(fSign*F*uy)} ŷ + ${emFmt(fSign*F*uz)} ẑ N</div>
-    </div>
-  </div>`;
+  const q1=emInp('em-coul-q1'), q2=emInp('em-coul-q2'), r=emInp('em-coul-r');
+  if(r===0) return emRes('res-em-coul','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const F=EM_K*q1*q2/(r*r);
+  const tipo=F>0?'repulsiva':'atractiva';
+  emRes('res-em-coul',`
+    <div class="calc-res-lbl">Fuerza</div>
+    <div class="calc-res-val">F = ${emFmt(F)} N</div>
+    <div class="calc-res-lbl" style="margin-top:4px">|F| = ${emFmt(Math.abs(F))} N — ${tipo}</div>
+  `);
 }
-
-// ─────────────────────────────────────────────────────
-// GAUSS
-// ─────────────────────────────────────────────────────
-function emRenderGauss(){
-  const p=document.getElementById('em-pGauss');
-  if(!p)return;
-  p.innerHTML=`
-  <div class="em-section-title">Ley de Gauss — Flujo Eléctrico</div>
-  <div class="em-formula">&oint; E&middot;dA = Q<sub>enc</sub>/&epsilon;<sub>0</sub> &nbsp;|&nbsp; &epsilon;<sub>0</sub> = 8.854&times;10<sup>&minus;12</sup> F/m</div>
-  <div class="em-section-title" style="margin-top:8px">Geometría de la superficie gaussiana</div>
-  <div class="em-input-row">
-    <div class="em-input-group">
-      <label>Geometría</label>
-      <select id="em-gauss-geo" style="background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text1);font-family:Space Mono,monospace;font-size:11px;padding:7px 8px;width:100%">
-        <option value="sphere">Esfera</option>
-        <option value="cylinder">Cilindro</option>
-        <option value="plane">Plano infinito</option>
-      </select>
-    </div>
-    <div class="em-input-group"><label>Q_enc (C)</label><input id="em-qenc" value="1e-9"></div>
-  </div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>r o d (m)</label><input id="em-gauss-r" value="0.1"></div>
-    <div class="em-input-group"><label>L (m) — cilindro</label><input id="em-gauss-L" value="1"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcGauss()">Calcular flujo y campo</button>
-  <div id="em-res-gauss"></div>`;
+function emCalcEField(){
+  const Q=emInp('em-ef-q'), r=emInp('em-ef-r');
+  if(r===0) return emRes('res-em-efield','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const E=EM_K*Q/(r*r);
+  emRes('res-em-efield',`
+    <div class="calc-res-lbl">Campo eléctrico</div>
+    <div class="calc-res-val">E = ${emFmt(E)} N/C</div>
+    <div class="calc-res-lbl" style="margin-top:4px">Dirección: ${E>0?'radial hacia afuera ↗':'radial hacia adentro ↙'}</div>
+  `);
 }
-
-function emCalcGauss(){
-  const geo=document.getElementById('em-gauss-geo').value;
-  const Q=parseFloat(document.getElementById('em-qenc').value)||0;
-  const r=parseFloat(document.getElementById('em-gauss-r').value)||0.1;
-  const L=parseFloat(document.getElementById('em-gauss-L').value)||1;
-
-  let E=0, flux=0, area=0, note='';
-  flux = Q / EM_EPS0;
-
-  if(geo==='sphere'){
-    area = 4*Math.PI*r*r;
-    E = Q/(4*Math.PI*EM_EPS0*r*r);
-    note = 'E radial: E⃗ = (Q/4πε₀r²) r̂';
-    emObjects=[{type:'charge',x:0,y:0,z:0,q:Q,label:'Q'}];
-    // Draw radial field arrows
-    [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(([dx,dy,dz])=>{
-      const s=Q>0?1:-1;
-      emObjects.push({type:'vector',ox:s*dx*r*3,oy:s*dy*r*3,oz:s*dz*r*3,vx:s*dx*2,vy:s*dy*2,vz:s*dz*2,color:'#ff8c42',label:''});
-    });
-  } else if(geo==='cylinder'){
-    area = 2*Math.PI*r*L;
-    E = Q/(2*Math.PI*EM_EPS0*r*L);
-    note = 'E radial: E⃗ = (lambda/2πε₀ρ) ρ̂  |  lambda = Q/L';
-    emObjects=[{type:'charge',x:0,y:0,z:0,q:Q,label:'Q'}];
-  } else {
-    // infinite plane: σ = Q/A (we treat r as half-spacing)
-    area = 1; // conceptual
-    E = Q/(2*EM_EPS0); // sigma/(2*eps0), treat Q as sigma
-    note = 'E uniforme: E⃗ = σ/2ε₀  (σ = densidad superficial)';
-    emObjects=[];
-  }
-
-  emDraw();
-  document.getElementById('em-res-gauss').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card full">
-      <div class="em-math-label">Flujo total Φ_E</div>
-      <div class="em-math-value big">${emFmt(flux)} N·m²/C</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Campo E</div>
-      <div class="em-math-value">${emFmt(E)} N/C</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Área gaussiana</div>
-      <div class="em-math-value">${emFmt(area)} m²</div>
-    </div>
-    <div class="em-math-card full">
-      <div class="em-math-label">Expresión del campo</div>
-      <div class="em-result-hint">${note}</div>
-    </div>
-  </div>`;
+function emCalcGaussFlux(){
+  const Q=emInp('em-gf-q');
+  const phi=Q/EM_EPS0;
+  emRes('res-em-gauss-flux',`
+    <div class="calc-res-lbl">Flujo eléctrico</div>
+    <div class="calc-res-val">Φ = ${emFmt(phi)} N·m²/C</div>
+    <div class="calc-res-lbl" style="margin-top:4px">ε₀ = ${EM_EPS0.toExponential(4)} F/m</div>
+  `);
 }
-
-// ─────────────────────────────────────────────────────
-// POTENCIAL ELÉCTRICO
-// ─────────────────────────────────────────────────────
-function emRenderPotential(){
-  const p=document.getElementById('em-pPotential');
-  if(!p)return;
-  p.innerHTML=`
-  <div class="em-section-title">Potencial Eléctrico</div>
-  <div class="em-formula">V = k&middot;Q/r &nbsp;|&nbsp; &Delta;V = V<sub>B</sub> &minus; V<sub>A</sub> &nbsp;|&nbsp; W = q&middot;&Delta;V</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>Q (C)</label><input id="em-vQ" value="1e-6"></div>
-    <div class="em-input-group"><label>r_A (m)</label><input id="em-vra" value="0.1"></div>
-    <div class="em-input-group"><label>r_B (m)</label><input id="em-vrb" value="0.3"></div>
-  </div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>q prueba (C)</label><input id="em-vq" value="1e-9"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcPotential()">Calcular</button>
-  <div id="em-res-potential"></div>`;
+function emCalcGaussSph(){
+  const Q=emInp('em-gs-q'), r=emInp('em-gs-r');
+  if(r===0) return emRes('res-em-gauss-sph','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const E=Q/(4*Math.PI*EM_EPS0*r*r);
+  emRes('res-em-gauss-sph',`
+    <div class="calc-res-lbl">Campo (simetría esférica)</div>
+    <div class="calc-res-val">E = ${emFmt(E)} N/C</div>
+  `);
 }
-
+function emCalcGaussCyl(){
+  const lambda=emInp('em-gc-l'), r=emInp('em-gc-r');
+  if(r===0) return emRes('res-em-gauss-cyl','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const E=lambda/(2*Math.PI*EM_EPS0*r);
+  emRes('res-em-gauss-cyl',`
+    <div class="calc-res-lbl">Campo (línea infinita)</div>
+    <div class="calc-res-val">E = ${emFmt(E)} N/C</div>
+  `);
+}
 function emCalcPotential(){
-  const Q=parseFloat(document.getElementById('em-vQ').value)||0;
-  const rA=parseFloat(document.getElementById('em-vra').value)||0.1;
-  const rB=parseFloat(document.getElementById('em-vrb').value)||0.3;
-  const q=parseFloat(document.getElementById('em-vq').value)||1e-9;
-
-  const VA=EM_K*Q/rA;
-  const VB=EM_K*Q/rB;
-  const dV=VB-VA;
-  const W=q*dV;
-  const E_A=EM_K*Q/(rA*rA);
-  const E_B=EM_K*Q/(rB*rB);
-
-  emObjects=[{type:'charge',x:0,y:0,z:0,q:Q,label:'Q'}];
-  // Show points A and B
-  emObjects.push({type:'vector',ox:rA,oy:0,oz:0,vx:0.01,vy:0,vz:0,color:'#2dd4a0',label:'A'});
-  emObjects.push({type:'vector',ox:rB,oy:0,oz:0,vx:0.01,vy:0,vz:0,color:'#ff8c42',label:'B'});
-  emDraw();
-
-  document.getElementById('em-res-potential').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card">
-      <div class="em-math-label">V en A (r=${rA}m)</div>
-      <div class="em-math-value">${emFmt(VA)} V</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">V en B (r=${rB}m)</div>
-      <div class="em-math-value">${emFmt(VB)} V</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">ΔV = V_B - V_A</div>
-      <div class="em-math-value">${emFmt(dV)} V</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Trabajo W = q·ΔV</div>
-      <div class="em-math-value">${emFmt(W)} J</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">E en A</div>
-      <div class="em-math-value">${emFmt(E_A)} N/C</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">E en B</div>
-      <div class="em-math-value">${emFmt(E_B)} N/C</div>
-    </div>
-  </div>`;
+  const Q=emInp('em-pot-q'), r=emInp('em-pot-r');
+  if(r===0) return emRes('res-em-pot','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const V=EM_K*Q/r;
+  emRes('res-em-pot',`
+    <div class="calc-res-lbl">Potencial eléctrico</div>
+    <div class="calc-res-val">V = ${emFmt(V)} V</div>
+  `);
 }
-
-// ─────────────────────────────────────────────────────
-// FUERZA DE LORENTZ
-// ─────────────────────────────────────────────────────
-function emRenderLorentz(){
-  const p=document.getElementById('em-pLorentz');
-  if(!p)return;
-  p.innerHTML=`
-  <div class="em-section-title">Fuerza de Lorentz</div>
-  <div class="em-formula"><b>F</b> = q(<b>E</b> + <b>v</b> &times; <b>B</b>)</div>
-  <div class="em-section-title" style="margin-top:8px">Carga y velocidad</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>q (C)</label><input id="em-lq" value="1.6e-19"></div>
-  </div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>vx (m/s)</label><input id="em-lvx" value="1e6"></div>
-    <div class="em-input-group"><label>vy</label><input id="em-lvy" value="0"></div>
-    <div class="em-input-group"><label>vz</label><input id="em-lvz" value="0"></div>
-  </div>
-  <div class="em-section-title">Campo eléctrico E⃗ (N/C)</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>Ex</label><input id="em-lex" value="0"></div>
-    <div class="em-input-group"><label>Ey</label><input id="em-ley" value="1e4"></div>
-    <div class="em-input-group"><label>Ez</label><input id="em-lez" value="0"></div>
-  </div>
-  <div class="em-section-title">Campo magnético B⃗ (T)</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>Bx</label><input id="em-lbx" value="0"></div>
-    <div class="em-input-group"><label>By</label><input id="em-lby" value="0"></div>
-    <div class="em-input-group"><label>Bz</label><input id="em-lbz" value="0.5"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcLorentz()">Calcular fuerza</button>
-  <div id="em-res-lorentz"></div>`;
+function emCalcEPot(){
+  const q1=emInp('em-ep-q1'), q2=emInp('em-ep-q2'), r=emInp('em-ep-r');
+  if(r===0) return emRes('res-em-epot','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const U=EM_K*q1*q2/r;
+  emRes('res-em-epot',`
+    <div class="calc-res-lbl">Energía potencial</div>
+    <div class="calc-res-val">U = ${emFmt(U)} J</div>
+    <div class="calc-res-lbl" style="margin-top:4px">${U<0?'Sistema ligado (atractivo)':'Sistema repulsivo'}</div>
+  `);
 }
-
+function emCalcCap(){
+  const A=emInp('em-cap-a'), d=emInp('em-cap-d'), er=emInp('em-cap-er')||1;
+  if(d===0) return emRes('res-em-cap','<div class="calc-res-val" style="color:var(--red)">d no puede ser 0</div>');
+  const C=er*EM_EPS0*A/d;
+  const Uf=0; // no voltage given
+  emRes('res-em-cap',`
+    <div class="calc-res-lbl">Capacitancia</div>
+    <div class="calc-res-val">C = ${emFmt(C)} F</div>
+    <div class="calc-res-lbl" style="margin-top:4px">${C>1e-6?emFmt(C*1e6)+' μF':C>1e-9?emFmt(C*1e9)+' nF':emFmt(C*1e12)+' pF'}</div>
+  `);
+}
 function emCalcLorentz(){
-  const q=parseFloat(document.getElementById('em-lq').value)||0;
-  const vx=parseFloat(document.getElementById('em-lvx').value)||0;
-  const vy=parseFloat(document.getElementById('em-lvy').value)||0;
-  const vz=parseFloat(document.getElementById('em-lvz').value)||0;
-  const Ex=parseFloat(document.getElementById('em-lex').value)||0;
-  const Ey=parseFloat(document.getElementById('em-ley').value)||0;
-  const Ez=parseFloat(document.getElementById('em-lez').value)||0;
-  const Bx=parseFloat(document.getElementById('em-lbx').value)||0;
-  const By=parseFloat(document.getElementById('em-lby').value)||0;
-  const Bz=parseFloat(document.getElementById('em-lbz').value)||0;
-
+  const q=emInp('em-lor-q');
+  const ex=emInp('em-lor-ex'),ey=emInp('em-lor-ey'),ez=emInp('em-lor-ez');
+  const vx=emInp('em-lor-vx'),vy=emInp('em-lor-vy'),vz=emInp('em-lor-vz');
+  const bx=emInp('em-lor-bx'),by=emInp('em-lor-by'),bz=emInp('em-lor-bz');
   // v × B
-  const cxB=vy*Bz-vz*By, cyB=vz*Bx-vx*Bz, czB=vx*By-vy*Bx;
-  // F = q(E + v×B)
-  const Fx=q*(Ex+cxB), Fy=q*(Ey+cyB), Fz=q*(Ez+czB);
-  const Fmag=Math.sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-  const vmag=Math.sqrt(vx*vx+vy*vy+vz*vz);
-  const Emag=Math.sqrt(Ex*Ex+Ey*Ey+Ez*Ez);
-  const Bmag=Math.sqrt(Bx*Bx+By*By+Bz*Bz);
-
-  // Escala visual: cada vector se normaliza a 2.5 unidades para que siempre sea visible
-  function scaleVec(x,y,z,len=2.5){
-    const m=Math.sqrt(x*x+y*y+z*z);
-    if(m<1e-30) return {vx:0,vy:0,vz:0};
-    return {vx:x/m*len, vy:y/m*len, vz:z/m*len};
-  }
-  const sv=scaleVec(vx,vy,vz), sE=scaleVec(Ex,Ey,Ez), sB=scaleVec(Bx,By,Bz), sF=scaleVec(Fx,Fy,Fz);
-  emObjects=[];
-  if(vmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sv,color:'#2dd4a0',label:'v⃗'});
-  if(Emag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sE,color:'#f0c040',label:'E'});
-  if(Bmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sB,color:'#4da6ff',label:'B'});
-  if(Fmag>1e-30)  emObjects.push({type:'vector',ox:0,oy:0,oz:0,...sF,color:'#ff5572',label:'F⃗'});
-  emDraw();
-
-  document.getElementById('em-res-lorentz').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card full">
-      <div class="em-math-label">Fuerza total F⃗ = q(E⃗ + v⃗×B⃗)</div>
-      <div class="em-math-value sm">(${emFmt(Fx)}, ${emFmt(Fy)}, ${emFmt(Fz)}) N</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">|F⃗|</div>
-      <div class="em-math-value">${emFmt(Fmag)} N</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">v⃗ × B⃗</div>
-      <div class="em-math-value sm">(${emFmt(cxB,3)}, ${emFmt(cyB,3)}, ${emFmt(czB,3)})</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">F_eléctrica = qE</div>
-      <div class="em-math-value">${emFmt(q*Emag)} N</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">F_magnética = q|v×B|</div>
-      <div class="em-math-value">${emFmt(q*Math.sqrt(cxB**2+cyB**2+czB**2))} N</div>
-    </div>
-  </div>`;
+  const cx=vy*bz-vz*by, cy=vz*bx-vx*bz, cz=vx*by-vy*bx;
+  const fx=q*(ex+cx), fy=q*(ey+cy), fz=q*(ez+cz);
+  const mag=Math.sqrt(fx*fx+fy*fy+fz*fz);
+  emRes('res-em-lor',`
+    <div class="calc-res-lbl">Fuerza de Lorentz</div>
+    <div class="calc-res-val">F = (${emFmt(fx)}, ${emFmt(fy)}, ${emFmt(fz)}) N</div>
+    <div class="calc-res-lbl" style="margin-top:4px">|F| = ${emFmt(mag)} N</div>
+    <div class="calc-res-lbl">v × B = (${emFmt(cx)}, ${emFmt(cy)}, ${emFmt(cz)})</div>
+  `);
 }
-
-// ─────────────────────────────────────────────────────
-// FARADAY — Inducción electromagnética
-// ─────────────────────────────────────────────────────
-function emRenderFaraday(){
-  const p=document.getElementById('em-pFaraday');
-  if(!p)return;
-  p.innerHTML=`
-  <div class="em-section-title">Ley de Faraday — Inducción</div>
-  <div class="em-formula">&varepsilon; = &minus;d&Phi;<sub>B</sub>/dt &nbsp;|&nbsp; &Phi;<sub>B</sub> = B&middot;A&middot;cos(&theta;)</div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>B (T)</label><input id="em-fb" value="0.5"></div>
-    <div class="em-input-group"><label>A (m²)</label><input id="em-fa" value="0.01"></div>
-    <div class="em-input-group"><label>θ (°)</label><input id="em-ftheta" value="0"></div>
-  </div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>dB/dt (T/s)</label><input id="em-fdbdt" value="2"></div>
-    <div class="em-input-group"><label>N vueltas</label><input id="em-fn" value="100"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcFaraday()">Calcular FEM</button>
-  <div id="em-res-faraday"></div>`;
+function emCalcBField(){
+  const I=emInp('em-bf-i'), r=emInp('em-bf-r');
+  if(r===0) return emRes('res-em-bfield','<div class="calc-res-val" style="color:var(--red)">r no puede ser 0</div>');
+  const B=EM_MU0*I/(2*Math.PI*r);
+  emRes('res-em-bfield',`
+    <div class="calc-res-lbl">Campo magnético</div>
+    <div class="calc-res-val">B = ${emFmt(B)} T</div>
+    <div class="calc-res-lbl" style="margin-top:4px">${B>1e-3?emFmt(B*1e3)+' mT':emFmt(B*1e6)+' μT'}</div>
+  `);
 }
-
 function emCalcFaraday(){
-  const B=parseFloat(document.getElementById('em-fb').value)||0;
-  const A=parseFloat(document.getElementById('em-fa').value)||0;
-  const th=parseFloat(document.getElementById('em-ftheta').value)||0;
-  const dBdt=parseFloat(document.getElementById('em-fdbdt').value)||0;
-  const N=parseFloat(document.getElementById('em-fn').value)||1;
-
-  const thRad=th*Math.PI/180;
-  const flux=B*A*Math.cos(thRad);
-  const dFluxDt=dBdt*A*Math.cos(thRad);
-  const emf=-N*dFluxDt;
-
-  // Vector B on canvas
-  emObjects=[
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:B*3,vz:0,color:'#4da6ff',label:'B'},
-  ];
-  emDraw();
-
-  document.getElementById('em-res-faraday').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card">
-      <div class="em-math-label">Flujo Φ_B</div>
-      <div class="em-math-value">${emFmt(flux)} Wb</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">dΦ_B/dt</div>
-      <div class="em-math-value">${emFmt(dFluxDt)} Wb/s</div>
-    </div>
-    <div class="em-math-card full">
-      <div class="em-math-label">FEM inducida ε = −N·dΦ/dt</div>
-      <div class="em-math-value big">${emFmt(emf)} V</div>
-      <div class="em-result-hint">${emf>0?'Dirección: positiva (Lenz)':'Dirección: negativa (Lenz)'}</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">N vueltas</div>
-      <div class="em-math-value">${N}</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">cos(θ)</div>
-      <div class="em-math-value">${emFmt(Math.cos(thRad),4)}</div>
-    </div>
-  </div>`;
+  const N=emInp('em-far-n')||1, p1=emInp('em-far-p1'), p2=emInp('em-far-p2'), dt=emInp('em-far-dt');
+  if(dt===0) return emRes('res-em-far','<div class="calc-res-val" style="color:var(--red)">Δt no puede ser 0</div>');
+  const emf=-N*(p2-p1)/dt;
+  emRes('res-em-far',`
+    <div class="calc-res-lbl">FEM inducida</div>
+    <div class="calc-res-val">ε = ${emFmt(emf)} V</div>
+    <div class="calc-res-lbl" style="margin-top:4px">ΔΦ = ${emFmt(p2-p1)} Wb · N = ${N}</div>
+  `);
 }
-
-// ─────────────────────────────────────────────────────
-// MAXWELL — Las 4 ecuaciones
-// ─────────────────────────────────────────────────────
-function emRenderMaxwell(){
-  const p=document.getElementById('em-pMaxwell');
-  if(!p)return;
-  p.innerHTML=`
-  <div class="em-section-title">Ecuaciones de Maxwell</div>
-  <div class="em-formula" style="line-height:2">
-    &nabla;&middot;E = &rho;/&epsilon;<sub>0</sub> &nbsp;&nbsp;&nbsp;(Gauss el&eacute;ctrico)<br>
-    &nabla;&middot;B = 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Gauss magn&eacute;tico)<br>
-    &nabla;&times;E = &minus;&part;B/&part;t &nbsp;(Faraday)<br>
-    &nabla;&times;B = &mu;<sub>0</sub>J + &mu;<sub>0</sub>&epsilon;<sub>0</sub>&part;E/&part;t &nbsp;(Amp&egrave;re-Maxwell)
-  </div>
-  <div class="em-section-title" style="margin-top:8px">Onda electromagnética en el vacío</div>
-  <div class="em-formula">c = 1/&radic;(&mu;<sub>0</sub>&epsilon;<sub>0</sub>) &nbsp;|&nbsp; E = c&middot;B &nbsp;|&nbsp; <b>S</b> = (1/&mu;<sub>0</sub>) <b>E</b>&times;<b>B</b></div>
-  <div class="em-input-row">
-    <div class="em-input-group"><label>E₀ (N/C)</label><input id="em-mE0" value="1000"></div>
-    <div class="em-input-group"><label>f (Hz)</label><input id="em-mf" value="1e9"></div>
-  </div>
-  <button class="em-action-btn" onclick="emCalcMaxwell()">Calcular onda EM</button>
-  <div id="em-res-maxwell"></div>`;
+function emCalcInductance(){
+  const N=emInp('em-ind-n'), phi=emInp('em-ind-p'), I=emInp('em-ind-i');
+  if(I===0) return emRes('res-em-ind','<div class="calc-res-val" style="color:var(--red)">I no puede ser 0</div>');
+  const L=N*phi/I;
+  const U=0.5*L*I*I;
+  emRes('res-em-ind',`
+    <div class="calc-res-lbl">Inductancia</div>
+    <div class="calc-res-val">L = ${emFmt(L)} H</div>
+    <div class="calc-res-lbl" style="margin-top:4px">${L>1e-3?emFmt(L*1e3)+' mH':emFmt(L*1e6)+' μH'}</div>
+    <div class="calc-res-lbl" style="margin-top:4px">Energía: U = ½LI² = ${emFmt(U)} J</div>
+  `);
 }
-
-function emCalcMaxwell(){
-  const E0=parseFloat(document.getElementById('em-mE0').value)||1000;
-  const f=parseFloat(document.getElementById('em-mf').value)||1e9;
-
-  const c=1/Math.sqrt(EM_MU0*EM_EPS0);
-  const B0=E0/c;
-  const lambda=c/f;
-  const omega=2*Math.PI*f;
-  const k=omega/c;
-  // Poynting vector magnitude S = E0*B0/mu0
-  const S=E0*B0/EM_MU0;
-  // Energy density
-  const uE=0.5*EM_EPS0*E0*E0;
-  const uB=0.5*B0*B0/EM_MU0;
-
-  // Draw E and B vectors orthogonal
-  emObjects=[
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:3,vz:0,color:'#f0c040',label:'E'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:0,vy:0,vz:3,color:'#4da6ff',label:'B'},
-    {type:'vector',ox:0,oy:0,oz:0,vx:3,vy:0,vz:0,color:'#ff5572',label:'S'},
-  ];
-  emDraw();
-
-  document.getElementById('em-res-maxwell').innerHTML=`
-  <div class="em-math-grid" style="margin-top:10px">
-    <div class="em-math-card">
-      <div class="em-math-label">c = 1/&radic;(&mu;0&epsilon;0)</div>
-      <div class="em-math-value">${emFmt(c,0)} m/s</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">B0 = E0/c</div>
-      <div class="em-math-value">${emFmt(B0)} T</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Long. de onda &lambda;</div>
-      <div class="em-math-value">${emFmt(lambda)} m</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">Poynting |S|</div>
-      <div class="em-math-value">${emFmt(S)} W/m&sup2;</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">u_E (densidad)</div>
-      <div class="em-math-value">${emFmt(uE)} J/m&sup3;</div>
-    </div>
-    <div class="em-math-card">
-      <div class="em-math-label">u_B (densidad)</div>
-      <div class="em-math-value">${emFmt(uB)} J/m&sup3;</div>
-    </div>
-    <div class="em-math-card full">
-      <div class="em-math-label">k = &omega;/c (n&uacute;m. de onda)</div>
-      <div class="em-math-value">${emFmt(k)} rad/m</div>
-    </div>
-  </div>`;
+function emCalcOhm(){
+  let V=parseFloat(document.getElementById('em-ohm-v')?.value);
+  let I=parseFloat(document.getElementById('em-ohm-i')?.value);
+  let R=parseFloat(document.getElementById('em-ohm-r')?.value);
+  const hv=isFinite(V), hi=isFinite(I), hr=isFinite(R);
+  if(hv&&hi&&!hr) R=V/I;
+  else if(hv&&!hi&&hr) I=V/R;
+  else if(!hv&&hi&&hr) V=I*R;
+  else if(hv&&hi&&hr){/* all given, just compute */}
+  else return emRes('res-em-mxw-ohm','<div class="calc-res-val" style="color:var(--text3)">Ingresa al menos 2 de los 3 valores</div>');
+  const P=V*I;
+  emRes('res-em-mxw-ohm',`
+    <div class="calc-res-lbl">Resultados</div>
+    <div class="calc-res-val">V = ${emFmt(V)} V · I = ${emFmt(I)} A · R = ${emFmt(R)} Ω</div>
+    <div class="calc-res-lbl" style="margin-top:4px">Potencia: P = ${emFmt(P)} W</div>
+  `);
 }
-
-
-
-
-
-
-
+function emCalcRC(){
+  const R=emInp('em-rc-r'), C=emInp('em-rc-c'), V0=emInp('em-rc-v0'), t=emInp('em-rc-t');
+  const tau=R*C;
+  if(tau===0) return emRes('res-em-mxw-rc','<div class="calc-res-val" style="color:var(--red)">τ = 0 — verifica R y C</div>');
+  const vCharge=V0*(1-Math.exp(-t/tau));
+  const vDischarge=V0*Math.exp(-t/tau);
+  emRes('res-em-mxw-rc',`
+    <div class="calc-res-lbl">Constante de tiempo</div>
+    <div class="calc-res-val">τ = RC = ${emFmt(tau)} s</div>
+    <div class="calc-res-lbl" style="margin-top:6px">En t = ${emFmt(t)} s:</div>
+    <div class="calc-res-val">Carga: V(t) = ${emFmt(vCharge)} V</div>
+    <div class="calc-res-val">Descarga: V(t) = ${emFmt(vDischarge)} V</div>
+  `);
+}
 // ═══════════════════════════════════════════════════════
 // SUPER CALC v3.0.0 — NAVIGATION
 // ═══════════════════════════════════════════════════════
@@ -1963,7 +1969,6 @@ const SUBMOD_CONFIG = {
       { icon:'⟶', name:'Vectores 3D', desc:'Operaciones, graficación y cálculo vectorial', id:'vectors', cls:'al-sub' },
       { icon:'▦',  name:'Matrices & Ec. Lineales', desc:'Operaciones, sistemas, determinantes, eigenvalores', id:'mat', cls:'al-sub' },
       { icon:'≠',  name:'Inecuaciones', desc:'Libre, cuadrática, racional, sistemas, valor absoluto', id:'ineq', cls:'al-sub' },
-      { icon:'f(x)', name:'Funciones', desc:'Dominio, rango y gráfica por tipo', id:'fn', cls:'al-sub' },
       { icon:'Σ',  name:'Sucesiones & Prog.', desc:'Término n-ésimo, PA, PG, clasificación, acotamiento', id:'seq', cls:'al-sub' },
     ]
   },
@@ -2002,7 +2007,7 @@ function navPush(state){
 window.addEventListener('popstate', (e) => {
   const state = e.state;
   // Determinar dónde estamos ahora y retroceder un nivel
-  const moduleIds = ['app','em-app','mat-app','calc-app','ineq-app','fn-app','seq-app'];
+  const moduleIds = ['app','em-app','mat-app','calc-app','ineq-app','seq-app'];
   const activeModule = moduleIds.find(id => {
     const el = document.getElementById(id);
     return el && (el.style.display === 'flex' || el.classList.contains('visible'));
@@ -2029,6 +2034,14 @@ window.addEventListener('load', () => {
   history.replaceState({sc:'launcher'}, '');
   history.pushState({sc:'base'}, '');
   setAuthorVisible(true);
+
+  // Delegated click para submod-cards generadas dinamicamente
+  document.getElementById('submod-cards').addEventListener('click', function(e) {
+    const card = e.target.closest('[data-mod]');
+    if (card && !card.classList.contains('disabled')) {
+      launchSubmod(card.getAttribute('data-mod'));
+    }
+  });
 });
 
 // ── Versiones internas sin pushState (evitar loops) ────
@@ -2036,10 +2049,10 @@ function _closeSubmodNoHistory(){
   document.getElementById('submod-screen').classList.remove('visible');
   const launcher = document.getElementById('launcher');
   launcher.style.display = 'flex';
-  launcher.style.opacity = '0';
+  launcher.classList.add('launcher-fade');
   setTimeout(() => {
     launcher.classList.remove('hidden');
-    launcher.style.opacity = '';
+    requestAnimationFrame(() => launcher.classList.remove('launcher-fade'));
     setAuthorVisible(true);
   }, 50);
 }
@@ -2049,7 +2062,6 @@ function _closeModuleNoHistory(id){
   else if(id==='em')      document.getElementById('em-app').classList.remove('visible');
   else if(id==='mat')     document.getElementById('mat-app').classList.remove('visible');
   else if(id==='ineq'){   document.getElementById('ineq-app').classList.remove('visible'); setTimeout(()=>ineqBack(),350); }
-  else if(id==='fn'){    document.getElementById('fn-app').classList.remove('visible'); setTimeout(()=>fnBack(),350); }
   else if(id==='seq'){   document.getElementById('seq-app').classList.remove('visible'); }
   else if(id==='calc')    document.getElementById('calc-app').classList.remove('visible');
   setTimeout(() => {
@@ -2059,7 +2071,7 @@ function _closeModuleNoHistory(id){
 
 function setAuthorVisible(visible){
   const el = document.getElementById('sc-author-footer');
-  if(el) el.style.opacity = visible ? '' : '0';
+  if(el) el.classList.toggle('author-hidden', !visible);
 }
 
 function _confirmExit(){
@@ -2081,15 +2093,19 @@ function openSubmod(parent) {
   const cfg = SUBMOD_CONFIG[parent];
   document.getElementById('submod-title').innerHTML = cfg.title;
   const cardsEl = document.getElementById('submod-cards');
-  cardsEl.innerHTML = cfg.cards.map(c => `
-    <div class="submod-card ${c.cls} ${c.disabled?'disabled':''}" onclick="${c.disabled?'':'launchSubmod(\''+c.id+'\')'}" style="${c.disabled?'opacity:.4;cursor:default':''}">
-      <div class="submod-icon">${c.icon}</div>
-      <div class="submod-info">
-        <div class="submod-name">${c.name}</div>
-        <div class="submod-desc">${c.desc}</div>
-      </div>
-      <div class="submod-arrow">${c.disabled?'':'›'}</div>
-    </div>`).join('');
+  cardsEl.innerHTML = cfg.cards.map(c => {
+    const dataAttr = c.disabled ? '' : 'data-mod="' + c.id + '"';
+    const disabledAttr = c.disabled ? 'disabled' : '';
+    const inlineStyle = c.disabled ? 'opacity:.4;cursor:default' : '';
+    return '<div class="submod-card ' + c.cls + ' ' + disabledAttr + '" ' + dataAttr + ' style="' + inlineStyle + '">'
+      + '<div class="submod-icon">' + c.icon + '</div>'
+      + '<div class="submod-info">'
+      + '<div class="submod-name">' + c.name + '</div>'
+      + '<div class="submod-desc">' + c.desc + '</div>'
+      + '</div>'
+      + '<div class="submod-arrow">' + (c.disabled ? '' : '›') + '</div>'
+      + '</div>';
+  }).join('');
   const launcher = document.getElementById('launcher');
   launcher.classList.add('hidden');
   setTimeout(() => {
@@ -2103,10 +2119,10 @@ function closeSubmod() {
   document.getElementById('submod-screen').classList.remove('visible');
   const launcher = document.getElementById('launcher');
   launcher.style.display = 'flex';
-  launcher.style.opacity = '0';
+  launcher.classList.add('launcher-fade');
   setTimeout(() => {
     launcher.classList.remove('hidden');
-    launcher.style.opacity = '';
+    requestAnimationFrame(() => launcher.classList.remove('launcher-fade'));
     setAuthorVisible(true);
   }, 50);
 }
@@ -2116,15 +2132,17 @@ function launchSubmod(id) {
     document.getElementById('submod-screen').classList.remove('visible');
     setTimeout(() => {
       document.getElementById('app').style.display = 'flex';
-      initVectorsApp();
+      // doble rAF: 1ro permite que el browser calcule el layout con display:flex,
+      // 2do garantiza que clientWidth/Height ya tienen dimensiones reales antes de resize()
+      requestAnimationFrame(() => requestAnimationFrame(() => initVectorsApp()));
     }, 300);
   } else if (id === 'em') {
     document.getElementById('submod-screen').classList.remove('visible');
     setTimeout(() => {
       document.getElementById('em-app').classList.add('visible');
       emInit();
-      setTimeout(() => emResizeCanvas(), 50);
-      setTimeout(() => emResizeCanvas(), 350);
+      // doble rAF — igual que vectores: garantiza layout antes de resize
+      requestAnimationFrame(() => requestAnimationFrame(() => emResizeCanvas()));
     }, 300);
   } else if (id === 'mat') {
     document.getElementById('submod-screen').classList.remove('visible');
@@ -2142,11 +2160,6 @@ function launchSubmod(id) {
     document.getElementById('submod-screen').classList.remove('visible');
     setTimeout(() => {
       document.getElementById('ineq-app').classList.add('visible');
-    }, 300);
-  } else if (id === 'fn') {
-    document.getElementById('submod-screen').classList.remove('visible');
-    setTimeout(() => {
-      document.getElementById('fn-app').classList.add('visible');
     }, 300);
   } else if (id === 'seq') {
     document.getElementById('submod-screen').classList.remove('visible');
@@ -2168,9 +2181,6 @@ function closeModule(id) {
   } else if (id === 'ineq') {
     document.getElementById('ineq-app').classList.remove('visible');
     setTimeout(() => ineqBack(), 350);
-  } else if (id === 'fn') {
-    document.getElementById('fn-app').classList.remove('visible');
-    setTimeout(() => fnBack(), 350);
   } else if (id === 'seq') {
     document.getElementById('seq-app').classList.remove('visible');
   } else if (id === 'calc') {
@@ -2179,11 +2189,6 @@ function closeModule(id) {
   setTimeout(() => {
     document.getElementById('submod-screen').classList.add('visible');
   }, 50);
-}
-
-// Legacy goHome — now goes to submod screen
-function goHome() {
-  closeModule('em');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2226,15 +2231,11 @@ function matGetGrid(prefix, rows, cols) {
 function matMakeGrid(prefix, rows, cols, extraClass='') {
   let html=`<div class="mat-grid-wrap"><div class="mat-grid" style="grid-template-columns:repeat(${cols},58px)">`;
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-    html+=`<input class="mat-cell ${extraClass}" id="${prefix}-${r}-${c}" value="0" type="number" step="any">`;
+    html+=`<input class="mat-cell ${extraClass}" id="${prefix}-${r}-${c}" value="0" type="number" onfocus="this.select()" step="any">`;
   }
   return html+'</div></div>';
 }
-function matFmtNum(n,d=4) {
-  if(isNaN(n)||!isFinite(n)) return '—';
-  const r=parseFloat(n.toFixed(d));
-  return r===0?'0':String(r);
-}
+// matFmtNum() → alias fmt() arriba
 function matFmtMatrix(M,label='') {
   const rows=M.length,cols=M[0].length;
   let h=label?`<div class="mat-res-lbl">${label}</div>`:'' ;
@@ -2295,7 +2296,6 @@ function matSisToggleFrac(){
 }
 function fGcd(a,b){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;}
 function fSimp([n,d]){if(d===0)return[n,d];const g=fGcd(Math.abs(n),Math.abs(d));const s=d<0?-1:1;return[s*n/g,s*d/g];}
-function fAdd([an,ad],[bn,bd]){return fSimp([an*bd+bn*ad,ad*bd]);}
 function fSub([an,ad],[bn,bd]){return fSimp([an*bd-bn*ad,ad*bd]);}
 function fMul([an,ad],[bn,bd]){return fSimp([an*bn,ad*bd]);}
 function fDiv([an,ad],[bn,bd]){return fSimp([an*bd,ad*bn]);}
@@ -2419,7 +2419,7 @@ function matOpsRenderControls() {
 
   let h = '<div class="mat-row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">';
   if (isSca) {
-    h += `<label>Escalar k:</label><input class="mat-inp wide" id="mat-sca-k" value="${matOpsState.scalar}" type="number" step="any" oninput="matOpsState.scalar=parseFloat(this.value)||1">`;
+    h += `<label>Escalar k:</label><input class="mat-inp wide" id="mat-sca-k" value="${matOpsState.scalar}" type="number" onfocus="this.select()" step="any" oninput="matOpsState.scalar=parseFloat(this.value)||1">`;
   }
   if (!isSingle) {
     h += `<button class="mat-btn" style="padding:5px 10px;font-size:10px" onclick="matOpsAddMatrix()">+ Matriz</button>`;
@@ -2459,9 +2459,9 @@ function matOpsRenderGrids() {
     const prefix = `mo-${m.id}`;
     h += `<div style="margin-bottom:12px">
       <div class="mat-sec" style="margin-top:0">${lbl} — 
-        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.rows}" min="1" max="8" type="number" onchange="matOpsSizeChange(${m.id},'rows',this.value)">
+        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.rows}" min="1" max="8" type="number" onfocus="this.select()" onchange="matOpsSizeChange(${m.id},'rows',this.value)">
         ×
-        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.cols}" min="1" max="8" type="number" onchange="matOpsSizeChange(${m.id},'cols',this.value)">
+        <input class="mat-inp" style="width:36px;display:inline;padding:2px 4px" value="${m.cols}" min="1" max="8" type="number" onfocus="this.select()" onchange="matOpsSizeChange(${m.id},'cols',this.value)">
       </div>`;
     h += matMakeGrid(prefix, m.rows, m.cols);
     h += '</div>';
@@ -2522,8 +2522,6 @@ function matCalcOps() {
   document.getElementById('mat-res-ops').innerHTML = `<div class="mat-res">${matFmtMatrix(result, title)}</div>`;
 }
 
-function matBuildGrids() { matOpsRenderControls(); matOpsRenderGrids(); } // compat alias
-function matClearOps() { matOpsReset(); }
 
 // ── Det & Inv panel ──
 function matBuildDet() {
@@ -2558,8 +2556,8 @@ function matBuildSis() {
   const n=parseInt(document.getElementById('mat-sn')?.value)||2;
   let html=`<div class="mat-grid-wrap"><div class="mat-grid" style="grid-template-columns:repeat(${n+1},58px)">`;
   for(let r=0;r<n;r++){
-    for(let c=0;c<n;c++) html+=`<input class="mat-cell" id="ms-${r}-${c}" value="0" type="number" step="any">`;
-    html+=`<input class="mat-cell rhs" id="ms-${r}-${n}" value="0" type="number" step="any">`;
+    for(let c=0;c<n;c++) html+=`<input class="mat-cell" id="ms-${r}-${c}" value="0" type="number" onfocus="this.select()" step="any">`;
+    html+=`<input class="mat-cell rhs" id="ms-${r}-${n}" value="0" type="number" onfocus="this.select()" step="any">`;
   }
   html+='</div></div>';
   html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:8px">Las últimas columnas (doradas) son el vector b</div>`;
@@ -2694,11 +2692,11 @@ function buildIneqForm(type) {
       <div class="mat-sec">Inecuación Cuadrática</div>
       <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">ax² + bx + c ⊳ 0</div>
       <div class="ineq-row">
-        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="1" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="1" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid">x² +</span>
-        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-3" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-3" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid">x +</span>
-        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="2" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="2" type="number" onfocus="this.select()" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
         <span class="ineq-lbl-mid">0</span>
       </div>
@@ -2733,18 +2731,18 @@ function buildIneqForm(type) {
       <div class="mat-sec">Sistema de Inecuaciones</div>
       <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">Dos inecuaciones lineales — se calcula la intersección</div>
       <div class="ineq-row" style="margin-bottom:6px">
-        <div class="ineq-inp-grp"><label>a₁</label><input class="ineq-inp" id="iq-a1" value="1" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>a₁</label><input class="ineq-inp" id="iq-a1" value="1" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid">x +</span>
-        <div class="ineq-inp-grp"><label>b₁</label><input class="ineq-inp" id="iq-b1" value="-2" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>b₁</label><input class="ineq-inp" id="iq-b1" value="-2" type="number" onfocus="this.select()" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-s1" onclick="ineqSymCycle('iq-s1',['<','≤','>','≥'])">&gt;</button>
-        <div class="ineq-inp-grp"><label>c₁</label><input class="ineq-inp" id="iq-c1" value="-1" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>c₁</label><input class="ineq-inp" id="iq-c1" value="-1" type="number" onfocus="this.select()" step="any"></div>
       </div>
       <div class="ineq-row">
-        <div class="ineq-inp-grp"><label>a₂</label><input class="ineq-inp" id="iq-a2" value="1" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>a₂</label><input class="ineq-inp" id="iq-a2" value="1" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid">x +</span>
-        <div class="ineq-inp-grp"><label>b₂</label><input class="ineq-inp" id="iq-b2" value="3" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>b₂</label><input class="ineq-inp" id="iq-b2" value="3" type="number" onfocus="this.select()" step="any"></div>
         <button class="ineq-sym-btn on" id="iq-s2" onclick="ineqSymCycle('iq-s2',['<','≤','>','≥'])">&lt;</button>
-        <div class="ineq-inp-grp"><label>c₂</label><input class="ineq-inp" id="iq-c2" value="10" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>c₂</label><input class="ineq-inp" id="iq-c2" value="10" type="number" onfocus="this.select()" step="any"></div>
       </div>
       <button class="ineq-btn" onclick="ineqSolveSystem()">Resolver</button>
       <div id="ineq-res"></div>
@@ -2755,12 +2753,12 @@ function buildIneqForm(type) {
       <div style="font-size:10px;font-family:'Space Mono',monospace;color:#5a7a9a;margin-bottom:10px">|ax + b| ⊳ c</div>
       <div class="ineq-row">
         <span class="ineq-lbl-mid" style="font-size:16px">|</span>
-        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid">x +</span>
-        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-1" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>b</label><input class="ineq-inp" id="iq-b" value="-1" type="number" onfocus="this.select()" step="any"></div>
         <span class="ineq-lbl-mid" style="font-size:16px">|</span>
         <button class="ineq-sym-btn on" id="iq-sym" onclick="ineqSymCycle('iq-sym',['<','≤','>','≥'])">&lt;</button>
-        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="5" type="number" step="any"></div>
+        <div class="ineq-inp-grp"><label>c</label><input class="ineq-inp" id="iq-c" value="5" type="number" onfocus="this.select()" step="any"></div>
       </div>
       <button class="ineq-btn" onclick="ineqSolveAbs()">Resolver</button>
       <div id="ineq-res"></div>
@@ -2771,13 +2769,6 @@ function buildIneqForm(type) {
 // ── helpers comunes ──
 function flipSym(s){ return {'>':'<','<':'>','≥':'≤','≤':'≥'}[s]||s; }
 function checkIneq(a,sym,b){ return {'>':a>b,'<':a<b,'≥':a>=b,'≤':a<=b}[sym]; }
-function ineqIntervalLinear(sym,x){
-  if(sym==='>') return `(${matFmtNum(x)}, +∞)`;
-  if(sym==='≥') return `[${matFmtNum(x)}, +∞)`;
-  if(sym==='<') return `(-∞, ${matFmtNum(x)})`;
-  if(sym==='≤') return `(-∞, ${matFmtNum(x)}]`;
-  return '';
-}
 function ineqLinearBound(a,b,c,sym){
   const rhs=c-b; let x=rhs/(a||1), s=sym;
   if(a<0) s=flipSym(sym);
@@ -3070,7 +3061,7 @@ function drawNumLine(points, solutionLabels) {
   if(!canvas) return;
   const W=canvas.offsetWidth||320; canvas.width=W; canvas.height=72;
   const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#111827'; ctx.fillRect(0,0,W,72);
+  ctx.fillStyle=_canvasColors.surface2||'#111827'; ctx.fillRect(0,0,W,72);
   const vals=points.map(p=>p.val).filter(v=>isFinite(v));
   if(!vals.length) return;
   const ctr=(Math.min(...vals)+Math.max(...vals))/2;
@@ -3078,12 +3069,12 @@ function drawNumLine(points, solutionLabels) {
   const lo=ctr-span/2, hi=ctr+span/2;
   const toX=v=>16+(v-lo)/(hi-lo)*(W-32);
   const ay=38;
-  ctx.strokeStyle='#1e2d45'; ctx.lineWidth=2; ctx.beginPath();
+  ctx.strokeStyle=_canvasColors.gridLine||'#1e2d45'; ctx.lineWidth=2; ctx.beginPath();
   ctx.moveTo(12,ay); ctx.lineTo(W-12,ay); ctx.stroke();
   ctx.fillStyle='#3a5a7a'; ctx.font='10px Space Mono'; ctx.textAlign='center';
   for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){
     const x=toX(v);
-    ctx.strokeStyle='#1e2d45'; ctx.lineWidth=1; ctx.beginPath();
+    ctx.strokeStyle=_canvasColors.gridLine||'#1e2d45'; ctx.lineWidth=1; ctx.beginPath();
     ctx.moveTo(x,ay-4); ctx.lineTo(x,ay+4); ctx.stroke();
     if((hi-lo)<20) ctx.fillText(v,x,ay+16);
   }
@@ -3094,7 +3085,7 @@ function drawNumLine(points, solutionLabels) {
     ctx.beginPath(); ctx.arc(x,ay,7,0,Math.PI*2);
     ctx.strokeStyle=color; ctx.lineWidth=2;
     if(filled){ ctx.fillStyle=color; ctx.fill(); }
-    else { ctx.fillStyle='#111827'; ctx.fill(); ctx.stroke(); }
+    else { ctx.fillStyle=_canvasColors.surface2||'#111827'; ctx.fill(); ctx.stroke(); }
     ctx.stroke();
     ctx.fillStyle=color; ctx.font='bold 10px Space Mono'; ctx.textAlign='center';
     ctx.fillText(matFmtNum(val),x,ay-14);
@@ -3259,13 +3250,7 @@ function calcParse(expr){
   } catch(e){ return null; }
 }
 
-function fN(v, d=6){
-  if(v===undefined||v===null||isNaN(v)) return 'indefinido';
-  if(!isFinite(v)) return v>0?'+∞':'-∞';
-  if(Math.abs(v)<1e-9) return '0';
-  if(Math.abs(v)>=1e6||Math.abs(v)<1e-4&&Math.abs(v)>0) return v.toExponential(4);
-  return parseFloat(v.toFixed(d)).toString();
-}
+// fN() unificada arriba — alias de compatibilidad disponible
 
 function resBox(label,val,hint='',big=false){
   return `<div class="calc-res-box">
@@ -3799,13 +3784,7 @@ function fmtResult(v){
   return parseFloat(v.toFixed(8)).toString();
 }
 
-function fmtNum(v,dp=6){
-  if(v===null||v===undefined||isNaN(v)) return 'indef.';
-  if(!isFinite(v)) return v>0?'+∞':'-∞';
-  if(Math.abs(v)<1e-10) return '0';
-  if(Math.abs(v)>1e12) return v>0?'+∞':'-∞';
-  return parseFloat(v.toFixed(dp)).toString();
-}
+// fmtNum() → alias fmt() arriba
 
 function fmtA(s){ return (s||'').trim().replace('Infinity','∞').replace('-Infinity','-∞'); }
 
@@ -4275,12 +4254,12 @@ let appsVisible = false;
 
 function toggleLimOp(){
   const p=document.getElementById('lim-op-panel');
-  if(p) p.style.display=p.style.display==='none'?'block':'none';
+  if(p) p.classList.toggle('graf-active');
 }
 
 function toggleApps(){
   appsVisible=!appsVisible;
-  document.getElementById('apps-panel').style.display=appsVisible?'block':'none';
+  document.getElementById('apps-panel').classList.toggle('graf-active', appsVisible);
   if(appsVisible) setApp('opt');
 }
 
@@ -4733,165 +4712,6 @@ function calcInit(){
   initInputTracking();
   calcTab('dif');
 }
-
-// ═══════════════════════════════════════════════════════
-// FUNCIONES — DOMINIO, RANGO Y GRÁFICA
-// ═══════════════════════════════════════════════════════
-let fnType=null;
-
-function fnSetType(type){
-  fnType=type;
-  document.getElementById('fn-pick-screen').style.display='none';
-  const solver=document.getElementById('fn-solver');
-  solver.style.display='';
-  const titles={
-    lineal:'f(x) = ax + b',cuad:'f(x) = ax² + bx + c',
-    raiz:'f(x) = √(ax + b)',abs:'f(x) = a|x + b| + c',
-    log:'f(x) = a·log_b(cx + d)',exp:'f(x) = a·b^(cx + d)',
-    parteEntera:'f(x) = a·⌊bx + c⌋',racional:'f(x) = P(x) / Q(x)',
-  };
-  document.getElementById('fn-solver-title').textContent=titles[type]||type;
-  const templates={
-    lineal:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/></div>`,
-    cuad:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div>`,
-    raiz:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = √(a·x + b)</div>`,
-    abs:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="0"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div>`,
-    log:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>base b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="10"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="1"/><label>d</label><input class="calc-inp calc-inp-sm" id="fn-d" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·log_b(c·x + d)</div>`,
-    exp:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="2"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="1"/><label>d</label><input class="calc-inp calc-inp-sm" id="fn-d" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·b^(c·x + d)</div>`,
-    parteEntera:`<div class="calc-field-row"><label>a</label><input class="calc-inp calc-inp-sm" id="fn-a" value="1"/><label>b</label><input class="calc-inp calc-inp-sm" id="fn-b" value="1"/><label>c</label><input class="calc-inp calc-inp-sm" id="fn-c" value="0"/></div><div style="font-size:9px;color:var(--text3);margin:4px 0">f(x) = a·⌊b·x + c⌋</div>`,
-    racional:`<div class="calc-field-row"><label>P(x)</label><input class="calc-inp" id="fn-num" placeholder="ej: x^2-1"/></div><div class="calc-field-row"><label>Q(x)</label><input class="calc-inp" id="fn-den" placeholder="ej: x-2"/></div>`,
-  };
-  document.getElementById('fn-form').innerHTML=templates[type]||'';
-}
-function fnBack(){
-  fnType=null;
-  document.getElementById('fn-pick-screen').style.display='';
-  document.getElementById('fn-solver').style.display='none';
-}
-function fnV(id){ return parseFloat(document.getElementById(id)?.value)||0; }
-function fnF(v,dp){ return isNaN(v)?'?':Number.isInteger(v)?String(v):parseFloat(v.toFixed(dp||6)).toString(); }
-
-function fnAnalyze(){
-  const res=document.getElementById('fn-result');
-  const a=fnV('fn-a'),b=fnV('fn-b'),c=fnV('fn-c'),d=fnV('fn-d');
-  let domain='',range='',formula='',steps=[],pts=[];
-
-  if(fnType==='lineal'){
-    formula=`f(x) = ${a===1?'':(a===-1?'−':fnF(a)+'·')}x ${b>=0?'+ '+fnF(b):'− '+fnF(Math.abs(b))}`;
-    domain='(-∞, +∞)'; range=Math.abs(a)<1e-12?`{${fnF(b)}}`:'(-∞, +∞)';
-    steps.push('Función lineal — dominio siempre ℝ.');
-    if(Math.abs(a)>1e-12){ steps.push(`Cero: x = ${fnF(-b/a)}`); }
-    else steps.push('a = 0 → función constante, rango puntual.');
-    for(let x=-5;x<=5;x++) pts.push({x,y:a*x+b});
-  }
-  else if(fnType==='cuad'){
-    const vx=-b/(2*a||1e-12), vy=a*vx*vx+b*vx+c;
-    formula=`f(x) = ${fnF(a)}x² + ${fnF(b)}x + ${fnF(c)}`;
-    domain='(-∞, +∞)';
-    range=a>0?`[${fnF(vy)}, +∞)`:`(-∞, ${fnF(vy)}]`;
-    steps.push(`Vértice: (${fnF(vx,4)}, ${fnF(vy,4)})`);
-    steps.push(a>0?'Parábola ↑ → mínimo en vértice':'Parábola ↓ → máximo en vértice');
-    const disc=b*b-4*a*c;
-    if(disc>0){ const sq=Math.sqrt(disc); steps.push(`Raíces: x = ${fnF((-b-sq)/(2*a),4)}, x = ${fnF((-b+sq)/(2*a),4)}`); }
-    else if(Math.abs(disc)<1e-12) steps.push(`Raíz doble: x = ${fnF(vx,4)}`);
-    else steps.push('Sin raíces reales (Δ < 0)');
-    for(let x=vx-5;x<=vx+5;x+=0.2) pts.push({x,y:a*x*x+b*x+c});
-  }
-  else if(fnType==='raiz'){
-    formula=`f(x) = √(${fnF(a)}x + ${fnF(b)})`;
-    const xMin=-b/(a||1e-12);
-    steps.push(`Condición: ${fnF(a)}x + ${fnF(b)} ≥ 0`);
-    if(a>0){ domain=`[${fnF(xMin)}, +∞)`; range='[0, +∞)'; steps.push(`x ≥ ${fnF(xMin)}`); }
-    else if(a<0){ domain=`(-∞, ${fnF(xMin)}]`; range='[0, +∞)'; steps.push(`x ≤ ${fnF(xMin)}`); }
-    else { domain=b>=0?'(-∞,+∞)':'∅'; range=b>=0?'[0,+∞)':'∅'; }
-    for(let x=xMin;x<=xMin+10;x+=0.1){ const v=a*x+b; if(v>=0) pts.push({x,y:Math.sqrt(v)}); }
-  }
-  else if(fnType==='abs'){
-    formula=`f(x) = ${fnF(a)}|x + ${fnF(b)}| + ${fnF(c)}`;
-    domain='(-∞, +∞)';
-    range=a>0?`[${fnF(c)}, +∞)`:`(-∞, ${fnF(c)}]`;
-    steps.push(`Vértice: (${fnF(-b)}, ${fnF(c)})`);
-    steps.push(a>0?'a > 0 → mínimo':'a < 0 → máximo');
-    for(let x=-6;x<=6;x+=0.2) pts.push({x,y:a*Math.abs(x+b)+c});
-  }
-  else if(fnType==='log'){
-    const base=b<=0||b===1?10:b;
-    formula=`f(x) = ${fnF(a)}·log_${fnF(base)}(${fnF(c)}x + ${fnF(d)})`;
-    const xMin=-d/(c||1e-12);
-    steps.push(`Arg > 0: ${fnF(c)}x + ${fnF(d)} > 0`);
-    domain=c>0?`(${fnF(xMin)}, +∞)`:c<0?`(-∞, ${fnF(xMin)})`:d>0?'(-∞,+∞)':'∅';
-    range='(-∞, +∞)';
-    const logB=Math.log(base);
-    for(let x=xMin+0.01;x<=xMin+12;x+=0.15){ const arg=c*x+d; if(arg>0) pts.push({x,y:a*Math.log(arg)/logB}); }
-  }
-  else if(fnType==='exp'){
-    const base=b<=0?2:b;
-    formula=`f(x) = ${fnF(a)}·${fnF(base)}^(${fnF(c)}x + ${fnF(d)})`;
-    domain='(-∞, +∞)'; range=a>0?'(0, +∞)':'(-∞, 0)';
-    steps.push('Exponencial — dominio ℝ.');
-    steps.push(`Asíntota horizontal: y = 0${a>0?' por abajo':' por arriba'}`);
-    for(let x=-4;x<=4;x+=0.2) pts.push({x,y:a*Math.pow(base,c*x+d)});
-  }
-  else if(fnType==='parteEntera'){
-    formula=`f(x) = ${fnF(a)}·⌊${fnF(b)}x + ${fnF(c)}⌋`;
-    domain='(-∞, +∞)'; range='ℤ (enteros)';
-    steps.push('Dominio ℝ, rango subconjunto de ℤ.');
-    for(let x=-5;x<=5;x+=0.05) pts.push({x,y:a*Math.floor(b*x+c)});
-  }
-  else if(fnType==='racional'){
-    const numStr=(document.getElementById('fn-num')||{value:''}).value.trim();
-    const denStr=(document.getElementById('fn-den')||{value:''}).value.trim();
-    formula=`f(x) = (${numStr}) / (${denStr})`;
-    const dp=parseSimplePoly(denStr);
-    const excl=dp.a!==0?quadRoots(dp.a,dp.b,dp.c):(Math.abs(dp.b)>1e-12?[-dp.c/dp.b]:[]);
-    if(!excl.length) domain='(-∞, +∞)';
-    else if(excl.length===1) domain=`(-∞, ${fnF(excl[0])}) ∪ (${fnF(excl[0])}, +∞)`;
-    else domain=`(-∞,${fnF(excl[0])})∪(${fnF(excl[0])},${fnF(excl[1])})∪(${fnF(excl[1])},+∞)`;
-    range='(análisis completo por álgebra)';
-    excl.forEach(r=>steps.push(`Q(${fnF(r)}) = 0 → x = ${fnF(r)} excluido`));
-    const fn=calcParse(numStr+'/'+denStr);
-    if(fn) for(let x=-8;x<=8;x+=0.05){ const y=fn(x,0); if(isFinite(y)&&Math.abs(y)<60) pts.push({x,y}); }
-  }
-
-  fnDrawGraph(pts,formula);
-  let html=`<div class="fn-result-wrap">`;
-  html+=`<div class="fn-formula">${formula}</div>`;
-  html+=`<div class="fn-prop-row"><span class="fn-prop-label">Dominio</span><span class="fn-prop-val">${domain}</span></div>`;
-  html+=`<div class="fn-prop-row"><span class="fn-prop-label">Rango</span><span class="fn-prop-val">${range}</span></div>`;
-  if(steps.length) html+=`<div class="fn-steps-list">${steps.map(s=>`<div class="fn-step">${s}</div>`).join('')}</div>`;
-  html+=`<canvas id="fn-graph-canvas" width="320" height="160" style="width:100%;border-radius:8px;background:#0d1220;margin-top:8px;display:block"></canvas>`;
-  html+=`</div>`;
-  res.innerHTML=html;
-  setTimeout(()=>fnDrawGraph(pts,formula),50);
-}
-
-function fnDrawGraph(pts,label){
-  const canvas=document.getElementById('fn-graph-canvas');
-  if(!canvas||!pts.length) return;
-  const W=canvas.offsetWidth||320, H=160;
-  canvas.width=W; canvas.height=H;
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#0d1220'; ctx.fillRect(0,0,W,H);
-  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
-  const xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
-  const px=(xMax-xMin)*0.05||1, py=(yMax-yMin)*0.1||1;
-  const xl=xMin-px,xr=xMax+px,yl=yMin-py,yr=yMax+py;
-  const toX=x=>14+(x-xl)/(xr-xl)*(W-28);
-  const toY=y=>H-6-(y-yl)/(yr-yl)*(H-12);
-  if(yl<=0&&yr>=0){ const ay=toY(0); ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ay);ctx.lineTo(W,ay);ctx.stroke(); }
-  if(xl<=0&&xr>=0){ const ax=toX(0); ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,0);ctx.lineTo(ax,H);ctx.stroke(); }
-  ctx.strokeStyle='#10b981'; ctx.lineWidth=2.5; ctx.beginPath();
-  let pen=false;
-  pts.forEach((p,i)=>{
-    const x=toX(p.x),y=toY(p.y);
-    const jump=i>0&&Math.abs(p.y-pts[i-1].y)>(yr-yl)*0.4;
-    if(!pen||jump) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    pen=true;
-  });
-  ctx.stroke();
-}
-
-// ═══════════════════════════════════════════════════════
 // SUCESIONES Y PROGRESIONES
 // ═══════════════════════════════════════════════════════
 let seqMode='terminos';
@@ -5035,11 +4855,17 @@ function seqAnalyzePG(){
 let grafType = 'lin';
 
 // Definición de cada tipo: coeficientes, fórmula, evaluador, pasos
+// ══════════════════════════════════════════════════════════════════════════
+// GRAF_TYPES — Tipos de funciones del graficador de CAL
+// Cada entrada define: title, coefs[], preview(v), eval(x,v), steps(x,v,y)
+// Para agregar una nueva función: añadir aquí sin modificar grafDraw().
+// Los coefs tienen default:'0' — el usuario introduce los valores reales.
+// ══════════════════════════════════════════════════════════════════════════
 const GRAF_TYPES = {
   lin: {
     title: 'Coeficientes — Lineal',
     coefs: [
-      { id:'gm', label:'m =', placeholder:'1', default:'1' },
+      { id:'gm', label:'m =', placeholder:'0', default:'0' },
       { id:'gb', label:'b =', placeholder:'0', default:'0' },
     ],
     preview: (v) => {
@@ -5062,7 +4888,7 @@ const GRAF_TYPES = {
   quad: {
     title: 'Coeficientes — Cuadrática',
     coefs: [
-      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'ga', label:'a =', placeholder:'1', default:'0' },
       { id:'gb', label:'b =', placeholder:'0', default:'0' },
       { id:'gc', label:'c =', placeholder:'0', default:'0' },
     ],
@@ -5128,6 +4954,104 @@ const GRAF_TYPES = {
       ];
     },
   },
+  raiz: {
+    title: 'Coeficientes — Raíz Cuadrada',
+    coefs: [
+      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'gh', label:'h =', placeholder:'0', default:'0' },
+      { id:'gk', label:'k =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const a=v.ga, h=grafParseCoef(v.gh), k=grafParseCoef(v.gk);
+      const inner = h===0?'x':(h>0?`x+${h}`:`x${h}`);
+      const kPart = k===0?'':(k>0?` + ${k}`:` - ${Math.abs(k)}`);
+      return `y = ${a}·√(${inner})${kPart}`;
+    },
+    eval: (x,v) => {
+      const a=grafParseCoef(v.ga), h=grafParseCoef(v.gh), k=grafParseCoef(v.gk);
+      const inner = x + h;
+      return inner < 0 ? NaN : a*Math.sqrt(inner) + k;
+    },
+    steps: (x,v,y) => {
+      const a=grafParseCoef(v.ga), h=grafParseCoef(v.gh), k=grafParseCoef(v.gk);
+      const inner = x+h;
+      if(inner < 0) return [`<span class="gs-op">√(${inner}) — No real</span>`];
+      return [
+        `<span class="gs-op">y = a·√(x + h) + k</span>`,
+        `<span class="gs-op">y = ${a}·√(<span class="gs-x">${x}</span> + ${h}) + ${k}</span>`,
+        `<span class="gs-op">y = ${a}·√(${inner}) + ${k}</span>`,
+        `<span class="gs-op">y = ${a}·${Math.sqrt(inner).toFixed(4)} + ${k}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+  log: {
+    title: 'Coeficientes — Logarítmica',
+    coefs: [
+      { id:'ga', label:'a =', placeholder:'1', default:'1' },
+      { id:'gbas', label:'base =', placeholder:'10', default:'10' },
+      { id:'gc', label:'c =', placeholder:'1', default:'1' },
+      { id:'gd', label:'d =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const b=v.gbas, c=v.gc, d=grafParseCoef(v.gd);
+      const inner = d===0?`${c}x`:(d>0?`${c}x+${d}`:`${c}x${d}`);
+      return `y = ${v.ga}·log_${b}(${inner})`;
+    },
+    eval: (x,v) => {
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gbas);
+      const c=grafParseCoef(v.gc), d=grafParseCoef(v.gd);
+      const arg = c*x + d;
+      if(arg <= 0 || b <= 0 || b === 1) return NaN;
+      return a * Math.log(arg) / Math.log(b);
+    },
+    steps: (x,v,y) => {
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gbas);
+      const c=grafParseCoef(v.gc), d=grafParseCoef(v.gd);
+      const arg = c*x + d;
+      if(arg <= 0) return [`<span class="gs-op">log(${arg}) — No definido (arg ≤ 0)</span>`];
+      return [
+        `<span class="gs-op">y = a · log_b(c·x + d)</span>`,
+        `<span class="gs-op">y = ${a} · log_${b}(${c}·<span class="gs-x">${x}</span> + ${d})</span>`,
+        `<span class="gs-op">y = ${a} · log_${b}(${arg})</span>`,
+        `<span class="gs-op">y = ${a} · ${(Math.log(arg)/Math.log(b)).toFixed(4)}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
+  racional: {
+    title: 'Coeficientes — Racional (ax+b)/(cx+d)',
+    coefs: [
+      { id:'ga', label:'a (num) =', placeholder:'1', default:'1' },
+      { id:'gb', label:'b (num) =', placeholder:'0', default:'0' },
+      { id:'gc', label:'c (den) =', placeholder:'1', default:'1' },
+      { id:'gd', label:'d (den) =', placeholder:'0', default:'0' },
+    ],
+    preview: (v) => {
+      const numStr = `${v.ga}x + ${v.gb}`;
+      const denStr = `${v.gc}x + ${v.gd}`;
+      return `y = (${numStr}) / (${denStr})`;
+    },
+    eval: (x,v) => {
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gb);
+      const c=grafParseCoef(v.gc), d=grafParseCoef(v.gd);
+      const den = c*x + d;
+      if(Math.abs(den) < 1e-10) return NaN;
+      return (a*x + b) / den;
+    },
+    steps: (x,v,y) => {
+      const a=grafParseCoef(v.ga), b=grafParseCoef(v.gb);
+      const c=grafParseCoef(v.gc), d=grafParseCoef(v.gd);
+      const num = a*x + b, den = c*x + d;
+      if(Math.abs(den) < 1e-10) return [`<span class="gs-op">Denominador = 0 — Asíntota vertical en x = <span class="gs-x">${x}</span></span>`];
+      return [
+        `<span class="gs-op">y = (ax + b) / (cx + d)</span>`,
+        `<span class="gs-op">y = (${a}·<span class="gs-x">${x}</span> + ${b}) / (${c}·<span class="gs-x">${x}</span> + ${d})</span>`,
+        `<span class="gs-op">y = ${num} / ${den}</span>`,
+        `<span class="gs-y">y = ${y}</span>`,
+      ];
+    },
+  },
 };
 
 function grafInit(){
@@ -5149,7 +5073,8 @@ function grafInitFields() {
   wrap.innerHTML = def.coefs.map(c => `
     <div class="graf-coef-row">
       <label>${c.label}</label>
-      <input class="graf-coef" id="${c.id}" placeholder="${c.placeholder}" value="${c.default}" oninput="grafPreview()"/>
+      <input class="graf-coef" id="${c.id}" placeholder="${c.placeholder}"
+        value="${c.default}" oninput="grafPreview()" onfocus="this.select()"/>
     </div>`).join('');
   grafPreview();
 }
@@ -5187,12 +5112,11 @@ function grafPreview() {
   } catch(e) {}
 }
 
-function grafFmt(n) {
-  if(!isFinite(n)) return '—';
-  const r = Math.round(n*10000)/10000;
-  return r % 1 === 0 ? r.toString() : parseFloat(r.toFixed(4)).toString();
-}
+// grafFmt() → alias fmt() arriba
 
+// ⚠ WARNING — FUNCIÓN CRÍTICA: grafDraw() — Graficador de funciones del módulo CAL.
+// • Depende de GRAF_TYPES[grafType] — agregar nuevas funciones ahí, no aquí.
+// • El canvas de graficación es distinto al de vectores — no mezclar contextos.
 function grafDraw() {
   const def = GRAF_TYPES[grafType];
   if(!def) return;
@@ -5214,13 +5138,14 @@ function grafDraw() {
   const yPad = (yMax-yMin)*0.15;
   yMin -= yPad; yMax += yPad;
 
-  // Mostrar canvas
+  // Mostrar canvas ANTES de leer dimensiones (offsetWidth=0 si display:none)
   const wrap = document.getElementById('graf-canvas-wrap');
-  wrap.style.display = 'block';
+  wrap.classList.add('graf-active');
 
   const cv = document.getElementById('graf-cv');
   const dpr = window.devicePixelRatio||1;
-  const W = cv.offsetWidth||300;
+  // Forzar reflow para obtener offsetWidth real después de display:block
+  const W = cv.getBoundingClientRect().width || cv.offsetWidth || 320;
   const H = 300;
   cv.width  = W*dpr;
   cv.height = H*dpr;
@@ -5328,46 +5253,58 @@ function grafDraw() {
     ctx.stroke();
   });
 
-  // ── Tabla de valores (overlay) ──
+  // ── Tabla de valores — tabla completa debajo del canvas ──
+  // Muestra el contenedor de tabla
+  document.getElementById('graf-table-wrap').classList.add('graf-active');
   const tableEl = document.getElementById('graf-table');
-  tableEl.innerHTML = `<table>
-    <tr><th>x</th><th>y</th></tr>
-    ${pts.map(({x,y})=>`
-      <tr class="${x===0?'zero-row':''}">
-        <td>${x}</td>
-        <td>${grafFmt(y)}</td>
-      </tr>`).join('')}
+  // ── Tabla de valores estructurada ──────────────────────────────────────
+  const tablePts = pts.filter(p => p.x >= -N && p.x <= N);
+  tableEl.innerHTML = `<table class="graf-result-table">
+    <thead>
+      <tr>
+        <th class="grt-x">x</th>
+        <th class="grt-y">f(x)</th>
+        <th class="grt-info">Info</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tablePts.map(({x,y})=>{
+        const yStr = isFinite(y) ? grafFmt(y) : '∄';
+        const rowCls = x===0 ? 'zero-row' : !isFinite(y) ? 'undef-row' : '';
+        const info = x===0 ? 'Origen' : !isFinite(y) ? 'Indefinido' : y>0 ? '↑' : y<0 ? '↓' : '—';
+        return `<tr class="${rowCls}">
+          <td class="grt-x">${x}</td>
+          <td class="grt-y">${yStr}</td>
+          <td class="grt-info">${info}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
   </table>`;
 
   // ── Pasos de cálculo ──
   const stepsWrap = document.getElementById('graf-steps-wrap');
   const stepsEl   = document.getElementById('graf-steps');
-  stepsWrap.style.display = 'block';
+  stepsWrap.classList.add('graf-active');
   stepsEl.innerHTML = pts.map(({x,y}) => {
-    if(!isFinite(y)) return '';
-    const lines = def.steps(x, v, grafFmt(y));
-    return `<div class="graf-step-block">
-      <div style="color:#f0c040;font-weight:700;margin-bottom:4px">x = ${x}</div>
-      ${lines.map(l=>`<div>${l}</div>`).join('')}
+    const yStr = isFinite(y) ? grafFmt(y) : '∄';
+    const stepLines = isFinite(y) ? def.steps(x, v, yStr) : [`<span class="gs-op">f(<span class="gs-x">${x}</span>) no está definida en este punto</span>`];
+    return `<div class="graf-step-block${x===0?' graf-step-origin':''}">
+      <div class="gs-header">x = ${x}</div>
+      ${stepLines.map(l=>`<div class="gs-line">${l}</div>`).join('')}
     </div>`;
   }).join('');
 }
 
 function grafClear() {
-  document.getElementById('graf-canvas-wrap').style.display='none';
-  document.getElementById('graf-steps-wrap').style.display='none';
+  document.getElementById('graf-canvas-wrap').classList.remove('graf-active');
+  document.getElementById('graf-steps-wrap').classList.remove('graf-active');
+  const tw = document.getElementById('graf-table-wrap');
+  if(tw) tw.classList.remove('graf-active');
   document.getElementById('graf-steps').innerHTML='';
   document.getElementById('graf-table').innerHTML='';
-  // reset coefs a defaults
   grafInitFields();
 }
 
-function grafUpdate() {
-  // si ya hay una gráfica visible, redibujar con los nuevos parámetros
-  if(document.getElementById('graf-canvas-wrap').style.display!=='none') {
-    grafDraw();
-  }
-}
 
 function grafGridStep(range, targetDivs) {
   const raw = range/targetDivs;
@@ -5414,7 +5351,7 @@ function figParamsHTML(prefix, type, vals={}){
   return `<div style="margin-bottom:8px">
     <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;letter-spacing:.04em">Parámetros</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${ps.map(p=>`<div class="inp-group"><label>${p.label}</label><input type="number" id="${prefix}${p.id}" value="${vals[p.id]??p.def}" step="any" min="0.1"/></div>`).join('')}
+      ${ps.map(p=>`<div class="inp-group"><label>${p.label}</label><input type="number" onfocus="this.select()" id="${prefix}${p.id}" value="${vals[p.id]??p.def}" step="any" min="0.1"/></div>`).join('')}
     </div>
   </div>`;
 }
@@ -5658,14 +5595,6 @@ function emFigClear(){
 }
 
 // ══════════════════════════════════════════════════════
-function triClear(){
-  document.getElementById('tri-res').innerHTML='';
-  ['px','py','pz','qx','qy','qz','rx','ry','rz'].forEach(k=>{
-    const el=document.getElementById('tri-'+k);
-    if(el) el.value='0';
-  });
-}
-
 function triCalc(){
   const P={x:triGet('tri-px'),y:triGet('tri-py'),z:triGet('tri-pz')};
   const Q={x:triGet('tri-qx'),y:triGet('tri-qy'),z:triGet('tri-qz')};
@@ -5850,7 +5779,7 @@ function triDrawCanvas(P, Q, R){
       const btn = document.createElement('button');
       btn.id = 'tri-restore-btn';
       btn.textContent = '← Restaurar mis vectores';
-      btn.style.cssText = 'margin:8px 14px;padding:7px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:Space Mono,monospace;font-size:10px;cursor:pointer;display:block;width:calc(100% - 28px)';
+      btn.classList.add('tri-restore-btn');
       btn.onclick = ()=>{
         vecs = window._triVecsBackup || vecs;
         renderVecs(); rLeg(); draw();
