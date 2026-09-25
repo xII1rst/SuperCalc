@@ -49,7 +49,7 @@ function tokenize(expr){
     if(/[a-zA-Z]/.test(c)){
       let word='';
       while(i<expr.length&&/[a-zA-Z0-9]/.test(expr[i])) word+=expr[i++];
-      if(['sin','cos','tan','asin','acos','atan','ln','log','sqrt','abs','exp'].includes(word))
+      if(['sin','cos','tan','sec','csc','cot','asin','acos','atan','sinh','cosh','tanh','ln','log','sqrt','abs','exp'].includes(word))
         raw.push({type:'fn',val:word});
       else if(word==='e') raw.push({type:'num',val:Math.E});
       else raw.push({type:'var',val:word});
@@ -192,6 +192,22 @@ function diffAST(node, varName='x'){
           left:{type:'/',left:{type:'num',val:1},
             right:{type:'^',left:{type:'fn',fn:'cos',arg:u},right:{type:'num',val:2}}},
           right:du});
+        case 'sec': return simplify({type:'*',
+          left:{type:'*',left:{type:'fn',fn:'sec',arg:u},right:{type:'fn',fn:'tan',arg:u}},
+          right:du});
+        case 'csc': return simplify({type:'*',
+          left:{type:'neg',arg:{type:'*',left:{type:'fn',fn:'csc',arg:u},right:{type:'fn',fn:'cot',arg:u}}},
+          right:du});
+        case 'cot': return simplify({type:'*',
+          left:{type:'neg',arg:{type:'/',left:{type:'num',val:1},
+            right:{type:'^',left:{type:'fn',fn:'sin',arg:u},right:{type:'num',val:2}}}},
+          right:du});
+        case 'sinh': return simplify({type:'*',left:{type:'fn',fn:'cosh',arg:u},right:du});
+        case 'cosh': return simplify({type:'*',left:{type:'fn',fn:'sinh',arg:u},right:du});
+        case 'tanh': return simplify({type:'*',
+          left:{type:'/',left:{type:'num',val:1},
+            right:{type:'^',left:{type:'fn',fn:'cosh',arg:u},right:{type:'num',val:2}}},
+          right:du});
         case 'asin': return simplify({type:'*',
           left:{type:'/',left:{type:'num',val:1},
             right:{type:'fn',fn:'sqrt',arg:{type:'-',
@@ -249,7 +265,9 @@ function evalAST(node){
     case 'fn': {
       const v=evalAST(node.arg);
       const fns={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,
-        atan:Math.atan,ln:Math.log,log:Math.log10,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp};
+        atan:Math.atan,ln:Math.log,log:Math.log10,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,
+        sec:x=>1/Math.cos(x),csc:x=>1/Math.sin(x),cot:x=>1/Math.tan(x),
+        sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};
       return (fns[node.fn]||((x)=>x))(v);
     }
     default: return 0;
@@ -872,3 +890,6 @@ export function implicitDerivative(fn,x,y,h=1e-7){
   const fy=(fn(x,y+h)-fn(x,y-h))/(2*h);
   return {fval,fx,fy,slope:fy!==0?-fx/fy:NaN};
 }
+
+// AST internals shared with the symbolic integration engine.
+export { tokenize, parseExpr, simplify, astToStr, collectTerms, evalAST, diffAST, isConst };

@@ -27,6 +27,12 @@ const modules = new Map([
   ['./js/math/expression.mjs', new URL('../js/math/expression.mjs', import.meta.url)],
   ['./js/math/graph-types.mjs', new URL('../js/math/graph-types.mjs', import.meta.url)],
   ['./js/math/applications.mjs', new URL('../js/math/applications.mjs', import.meta.url)],
+  ['./js/math/integration.mjs', new URL('../js/math/integration.mjs', import.meta.url)],
+  ['./js/math/series.mjs', new URL('../js/math/series.mjs', import.meta.url)],
+  ['./js/math/integral-applications.mjs', new URL('../js/math/integral-applications.mjs', import.meta.url)],
+  ['./js/math/parametric.mjs', new URL('../js/math/parametric.mjs', import.meta.url)],
+  ['./js/math/polar.mjs', new URL('../js/math/polar.mjs', import.meta.url)],
+  ['./js/math/conics.mjs', new URL('../js/math/conics.mjs', import.meta.url)],
   ['./js/ui/algebra/functions.mjs', new URL('../js/ui/algebra/functions.mjs', import.meta.url)],
   ['./js/ui/algebra/sequences.mjs', new URL('../js/ui/algebra/sequences.mjs', import.meta.url)],
   ['./js/math/algebra/polynomial.mjs', new URL('../js/math/algebra/polynomial.mjs', import.meta.url)],
@@ -80,11 +86,6 @@ function makeElement(id) {
 test('el punto de entrada ES conserva los eventos y cálculos principales', async () => {
   const elements = new Map();
   const delegatedEvents = new Map();
-  const calcTabs=['dif','int','mul','edo','graf'].map(id=>{
-    const tab=makeElement(`calc-tab-${id}`);
-    tab.dataset.arg=id;
-    return tab;
-  });
   const getElementById = id => {
     if (id === 'sc-bg-canvas' || id === 'sc-e1') return null;
     if (id === 'update-banner' || id === 'install-banner' || id === 'tri-restore-btn') return elements.get(id) || null;
@@ -112,7 +113,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
       createElement: tag => makeElement(tag),
       querySelectorAll: selector => selector === '.tab'
         ? Array.from({length:7}, (_,i)=>makeElement(`tab-${i}`))
-        : selector === '.calc-tab' ? calcTabs : [],
+        : [],
       head: { appendChild() {} },
       body: { appendChild(element) { elements.set(element.id, element); } },
     },
@@ -189,17 +190,15 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     assert.match(algebraCards,new RegExp(`data-arg="${id}"`));
   actions.openSubmod('ca');
   const calcCards=getElementById('submod-cards').innerHTML;
-  for(const id of ['calc-dif','calc-int','calc-mul','calc-edo','calc-graf'])
+  for(const id of ['calc-dif','calc-int','calc-cur','calc-mul','calc-edo','calc-graf'])
     assert.match(calcCards,new RegExp(`data-arg="${id}"`));
-  for(const [id,tab,panel] of [
-    ['calc-dif','dif','Dif'],['calc-int','int','Int'],
-    ['calc-mul','mul','Mul'],['calc-edo','edo','Edo'],['calc-graf','graf','Graf'],
+  for(const [id,panel] of [
+    ['calc-dif','Dif'],['calc-int','Int'],['calc-cur','Cur'],
+    ['calc-mul','Mul'],['calc-edo','Edo'],['calc-graf','Graf'],
   ]){
     const card={dataset:{action:'launchSubmod',arg:id},closest(){return this;}};
     delegatedEvents.get('click')({type:'click',target:card});
     assert.equal(getElementById('calc-p'+panel).classList.contains('on'),true,id);
-    assert.equal(calcTabs.find(item=>item.dataset.arg===tab).classList.contains('on'),true,id);
-    assert.equal(calcTabs.filter(item=>item.classList.contains('on')).length,1,id);
     actions.closeModule('calc');
   }
 

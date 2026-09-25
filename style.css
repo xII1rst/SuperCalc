@@ -971,9 +971,9 @@ body:has(#update-banner) .sc-toast-stack { bottom:calc(84px + env(safe-area-inse
 .calc-card-desc{font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
 .calc-card-arrow{font-size:18px;color:var(--text3);transition:transform .25s;flex-shrink:0;line-height:1;}
 .calc-card-arrow.open{transform:rotate(90deg);}
-.calc-card-body{max-height:0;overflow:hidden;transition:max-height .35s ease;}
-.calc-card-body.open{max-height:6000px;}
-.calc-card-inner{padding:0 14px 14px;}
+.calc-card-body{display:grid;grid-template-rows:0fr;overflow:hidden;transition:grid-template-rows .18s ease;}
+.calc-card-body.open{grid-template-rows:1fr;}
+.calc-card-inner{padding:0 14px 14px;overflow:hidden;min-height:0;}
 .calc-btn-row{display:flex;gap:8px;margin-top:10px;}
 .app-panel{background:var(--surface3);border:1px solid var(--border2);border-radius:10px;
   padding:12px;margin-top:10px;}

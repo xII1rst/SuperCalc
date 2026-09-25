@@ -3,11 +3,14 @@
 export function calcParse(expr,varName='x'){
   if(!expr||!expr.trim()) return null;
   if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(varName)||
-    ['sin','cos','tan','asin','acos','atan','ln','log','sqrt','abs','exp','Math','Infinity','e'].includes(varName)) return null;
+    ['sin','cos','tan','sec','csc','cot','asin','acos','atan','sinh','cosh','tanh','ln','log','sqrt','abs','exp','Math','Infinity','e'].includes(varName)) return null;
   let s=expr.trim();
   s=s.replace(/π/g,'Math.PI');
   s=s.replace(/\bInfinity\b/g,'Infinity');
   s=s.replace(/\^/g,'**');
+  s=s.replace(/\bsinh\b/g,'Math.sinh');
+  s=s.replace(/\bcosh\b/g,'Math.cosh');
+  s=s.replace(/\btanh\b/g,'Math.tanh');
   s=s.replace(/\bsin\b/g,'Math.sin');
   s=s.replace(/\bcos\b/g,'Math.cos');
   s=s.replace(/\btan\b/g,'Math.tan');
@@ -23,7 +26,7 @@ export function calcParse(expr,varName='x'){
   s=s.replace(/([a-zA-Z)])(\d)/g,'$1*$2');
   s=s.replace(/\)\(/g,')*(');
   try{
-    const fn=new Function(varName,varName==='y'?'x':'y','return ('+s+');');
+    const fn=new Function(varName,varName==='y'?'x':'y','const sec=_=>1/Math.cos(_),csc=_=>1/Math.sin(_),cot=_=>1/Math.tan(_);return ('+s+');');
     fn(1,1);
     return fn;
   }catch(e){return null;}

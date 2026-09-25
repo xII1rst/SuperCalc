@@ -32,6 +32,7 @@ const SUBMOD_CONFIG = {
       { title:'Una variable', cls:'ca-sub', cards:[
         { icon:'∂', name:'Cálculo diferencial', desc:'Límites, derivadas y análisis de función', id:'calc-dif', cls:'ca-sub' },
         { icon:'∫', name:'Cálculo integral', desc:'Antiderivadas, integrales, volúmenes y Taylor', id:'calc-int', cls:'ca-sub' },
+        { icon:'∿', name:'Curvas', desc:'Paramétricas, polares y cónicas', id:'calc-cur', cls:'ca-sub' },
       ]},
       { title:'Varias variables y modelos', cls:'ca-sub', cards:[
         { icon:'∇', name:'Cálculo multivariable', desc:'Derivadas parciales, gradiente e integral doble', id:'calc-mul', cls:'ca-sub' },
@@ -47,6 +48,7 @@ const SUBMOD_CONFIG = {
 const CALC_DESTINATIONS={
   calc:'dif', 'calc-dif':'dif', 'calc-int':'int',
   'calc-mul':'mul', 'calc-edo':'edo', 'calc-graf':'graf',
+  'calc-cur':'cur',
 };
 
 let currentParent = null;

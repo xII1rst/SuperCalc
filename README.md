@@ -10,7 +10,7 @@ El launcher abre tres áreas. Cada tarjeta de submódulo conduce a su pantalla o
 
 - **Álgebra:** vectores en R²/R³ con suma, productos, proyecciones, ecuaciones, incógnitas, triángulos y figuras 3D; matrices con operaciones, determinantes, inversa, sistemas y eigenvalores; inecuaciones, análisis de funciones y sucesiones/progresiones. El selector agrupa vectores y matrices por un lado, y funciones y relaciones por otro.
 - **Física:** electromagnetismo con Coulomb, Gauss, potencial, Lorentz, Faraday y Maxwell; aplicaciones de energía potencial, capacitancia, campo de un hilo, inductancia, ley de Ohm, circuitos RC y FEM por cambio de flujo. El canvas representa vectores y figuras geométricas.
-- **Cálculo:** entradas directas a Diferencial, Integral, Multivariable, Ecuaciones diferenciales y Graficador. Incluye límites y operaciones entre límites, derivadas y aplicaciones, antiderivadas básicas, integral definida, series de Taylor, derivadas parciales, gradiente, integral doble y métodos de EDO. El graficador ofrece funciones lineales, cuadráticas, de valor absoluto, exponenciales, de raíz, logarítmicas y racionales.
+- **Cálculo:** entradas directas a Diferencial, Integral, Multivariable, Ecuaciones diferenciales, Graficador y Curvas. Incluye límites y operaciones entre límites, derivadas y aplicaciones (optimización, Newton-Raphson, teorema del valor medio, continuidad y funciones hiperbólicas), integración simbólica con pasos (sustitución, por partes, fracciones parciales), integral definida e impropia, series infinitas y de Taylor, derivadas parciales, gradiente, integral doble y métodos de EDO. La pestaña Integral añade aplicaciones de la integral (área entre curvas, longitud de arco, superficie de revolución, centroide, trabajo y fuerza hidrostática). La pestaña Curvas cubre curvas paramétricas, coordenadas polares y secciones cónicas. El graficador ofrece funciones lineales, cuadráticas, de valor absoluto, exponenciales, de raíz, logarítmicas y racionales.
 
 En **Integral → Volumen de revolución**, se define `f(x)` y el intervalo `[a,b]`. La región comprendida entre la curva y el eje X gira alrededor del eje elegido:
 
@@ -40,6 +40,13 @@ SuperCalc/
 │   │   │   ├── polynomial.mjs          Utilidades polinómicas
 │   │   │   └── sequences.mjs           Sucesiones y progresiones
 │   │   ├── calculus.mjs                Límites, derivadas, integrales y volúmenes
+│   │   ├── integration.mjs             Integración simbólica (CAS) con pasos
+│   │   ├── series.mjs                  Series infinitas y polinomio de Taylor
+│   │   ├── numeric.mjs                 Integración numérica e integrales impropias
+│   │   ├── integral-applications.mjs   Aplicaciones de la integral definida
+│   │   ├── parametric.mjs              Curvas paramétricas
+│   │   ├── polar.mjs                   Coordenadas polares
+│   │   ├── conics.mjs                  Secciones cónicas
 │   │   ├── applications.mjs            Aplicaciones de derivadas y EDO
 │   │   ├── electromagnetism.mjs        Fórmulas físicas
 │   │   ├── expression.mjs              Lectura numérica de expresiones
@@ -73,6 +80,9 @@ SuperCalc/
 ├── tests/                   Pruebas de Node, sin navegador
 │   ├── app-ui.test.mjs, events.test.mjs, offline.test.mjs
 │   ├── calculus.test.mjs, applications.test.mjs, electromagnetism.test.mjs
+│   ├── integration.test.mjs, series.test.mjs, numeric.test.mjs
+│   ├── integral-applications.test.mjs, parametric.test.mjs
+│   ├── polar.test.mjs, conics.test.mjs
 │   ├── matrix.test.mjs, vector.test.mjs, vector-equations.test.mjs
 │   ├── inequalities.test.mjs, functions.test.mjs, polynomial.test.mjs
 │   ├── sequences.test.mjs, graph-types.test.mjs, format.test.mjs
