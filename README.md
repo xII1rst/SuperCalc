@@ -1,168 +1,103 @@
-# SuperCalc v1.9.4
+# SuperCalc v1.0.0
 
-**Progressive Web App** de cálculo científico y visualización matemática.  
-Desarrollada por **Ing. Rafael Miranda (xII1rst)**  
-Disponible en: supercalc-sooty.vercel.app 
+SuperCalc es una aplicación web progresiva de cálculo científico y visualización matemática, desarrollada por **Ing. Rafael Miranda (xII1rst)**. Funciona con JavaScript modular nativo, Canvas 2D y un service worker; no requiere framework, dependencias de npm ni compilación.
 
----
+Disponible en: https://supercalc-sooty.vercel.app
 
-## Descripción
+## Cómo se usa
 
-SuperCalc es una calculadora científica avanzada orientada a estudiantes e ingenieros.  
-Permite realizar operaciones vectoriales, matriciales, de cálculo diferencial e integral,
-análisis electromagnético y graficación — todo con visualización en canvas 3D interactivo,
-sin necesidad de instalación ni conexión a internet tras la primera carga.
+El launcher abre tres áreas. Cada tarjeta de submódulo conduce a su pantalla o sección correspondiente; dentro de las pantallas, pestañas y tarjetas organizan los formularios. Se introducen datos, se ejecuta una operación y se muestran resultados, pasos o gráficas según el caso. Los controles usan acciones declarativas (`data-action`) enlazadas por un módulo de eventos, no llamadas JavaScript incrustadas en el HTML.
 
----
+- **Álgebra:** vectores en R²/R³ con suma, productos, proyecciones, ecuaciones, incógnitas, triángulos y figuras 3D; matrices con operaciones, determinantes, inversa, sistemas y eigenvalores; inecuaciones, análisis de funciones y sucesiones/progresiones. El selector agrupa vectores y matrices por un lado, y funciones y relaciones por otro.
+- **Física:** electromagnetismo con Coulomb, Gauss, potencial, Lorentz, Faraday y Maxwell; aplicaciones de energía potencial, capacitancia, campo de un hilo, inductancia, ley de Ohm, circuitos RC y FEM por cambio de flujo. El canvas representa vectores y figuras geométricas.
+- **Cálculo:** entradas directas a Diferencial, Integral, Multivariable, Ecuaciones diferenciales y Graficador. Incluye límites y operaciones entre límites, derivadas y aplicaciones, antiderivadas básicas, integral definida, series de Taylor, derivadas parciales, gradiente, integral doble y métodos de EDO. El graficador ofrece funciones lineales, cuadráticas, de valor absoluto, exponenciales, de raíz, logarítmicas y racionales.
 
-## Módulos
+En **Integral → Volumen de revolución**, se define `f(x)` y el intervalo `[a,b]`. La región comprendida entre la curva y el eje X gira alrededor del eje elegido:
 
-### AL — Álgebra Lineal
+- Eje X: método de discos, `V = π∫ₐᵇ [f(x)]² dx`.
+- Eje Y: método de cascarones, `V = 2π∫ₐᵇ |x|·|f(x)| dx`; `[a,b]` debe quedar a un solo lado de `x = 0` para evitar contar dos veces un volumen superpuesto.
 
-#### Vectores 3D
-- Hasta 10 vectores simultáneos con nombres y colores personalizados
-- Modos R² y R³ con canvas 3D rotable (drag + pinch-zoom)
-- **Tab Vectores** — Suma, resta, escalar. Grafica todos los vectores activos con sombras de proyección
-- **Tab Cálculos** — Producto punto, ángulo, proyecciones escalares/vectoriales, producto cruz. Resultados con pasos detallados expandibles
-- **Tab Operaciones** — Combinaciones lineales (suma ponderada de N vectores activos)
-- **Tab Ecuación** — Ecuación vectorial de la línea (punto + dirección), grafica la recta
-- **Tab Incógnita** — Resuelve `αA + βB = C` para el escalar o vector desconocido
-- **Tab Triángulo** — 3 puntos P/Q/R en R³: lados (notación √n), ángulos (D°MM'SS"), perímetro, área, verificación 180°
-- **Tab Figuras** — Grafica figuras geométricas 3D sobre el canvas: esfera, cilindro, cono, plano, toro. Color y opacidad configurables
+Ambos resultados se aproximan con Simpson 1/3 y se expresan en unidades cúbicas. Los dos temas, oscuro y claro, se pueden alternar desde el launcher; la preferencia se guarda localmente. El service worker almacena los recursos propios para navegación y cálculos sin conexión tras su instalación; la fuente externa es opcional.
 
-#### Matrices & Ec. Lineales
-- Operaciones básicas (suma, resta, escalar, transpuesta)
-- Determinante e inversa
-- Sistemas de ecuaciones por Gauss-Jordan con aritmética exacta de fracciones (modo FRAC/DEC)
-- Eigenvalores y eigenvectores (2×2 y 3×3)
+## Mapa del proyecto
 
-#### Inecuaciones
-- Lineal (ax + b < c), cuadrática, sistema de dos inecuaciones, valor absoluto |ax+b| ≤ c
-
----
-
-### FÍS — Física
-
-#### Electromagnetismo
-- **Coulomb** — Fuerza entre dos cargas; distancia calculada desde posiciones; vectores F y E graficados a escala normalizada
-- **Gauss** — Flujo eléctrico; geometrías esfera, cilindro, plano infinito
-- **Potencial** — V en A y B, ΔV, trabajo W = qΔV, campo E en ambos puntos
-- **Lorentz** — F = q(E + v×B); vectores v, E, B, F graficados con normalización independiente
-- **Faraday** — FEM inducida ε = −N·dΦ/dt, flujo magnético, N vueltas
-- **Maxwell** — Onda EM en el vacío: B₀, λ, ω, k, Poynting S, densidades u_E y u_B
-- **Panel Figuras** — Superpone figuras 3D (esfera, cilindro, cono, plano, toro) al canvas EM
-
----
-
-### CAL — Cálculo
-
-#### Diferencial
-- Límites numéricos (extrapolación de Richardson)
-- Derivadas: primera, segunda, tercera en un punto
-- Análisis completo de función: monotonía, concavidad, extremos, inflexiones
-
-#### Integral
-- Integral indefinida (reglas básicas)
-- Integral definida (Simpson 3/8)
-- Series de Taylor/Maclaurin hasta orden n
-
-#### Multivariable
-- Derivadas parciales ∂f/∂x, ∂f/∂y
-- Gradiente ∇f en un punto
-- Integral doble numérica (Simpson 2D)
-
-#### Ecuaciones Diferenciales
-- 1er orden separable (Euler + RK4)
-- 1er orden lineal y' + p(x)y = q(x)
-- 2do orden coeficientes constantes (característica)
-
-#### Graficar
-- Funciones: lineal, cuadrática, valor absoluto, exponencial, seno, coseno
-- Canvas interactivo con etiquetas de ejes
-
----
-
-## Tecnología
-
-| Elemento | Detalle |
-|---|---|
-| Plataforma | PWA (Progressive Web App) |
-| Archivos | `index.html` · `style.css` · `app.js` |
-| Tipografía | Space Grotesk · Space Mono (Google Fonts) |
-| Canvas | HTML5 Canvas 2D (proyección isométrica 3D) |
-| Offline | Service Worker con estrategia network-first para núcleo, cache-first para fuentes |
-| Instalación | Add to Home Screen (Android/iOS) o banner nativo |
-| Hosting | GitHub Pages / Vercel |
-
----
-
-## Tokens de diseño
-
-```
---al:  #7c6af7   violeta       Álgebra Lineal
---al2: #a594ff   violeta claro
---fi:  #22d3ee   cian          Física
---fi2: #67e8f9   cian claro
---ca:  #10b981   esmeralda     Cálculo
---ca2: #34d399   esmeralda claro
---accent: #f0c040  dorado      Vectores / énfasis
---bg:       #080c14
---surface:  #0d1220
---surface2: #111827
---border:   #1e2d45
---text1:    #e8f0fc
---text3:    #3a5a7a
+```text
+SuperCalc/
+├── index.html                 Pantallas, formularios y acciones declarativas
+├── app.js                     Arranque ES y registro de acciones
+├── theme.css                  Paletas oscura y clara
+├── style.css                  Distribución visual y componentes
+├── sw.js                      Caché y funcionamiento offline
+├── js/
+│   ├── math/                 Cálculos sin DOM ni canvas
+│   │   ├── algebra/
+│   │   │   ├── matrix.mjs              Matrices y sistemas
+│   │   │   ├── vector.mjs              Operaciones vectoriales
+│   │   │   ├── vector-equations.mjs    Ecuaciones e incógnitas vectoriales
+│   │   │   ├── triangle.mjs            Geometría de triángulos
+│   │   │   ├── inequalities.mjs        Solución de inecuaciones
+│   │   │   ├── functions.mjs           Análisis de funciones
+│   │   │   ├── polynomial.mjs          Utilidades polinómicas
+│   │   │   └── sequences.mjs           Sucesiones y progresiones
+│   │   ├── calculus.mjs                Límites, derivadas, integrales y volúmenes
+│   │   ├── applications.mjs            Aplicaciones de derivadas y EDO
+│   │   ├── electromagnetism.mjs        Fórmulas físicas
+│   │   ├── expression.mjs              Lectura numérica de expresiones
+│   │   └── graph-types.mjs             Siete tipos del graficador
+│   ├── ui/                   DOM, formularios, navegación y eventos
+│   │   ├── algebra/
+│   │   │   ├── matrix.mjs              Pantalla de matrices
+│   │   │   ├── vectors.mjs             Paneles y controles de vectores
+│   │   │   ├── inequalities.mjs        Pantalla de inecuaciones
+│   │   │   ├── functions.mjs           Pantalla de funciones
+│   │   │   └── sequences.mjs           Pantalla de sucesiones
+│   │   ├── calculus.mjs                Paneles y resultados de Cálculo
+│   │   ├── electromagnetism.mjs        Paneles de electromagnetismo
+│   │   ├── electromagnetism-extra.mjs  Aplicaciones físicas
+│   │   ├── plotter.mjs                 Controles y tabla del graficador
+│   │   ├── navigation.mjs              Launcher, submódulos e historial
+│   │   ├── events.mjs                  Delegación de data-action
+│   │   ├── figure-controls.mjs         Controles de figuras 3D
+│   │   ├── canvas-size.mjs             Ajuste del bitmap al contenedor
+│   │   ├── branding.mjs                Logo y presentación
+│   │   ├── theme.mjs                   Selector y persistencia del tema
+│   │   └── toast.mjs                   Avisos no bloqueantes
+│   ├── graphics/             Dibujo con Canvas 2D
+│   │   ├── vector-canvas.mjs, em-canvas.mjs
+│   │   ├── graph-canvas.mjs, analysis.mjs
+│   │   ├── axes.mjs, figures.mjs
+│   │   └── colors.mjs, formula-background.mjs
+│   ├── state/figures.mjs      Estado de figuras
+│   ├── utils/format.mjs       Formato numérico, fracciones y radicales
+│   └── offline.mjs            Registro PWA, instalación y actualización
+├── tests/                   Pruebas de Node, sin navegador
+│   ├── app-ui.test.mjs, events.test.mjs, offline.test.mjs
+│   ├── calculus.test.mjs, applications.test.mjs, electromagnetism.test.mjs
+│   ├── matrix.test.mjs, vector.test.mjs, vector-equations.test.mjs
+│   ├── inequalities.test.mjs, functions.test.mjs, polynomial.test.mjs
+│   ├── sequences.test.mjs, graph-types.test.mjs, format.test.mjs
+│   ├── canvas.test.mjs, canvas-size.test.mjs, analysis-graphics.test.mjs
+│   ├── figures.test.mjs, formula-background.test.mjs
+│   └── theme.test.mjs, toast.test.mjs
+└── docs/estado-proyecto.md   Registro técnico de la refactorización
 ```
 
----
+El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. `js/state/` y `js/utils/` sirven a varios dominios; `js/offline.mjs` y `sw.js` gestionan recursos y caché por separado. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable.
 
-## Historial de versiones
+## Ejecutar y comprobar
 
-| Versión | Cambios |
-|---|---|
-| **v1.9.4** | Correcciones EM: Coulomb sin campo `r` manual (distancia desde posiciones), validación posiciones iguales, Lorentz escala normalizada por vector, `emRenderAllPanels` no destruye inputs al cambiar coordenadas |
-| **v1.9.3** | Tab Figuras 3D en AL Vectores (esfera, cilindro, cono, plano, toro). Panel flotante de figuras en EM. Motor de malla compartido con Painter's algorithm |
-| **v1.9.2** | Icono PWA actualizado a Ω atómico. Tarjetas del launcher sin descripción, alineación por altura fija. Autor fijo en parte inferior de pantalla |
-| **v1.9.1** | Tab Triángulo 3D (P/Q/R, lados √n, ángulos DMS, área, pasos). Math-cards con toggle de pasos. Layout desktop responsive (flex-row canvas+panel). Notación radical y DMS |
-| **v1.9.0** | Logo Ω atómico SVG con electrones animados (∑ violeta, π cian, ∂ dorado). Canvas de fórmulas matemáticas de fondo. SW reescrito con estrategia network-first. Arquitectura 3 archivos |
-| **v1.8.0** | Módulo Cálculo: Diferencial, Integral, Multivariable, EDO, Graficar |
-| **v1.7.0** | Módulo Inecuaciones (lineal, cuadrática, sistema, valor absoluto) |
-| **v1.6.0** | Módulo Matrices & Ec. Lineales con Gauss-Jordan en fracciones exactas, eigenvalores |
-| **v1.5.0** | Arquitectura modular: Launcher → Submódulos (AL/FÍS). SUBMOD_CONFIG |
-| **v1.4.0** | Módulo Electromagnetismo (Coulomb, Gauss, Lorentz, Faraday, Maxwell) |
-| **v1.3.0** | Axis ticks adaptativos, figura geométrica toggle en canvas vectores |
-| **v1.2.0** | Ecuación de línea (punto + dirección), solver de incógnita vectorial |
-| **v1.1.0** | Operaciones vectoriales (prod. punto, ángulo, cruz, proyecciones) |
-| **v1.0.0** | App inicial: vectores R²/R³, canvas 3D, PWA, GitHub Pages |
+Servir la raíz por HTTP y abrir `http://127.0.0.1:8765/` (los módulos ES y el service worker no se prueban desde `file://`):
 
----
+```sh
+python3 -m http.server 8765 --bind 127.0.0.1
+```
 
-## Glosario de funciones principales
+Ejecutar las pruebas automatizadas:
 
-| Función | Descripción |
-|---|---|
-| `draw()` | Render principal del canvas AL vectores |
-| `p3(x,y,z,cx,cy,s)` | Proyección isométrica 3D → 2D (AL) |
-| `emDraw()` | Render canvas EM |
-| `emP3(x,y,z)` | Proyección isométrica 3D → 2D (EM) |
-| `renderFigure(ctx, projectFn, state)` | Motor compartido de figuras 3D |
-| `genSphere/Cylinder/Cone/Plane/Torus` | Generadores de malla poligonal |
-| `showTab(t)` | Navegación tabs AL vectores (V/M/O/E/I/T/F) |
-| `figDraw()` / `figClear()` | Graficar/limpiar figura en AL |
-| `emFigDraw()` / `emFigClear()` | Graficar/limpiar figura en EM |
-| `launchSubmod(id)` | Abre módulo: vectors, em, mat, calc, ineq |
-| `openSubmod(parent)` | Abre pantalla de submódulos AL/FÍS/CAL |
-| `calcTab(t)` | Navegación tabs Cálculo (dif/int/mul/edo/graf) |
-| `emCalcCoulomb()` | Fuerza de Coulomb desde posiciones |
-| `emCalcLorentz()` | Fuerza de Lorentz F=q(E+v×B) |
-| `matGauss()` | Eliminación Gauss-Jordan con fracciones |
-| `triCalc()` | Triángulo 3D: lados, ángulos, área |
-| `fDMS(deg)` | Formato grados°minutos'segundos" |
-| `fMag(x)` | Magnitud con notación √n |
-| `fN(x,dec)` | Decimal sin ceros trailing |
-| `scBg()` | Canvas de fórmulas de fondo |
-| `scLogoAnim()` | Animación electrones del logo Ω |
+```sh
+node --experimental-vm-modules --test tests/*.test.mjs
+```
 
----
+La suite comprueba motores matemáticos, acciones de interfaz simuladas, renderizadores con canvas simulado, temas y precarga offline. La interacción, el aspecto visual y el control offline real se comprueban desde el navegador y sus DevTools.
 
 © 2026 Ing. Rafael Miranda (xII1rst) — SuperCalc
