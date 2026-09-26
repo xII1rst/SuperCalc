@@ -1,5 +1,29 @@
 // Formatos numéricos compartidos; independientes del DOM y de canvas.
 
+const DISPLAY_TOLERANCE = 1e-6;
+
+function nearbySimpleFraction(value) {
+  if (!Number.isFinite(value)) return null;
+  const integer = Math.round(value);
+  if (integer !== 0 && Math.abs(value - integer) <= DISPLAY_TOLERANCE) return [integer, 1];
+  for (let denominator = 2; denominator <= 24; denominator++) {
+    const numerator = Math.round(value * denominator);
+    if (numerator === 0) continue;
+    if (Math.abs(value - numerator / denominator) <= DISPLAY_TOLERANCE) {
+      const divisor = gcd(numerator, denominator);
+      return [numerator / divisor, denominator / divisor];
+    }
+  }
+  return null;
+}
+
+function shortDecimal(value, digits) {
+  const fraction = nearbySimpleFraction(value);
+  if (fraction?.[1] === 1) return String(fraction[0]);
+  if (fraction) return String(parseFloat(value.toFixed(Math.min(digits, 3))));
+  return String(parseFloat(value.toFixed(digits)));
+}
+
 export function fDMS(deg) {
   if (isNaN(deg) || !isFinite(deg)) return '—';
   const sign = deg < 0 ? '-' : '';
@@ -16,14 +40,23 @@ export function fN(v, d = 6) {
   if (v === undefined || v === null || isNaN(v)) return 'indefinido';
   if (!isFinite(v)) return v > 0 ? '+∞' : '-∞';
   if (Math.abs(v) < 1e-9) return '0';
+  const nearby = nearbySimpleFraction(v);
+  if (nearby?.[1] === 1) return String(nearby[0]);
   if (Math.abs(v) >= 1e6 || Math.abs(v) < 1e-4 && Math.abs(v) > 0) return v.toExponential(4);
-  return parseFloat(v.toFixed(d)).toString();
+  return shortDecimal(v, d);
+}
+
+export function formatResult(v, d = 3) {
+  const decimal = fN(v, d);
+  const fraction = nearbySimpleFraction(v);
+  if (!fraction || fraction[1] === 1 || /e[+-]\d+/.test(decimal)) return decimal;
+  return `${decimal} → ${fraction[0]}/${fraction[1]}`;
 }
 
 export function matFmtNum(n, d = 4) {
   if (isNaN(n) || !isFinite(n)) return '—';
-  const rounded = parseFloat(n.toFixed(d));
-  return rounded === 0 ? '0' : String(rounded);
+  const rounded = shortDecimal(n, d);
+  return Number(rounded) === 0 ? '0' : rounded;
 }
 
 export function emFmt(v, dec = 4) {

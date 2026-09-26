@@ -4,7 +4,7 @@ import {
   simpsonIntegral, revolutionVolume, taylorCoefficients, partialDerivative,
   gradient2D, midpointIntegral2D, implicitDerivative,
 } from '../math/calculus.mjs';
-import { fN } from '../utils/format.mjs';
+import { fN, formatResult } from '../utils/format.mjs';
 import {
   optimizeFunction, populationGrowth, motionAt, tangentAt, relatedRates, characteristicRoots,
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
@@ -193,7 +193,18 @@ function clearCard(id){
 // ═══════════════════════════════════════════════════════
 // PARSER NUMÉRICO
 // ═══════════════════════════════════════════════════════
+function resultWithFraction(val){
+  if (typeof val !== 'string') return val;
+  const fraction = /^(-?\d+)\/(\d+)$/.exec(val);
+  const numeric = /^-?\d+(?:\.\d+)?$/.test(val);
+  if (!fraction && !numeric) return val;
+  const value = fraction ? Number(fraction[1]) / Number(fraction[2]) : Number(val);
+  if (!Number.isFinite(value)) return val;
+  const displayed = formatResult(value, 8);
+  return displayed.includes(' → ') || (numeric && displayed === String(Math.round(value))) ? displayed : val;
+}
 function resBox(label,val,hint='',big=false){
+  val = resultWithFraction(val);
   return `<div class="calc-res-box">
     <div class="calc-res-label">${label}</div>
     <div class="calc-res-val${big?' big':''}">${val}</div>
@@ -307,8 +318,8 @@ function limitStepsHTML(r){
   const showApprox=r.exact&&r.valueNum&&Math.abs(r.valueNum)>1e-10&&r.tipo!=='directo';
   html+=`<div class="calc-res-box" style="margin-top:8px;${r.exists?'border-color:var(--ca2)':''}">
     <div class="calc-res-label">lim<sub>${variable}→${a}</sub> [ ${fx} ]</div>
-    <div class="calc-res-val big">${r.value||'No existe'}</div>
-    ${showApprox?`<div class="calc-res-hint">≈ ${fmtNum(r.valueNum,8)}</div>`:''}
+    <div class="calc-res-val big">${resultWithFraction(r.value||'No existe')}</div>
+    ${showApprox?`<div class="calc-res-hint">≈ ${fN(r.valueNum,8)}</div>`:''}
     <div class="calc-res-hint">${
       r.exists
         ?(r.tipo==='directo'?'✓ Sustitución directa'
@@ -362,7 +373,7 @@ function calcLimitOp(){
   html+=`<div class="lim-op-block"><div class="lim-op-label">Límite B — lim<sub>${variable2}→${a2}</sub> [${fx2}]</div>${limitStepsHTML(r2)}</div>`;
   html+=`<div class="calc-res-box" style="border-color:var(--gold);margin-top:8px">
     <div class="calc-res-label">L_A ${opSym} L_B</div>
-    <div class="calc-res-val big">${resStr}</div>
+    <div class="calc-res-val big">${resultWithFraction(resStr)}</div>
     <div class="calc-res-hint">${fmtResult(v1)||'?'} ${opSym} ${fmtResult(v2)||'?'} = ${resStr}</div>
     ${reason?`<div class="calc-res-hint">${reason}</div>`:''}
   </div>`;
@@ -400,7 +411,7 @@ function calcDerivative(){
             if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
             else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
             else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
-            html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, fN(v,8));
+            html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, formatResult(v,8));
           }
         }
       }
@@ -416,7 +427,7 @@ function calcDerivative(){
         if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
         else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
         else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
-        html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, fN(v,8));
+        html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, formatResult(v,8));
       }
     }
   }
@@ -440,8 +451,8 @@ function calcImplicit(){
     const {fval,fx:fx0,fy:fy0,slope}=implicitDerivative(Fxy,x0,y0);
     if(Math.abs(fval)>0.1)
       html+=resBox('Verificación',`F(${x0},${y0}) ≈ ${fN(fval,4)}`,'⚠ El punto puede no estar en la curva');
-    html+=resBox(`∂F/∂x en (${x0},${y0})`, fN(fx0,6));
-    html+=resBox(`∂F/∂y en (${x0},${y0})`, fN(fy0,6));
+    html+=resBox(`∂F/∂x en (${x0},${y0})`, formatResult(fx0,6));
+    html+=resBox(`∂F/∂y en (${x0},${y0})`, formatResult(fy0,6));
     html+=resBox(`dy/dx en (${x0},${y0})`, isFinite(slope)?fmtResult(slope)||fN(slope,6):'indefinido',
       isFinite(slope)?'':'∂F/∂y ≈ 0 en este punto',true);
   } else {
@@ -676,9 +687,9 @@ function appGrowth(){
   const {Pt,dPdt,t2x}=populationGrowth(p0,k,t);
   appRes(
     resBox('P(t) = P₀·eᵏᵗ',`P(${t}) = ${fN(p0)} · e^(${k}·${t}) = ${fN(Pt,4)}`,`P₀=${p0}, k=${k}`,true)+
-    resBox('Tasa de cambio dP/dt = k·P(t)', fN(dPdt,4)+' unidades/tiempo',`Proporcional a la población actual`)+
-    resBox('Tiempo de duplicación  t₂ = ln(2)/k', isFinite(t2x)?fN(t2x,4)+' unidades de tiempo':'∞ (k=0)')+
-    resBox('Verificación: P\'(t)/P(t)', fN(k),' = k ✓')
+    resBox('Tasa de cambio dP/dt = k·P(t)', formatResult(dPdt,4)+' unidades/tiempo',`Proporcional a la población actual`)+
+    resBox('Tiempo de duplicación  t₂ = ln(2)/k', isFinite(t2x)?formatResult(t2x,4)+' unidades de tiempo':'∞ (k=0)')+
+    resBox('Verificación: P\'(t)/P(t)', formatResult(k),' = k ✓')
   );
 }
 
@@ -691,9 +702,9 @@ function appMotion(){
   appRes(
     (symV?resBox("v(t) = s'(t) =",symV):'')+
     (symA?resBox("a(t) = s''(t) =",symA):'')+
-    resBox(`s(${t0}) — posición`, fN(s0,6))+
-    resBox(`v(${t0}) — velocidad`, fN(vel,6), vel>0?'↑ Movimiento positivo':vel<0?'↓ Movimiento negativo':'En reposo', true)+
-    resBox(`a(${t0}) — aceleración`, fN(acel,6),
+    resBox(`s(${t0}) — posición`, formatResult(s0,6))+
+    resBox(`v(${t0}) — velocidad`, formatResult(vel,6), vel>0?'↑ Movimiento positivo':vel<0?'↓ Movimiento negativo':'En reposo', true)+
+    resBox(`a(${t0}) — aceleración`, formatResult(acel,6),
       acel>0?'↑ Acelerando en dir. positiva':acel<0?'↓ Frenando':'Velocidad constante')
   );
 }
@@ -707,8 +718,8 @@ function appTangent(){
   const bStr=b>=0?` + ${fN(b,4)}`:` - ${fN(Math.abs(b),4)}`;
   appRes(
     (symD?resBox("f'(x) =",symD):'')+
-    resBox(`f(${x0}) — punto de tangencia`, fN(fx0,6))+
-    resBox(`f'(${x0}) — pendiente`, fN(fpx0,6), 'Ángulo ≈ '+fN(Math.atan(fpx0)*180/Math.PI,2)+'°')+
+    resBox(`f(${x0}) — punto de tangencia`, formatResult(fx0,6))+
+    resBox(`f'(${x0}) — pendiente`, formatResult(fpx0,6), 'Ángulo ≈ '+fN(Math.atan(fpx0)*180/Math.PI,2)+'°')+
     resBox('Ecuación recta tangente', `y = ${fN(fpx0,4)}x${bStr}`, `y − f(x₀) = f\'(x₀)·(x − x₀)`, true)
   );
 }
@@ -721,16 +732,16 @@ function appRelated(){
     const {V,dVdt}=relatedRates(type,r,drdt);
     appRes(
       resBox('Esfera V = (4/3)πr³','','')+
-      resBox(`V cuando r=${r}`, fN(V,6)+' u³')+
-      resBox('dV/dt = 4πr²·(dr/dt)', fN(dVdt,6)+' u³/tiempo',
+      resBox(`V cuando r=${r}`, formatResult(V,6)+' u³')+
+      resBox('dV/dt = 4πr²·(dr/dt)', formatResult(dVdt,6)+' u³/tiempo',
         `4π·${r}²·${drdt} = ${fN(dVdt,4)}`, true)
     );
   } else if(type.includes('Cono')){
     const {V,dVdt}=relatedRates(type,r,drdt);
     appRes(
       resBox('Cono V = (1/3)πr³ (h=r)','','')+
-      resBox(`V cuando r=${r}`, fN(V,6)+' u³')+
-      resBox('dV/dt = πr²·(dr/dt)', fN(dVdt,6)+' u³/tiempo','', true)
+      resBox(`V cuando r=${r}`, formatResult(V,6)+' u³')+
+      resBox('dV/dt = πr²·(dr/dt)', formatResult(dVdt,6)+' u³/tiempo','', true)
     );
   } else {
     appRes(resBox('Pitágoras','Selecciona Esfera o Cono para demo completa',''));
@@ -746,7 +757,7 @@ function appNewton(){
   const {root,iterations,converged}=newtonMethod(fn,x0);
   const last=iterations[iterations.length-1];
   appRes(
-    resBox('Raíz de f(x) = 0', fN(root,10), converged?'✓ Convergió':'⚠ No convergió', true)+
+    resBox('Raíz de f(x) = 0', formatResult(root,10), converged?'✓ Convergió':'⚠ No convergió', true)+
     resBox('Iteraciones', String(iterations.length), last?`Último paso: x = ${fN(last.xNext,6)}`:'')
   );
 }
@@ -758,8 +769,8 @@ function appMVT(){
   if(a>=b){appRes(errBox('Se requiere a < b'));return;}
   const {slope,c}=meanValueTheorem(fn,a,b);
   appRes(
-    resBox('Pendiente secante (f(b)−f(a))/(b−a)', fN(slope,6))+
-    resBox('Punto c con f\'(c) = pendiente', c?`c ≈ ${fN(c,6)}`:'No encontrado',
+    resBox('Pendiente secante (f(b)−f(a))/(b−a)', formatResult(slope,6))+
+    resBox('Punto c con f\'(c) = pendiente', c?`c ≈ ${formatResult(c,6)}`:'No encontrado',
       'Verifica que f cumpla las hipótesis del teorema', true)
   );
 }
@@ -771,7 +782,7 @@ function appContinuity(){
   const r=checkContinuity(fn,a);
   const typeMap={removible:'Discontinuidad removible',infinita:'Discontinuidad infinita',salto:'Discontinuidad de salto'};
   appRes(
-    resBox(`f(${a})`, Number.isFinite(r.value)?fN(r.value,6):'no definida')+
+    resBox(`f(${a})`, Number.isFinite(r.value)?formatResult(r.value,6):'no definida')+
     resBox('Límites laterales', `lim₋ ≈ ${fN(r.leftLimit,4)}   lim₊ ≈ ${fN(r.rightLimit,4)}`)+
     resBox('Conclusión', r.continuous?`✓ Continua en x = ${a}`:(typeMap[r.discontinuityType]||r.discontinuityType), '', true)
   );
@@ -783,10 +794,10 @@ function appHyperbolic(){
   const h=hyperbolicValues(x);
   const inv=inverseHyperbolic(x);
   appRes(
-    resBox(`sinh(${x})`, fN(h.sinh,6))+
-    resBox(`cosh(${x})`, fN(h.cosh,6))+
-    resBox(`tanh(${x})`, fN(h.tanh,6))+
-    resBox('cosh² − sinh²', fN(h.identity,6), 'Identidad fundamental = 1')+
+    resBox(`sinh(${x})`, formatResult(h.sinh,6))+
+    resBox(`cosh(${x})`, formatResult(h.cosh,6))+
+    resBox(`tanh(${x})`, formatResult(h.tanh,6))+
+    resBox('cosh² − sinh²', formatResult(h.identity,6), 'Identidad fundamental = 1')+
     resBox('Inversas', `asinh=${fN(inv.asinh,4)}, acosh=${Number.isFinite(inv.acosh)?fN(inv.acosh,4):'—'}, atanh=${Number.isFinite(inv.atanh)?fN(inv.atanh,4):'—'}`)
   );
 }
@@ -809,7 +820,7 @@ function calcIntegralIndef(){
     resBox('∫ f(x) dx','Usa la Integral Definida para calcular numéricamente','');
   // Siempre dar verificación numérica
   const v0=(fn(1+1e-4,0)-fn(1-1e-4,0))/(2e-4);
-  html+=resBox('f(1) para referencia', fN(fn(1,0),6));
+  html+=resBox('f(1) para referencia', formatResult(fn(1,0),6));
   res.innerHTML=html;
 }
 
@@ -857,8 +868,8 @@ function calcIntegralDef(){
   }
 
   if(Number.isFinite(a)&&Number.isFinite(b)){
-    html+=resBox('Valor promedio  f̄ = (1/(b−a))∫f dx', fN(r.valueNum/(b-a),6))+
-          resBox('Longitud del intervalo', fN(b-a,4)+' u');
+    html+=resBox('Valor promedio  f̄ = (1/(b−a))∫f dx', formatResult(r.valueNum/(b-a)))+
+          resBox('Longitud del intervalo', formatResult(b-a,4)+' u');
   }
   res.innerHTML=html;
 }
@@ -874,7 +885,7 @@ function calcRevolutionVolume(){
     const formula=axis==='x' ? 'π∫ₐᵇ [f(x)]² dx' : '2π∫ₐᵇ |x|·|f(x)| dx';
     const method=axis==='x' ? 'Discos alrededor del eje X' : 'Cascarones alrededor del eje Y';
     res.innerHTML=
-      resBox('Volumen V',`${fN(volume,8)} u³`,`${method} · Simpson 1/3`,true)+
+      resBox('Volumen V',`${formatResult(volume,8)} u³`,`${method} · Simpson 1/3`,true)+
       resBox('Integral usada',formula,`a = ${a}, b = ${b}`);
     renderRevolutionSolid(fn, a, b, axis);
   }catch(error){
@@ -925,7 +936,7 @@ function calcPartial(){
 
   if(!isNaN(x0)&&!isNaN(y0)){
     const v2=partialDerivative(fn,x0,y0,varN,ord);
-    html+=resBox(`Valor en (${x0},${y0})`, fN(v2,8), '', true);
+    html+=resBox(`Valor en (${x0},${y0})`, formatResult(v2,8), '', true);
   } else {
     html+=resBox('Nota','Ingresa (x₀,y₀) para evaluar en un punto','');
   }
@@ -942,10 +953,10 @@ function calcGradient(){
 
   const {fx,fy,mag}=gradient2D(fn,x0,y0);
   res.innerHTML=
-    resBox('∂f/∂x', fN(fx))+
-    resBox('∂f/∂y', fN(fy))+
+    resBox('∂f/∂x', formatResult(fx))+
+    resBox('∂f/∂y', formatResult(fy))+
     resBox('∇f = (∂f/∂x, ∂f/∂y)', `(${fN(fx,4)},  ${fN(fy,4)})`, 'Dirección de máximo crecimiento', true)+
-    resBox('|∇f| — magnitud', fN(mag,6))+
+    resBox('|∇f| — magnitud', formatResult(mag,6))+
     resBox('∇f unitario', mag>1e-10?`(${fN(fx/mag,4)},  ${fN(fy/mag,4)})`:'(0, 0)');
 }
 
@@ -960,9 +971,9 @@ function calcDoubleIntegral(){
 
   const result=midpointIntegral2D(fn,x1,x2,y1,y2);
   res.innerHTML=
-    resBox(`∬ f dx dy — [${x1},${x2}]×[${y1},${y2}]`, fN(result,8), 'Punto medio 100×100', true)+
-    resBox('Área de la región', fN((x2-x1)*(y2-y1),4)+' u²')+
-    resBox('Valor promedio f̄', fN(result/((x2-x1)*(y2-y1)),6));
+    resBox(`∬ f dx dy — [${x1},${x2}]×[${y1},${y2}]`, formatResult(result,8), 'Punto medio 100×100', true)+
+    resBox('Área de la región', formatResult((x2-x1)*(y2-y1),4)+' u²')+
+    resBox('Valor promedio f̄', formatResult(result/((x2-x1)*(y2-y1)),6));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -977,9 +988,9 @@ function calcGrad3D(){
   try{
     const g=gradient3D(fxyz,x,y,z);
     res.innerHTML=
-      resBox('∂f/∂x', fN(g.x,6))+
-      resBox('∂f/∂y', fN(g.y,6))+
-      resBox('∂f/∂z', fN(g.z,6))+
+      resBox('∂f/∂x', formatResult(g.x,6))+
+      resBox('∂f/∂y', formatResult(g.y,6))+
+      resBox('∂f/∂z', formatResult(g.z,6))+
       resBox('∇f =', `(${fN(g.x,4)}, ${fN(g.y,4)}, ${fN(g.z,4)})`, 'Gradiente 3D', true);
   }catch(e){ res.innerHTML=errBox(e.message); }
 }
@@ -994,7 +1005,7 @@ function calcDirectional(){
   if(dx===0&&dy===0){res.innerHTML=errBox('La dirección no puede ser (0,0)');return;}
   try{
     const v=directionalDerivative(fxy,x0,y0,{x:dx,y:dy});
-    res.innerHTML=resBox('D_u f', fN(v,8), `en dirección (${dx}, ${dy})`, true);
+    res.innerHTML=resBox('D_u f', formatResult(v,8), `en dirección (${dx}, ${dy})`, true);
   }catch(e){ res.innerHTML=errBox(e.message); }
 }
 
@@ -1009,7 +1020,7 @@ function calcCurvature(){
     const T=unitTangent(x,y,t);
     const N=unitNormal(x,y,t);
     res.innerHTML=
-      resBox('Curvatura κ', fN(k,8), '', true)+
+      resBox('Curvatura κ', formatResult(k,8), '', true)+
       resBox('Tangente unitaria T', `(${fN(T.x,4)}, ${fN(T.y,4)})`)+
       resBox('Normal unitaria N', `(${fN(N.x,4)}, ${fN(N.y,4)})`);
   }catch(e){ res.innerHTML=errBox(e.message); }
@@ -1025,7 +1036,7 @@ function calcDivCurl(){
     const d=divergence(fx,fy,fz,x,y,z);
     const c=curl(fx,fy,fz,x,y,z);
     res.innerHTML=
-      resBox('Divergencia ∇·F', fN(d,8), '', true)+
+      resBox('Divergencia ∇·F', formatResult(d,8), '', true)+
       resBox('Rotacional ∇×F', `(${fN(c.x,4)}, ${fN(c.y,4)}, ${fN(c.z,4)})`);
   }catch(e){ res.innerHTML=errBox(e.message); }
 }
@@ -1043,7 +1054,7 @@ function calcConservative(){
     if(conservative){
       const phi=potentialFunction2D(fx,fy);
       if(!isNaN(x0)&&!isNaN(y0))
-        html+=resBox(`Potencial φ(${x0},${y0})`, fN(phi(x0,y0),8), 'φ vía integral de línea');
+        html+=resBox(`Potencial φ(${x0},${y0})`, formatResult(phi(x0,y0),8), 'φ vía integral de línea');
     }
     res.innerHTML=html;
   }catch(e){ res.innerHTML=errBox(e.message); }
@@ -1058,13 +1069,13 @@ function calcLineIntegral(){
   let html='';
   if(fs&&xs&&ys&&!isNaN(st0)&&!isNaN(st1)){
     try{
-      html+=resBox('∫_C f ds (escalar)', fN(lineIntegralScalar(fs,xs,ys,st0,st1),8),
+      html+=resBox('∫_C f ds (escalar)', formatResult(lineIntegralScalar(fs,xs,ys,st0,st1),8),
         `f=${fs}, C: (${xs}, ${ys})`, true);
     }catch(e){ html+=errBox('Escalar: '+e.message); }
   }
   if(fx&&fy&&xv&&yv&&!isNaN(vt0)&&!isNaN(vt1)){
     try{
-      html+=resBox('∫_C F·dr (vectorial)', fN(lineIntegralVector(fx,fy,xv,yv,vt0,vt1),8),
+      html+=resBox('∫_C F·dr (vectorial)', formatResult(lineIntegralVector(fx,fy,xv,yv,vt0,vt1),8),
         `F=(${fx}, ${fy})`, true);
     }catch(e){ html+=errBox('Vectorial: '+e.message); }
   }
@@ -1080,14 +1091,14 @@ function calcTheorems(){
   let html='';
   if(p&&q&&![x1,x2,y1,y2].some(isNaN)){
     try{
-      html+=resBox('Green ∮ P dx + Q dy', fN(greenLineIntegral(p,q,x1,x2,y1,y2),8),
+      html+=resBox('Green ∮ P dx + Q dy', formatResult(greenLineIntegral(p,q,x1,x2,y1,y2),8),
         `región [${x1},${x2}]×[${y1},${y2}]`, true);
-      html+=resBox('Flujo (Gauss 2D)', fN(fluxDivergenceTheorem(p,q,x1,x2,y1,y2),8));
+      html+=resBox('Flujo (Gauss 2D)', formatResult(fluxDivergenceTheorem(p,q,x1,x2,y1,y2),8));
     }catch(e){ html+=errBox('Green: '+e.message); }
   }
   if(fx&&fy&&fz&&!isNaN(R)&&R>0){
     try{
-      html+=resBox('Stokes sobre disco de radio R', fN(stokesLineIntegral(fx,fy,fz,R),8),
+      html+=resBox('Stokes sobre disco de radio R', formatResult(stokesLineIntegral(fx,fy,fz,R),8),
         `F=(${fx}, ${fy}, ${fz})`, true);
     }catch(e){ html+=errBox('Stokes: '+e.message); }
   }
@@ -1141,7 +1152,7 @@ function calcMvIntegral(){
   const pr1=pf('mvint-pr1'), pr2=pf('mvint-pr2'), pt1=pf('mvint-pt1'), pt2=pf('mvint-pt2');
   if(fp&&![pr1,pr2,pt1,pt2].some(isNaN)){
     try{
-      html+=resBox('∬ f dA (polar)', fN(doubleIntegralPolar(fp,pr1,pr2,pt1,pt2),8),
+      html+=resBox('∬ f dA (polar)', formatResult(doubleIntegralPolar(fp,pr1,pr2,pt1,pt2),8),
         `r∈[${pr1},${pr2}], θ∈[${pt1},${pt2}]`, true);
     }catch(e){ html+=errBox('Polar: '+e.message); }
   }
@@ -1150,7 +1161,7 @@ function calcMvIntegral(){
   const tx1=pf('mvint-tx1'),tx2=pf('mvint-tx2'),ty1=pf('mvint-ty1'),ty2=pf('mvint-ty2'),tz1=pf('mvint-tz1'),tz2=pf('mvint-tz2');
   if(ft&&![tx1,tx2,ty1,ty2,tz1,tz2].some(isNaN)){
     try{
-      html+=resBox('∭ f dV (triple)', fN(tripleIntegral(ft,tx1,tx2,ty1,ty2,tz1,tz2),8),
+      html+=resBox('∭ f dV (triple)', formatResult(tripleIntegral(ft,tx1,tx2,ty1,ty2,tz1,tz2),8),
         `caja [${tx1},${tx2}]×[${ty1},${ty2}]×[${tz1},${tz2}]`, true);
     }catch(e){ html+=errBox('Triple: '+e.message); }
   }
@@ -1158,7 +1169,7 @@ function calcMvIntegral(){
   const jx=v('mvint-jx'), jy=v('mvint-jy'), ju=pf('mvint-ju'), jv=pf('mvint-jv');
   if(jx&&jy&&!isNaN(ju)&&!isNaN(jv)){
     try{
-      html+=resBox('Jacobiano ∂(x,y)/∂(u,v)', fN(jacobian2D(jx,jy,ju,jv),8),
+      html+=resBox('Jacobiano ∂(x,y)/∂(u,v)', formatResult(jacobian2D(jx,jy,ju,jv),8),
         `en (u,v)=(${ju},${jv})`, true);
     }catch(e){ html+=errBox('Jacobiano: '+e.message); }
   }
@@ -1188,7 +1199,7 @@ function calcEDOSep(){
   const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
   res.innerHTML=
     resBox('RK4 — Solución numérica',sample,'dy/dx = '+rhsStr+'  con  y('+x0+')='+y0)+
-    resBox('y final  x='+(x0+5).toFixed(2), fN(pts[pts.length-1][1],6),'',true);
+    resBox('y final  x='+(x0+5).toFixed(2), formatResult(pts[pts.length-1][1],6),'',true);
 }
 
 function calcEDOLinear(){
@@ -1200,7 +1211,7 @@ function calcEDOLinear(){
   const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
   res.innerHTML=
     resBox('RK4 — y\' + P(x)y = Q(x)',sample,'y('+x0+')='+y0)+
-    resBox('y final  x='+(x0+5).toFixed(2), fN(pts[pts.length-1][1],6),'',true);
+    resBox('y final  x='+(x0+5).toFixed(2), formatResult(pts[pts.length-1][1],6),'',true);
 }
 
 function calcEDO2nd(){
@@ -1225,7 +1236,7 @@ function calcEDO2nd(){
   }
   res.innerHTML=
     resBox('Ecuación característica', `${a}r² + ${b}r + ${c} = 0`)+
-    resBox('Discriminante Δ', fN(disc))+
+    resBox('Discriminante Δ', formatResult(disc))+
     resBox('Tipo de solución', solType)+
     resBox('Solución general', sol,'C₁,C₂ por condiciones iniciales y(0)='+y0+', y\'(0)='+dy0,true);
 }
@@ -1301,22 +1312,22 @@ function calcIntegralApp(){
       const gx=v('intapp-gx');
       const f=calcParse(fx), g=calcParse(gx);
       if(!f||!g||isNaN(a)||isNaN(b)){res.innerHTML=errBox('Ingresa f(x), g(x), a y b');return;}
-      html=resBox('Área entre curvas ∫(f−g)dx', `${fN(areaBetweenCurves(f,g,a,b),8)} u²`, `[${a}, ${b}]`, true);
+      html=resBox('Área entre curvas ∫(f−g)dx', `${formatResult(areaBetweenCurves(f,g,a,b),8)} u²`, `[${a}, ${b}]`, true);
     } else if(type==='arc'||type==='surface'||type==='centroid'){
       const f=calcParse(fx);
       if(!f||isNaN(a)||isNaN(b)){res.innerHTML=errBox('Ingresa f(x), a y b');return;}
-      if(type==='arc') html=resBox('Longitud de arco ∫√(1+f\'²)dx', `${fN(arcLength(f,a,b),8)} u`, `[${a}, ${b}]`, true);
-      else if(type==='surface') html=resBox('Superficie de revolución (eje X)', `${fN(surfaceAreaOfRevolution(f,a,b),8)} u²`, `[${a}, ${b}]`, true);
+      if(type==='arc') html=resBox('Longitud de arco ∫√(1+f\'²)dx', `${formatResult(arcLength(f,a,b),8)} u`, `[${a}, ${b}]`, true);
+      else if(type==='surface') html=resBox('Superficie de revolución (eje X)', `${formatResult(surfaceAreaOfRevolution(f,a,b),8)} u²`, `[${a}, ${b}]`, true);
       else { const c=centroidRegion(f,a,b); html=resBox('Centroide (x̄, ȳ)', `(${fN(c.xbar,6)}, ${fN(c.ybar,6)})`, `Área = ${fN(c.area,6)} u²`, true); }
     } else if(type==='work'){
       const f=calcParse(fx);
       if(!f||isNaN(a)||isNaN(b)){res.innerHTML=errBox('Ingresa F(x), a y b');return;}
-      html=resBox('Trabajo W = ∫F(x)dx', `${fN(workVariable(f,a,b),8)} J`, `[${a}, ${b}]`, true);
+      html=resBox('Trabajo W = ∫F(x)dx', `${formatResult(workVariable(f,a,b),8)} J`, `[${a}, ${b}]`, true);
     } else if(type==='fluid'){
       const rho=pf('intapp-rho'), depth=v('intapp-depth'), width=v('intapp-width');
       const h=calcParse(depth), w=calcParse(width);
       if(!h||!w||isNaN(a)||isNaN(b)||isNaN(rho)){res.innerHTML=errBox('Ingresa ρ, h(x), w(x), a y b');return;}
-      html=resBox('Fuerza hidrostática F = ρ∫h·w dx', `${fN(fluidForce(rho,h,w,a,b),8)} N`, `ρ = ${rho}`, true);
+      html=resBox('Fuerza hidrostática F = ρ∫h·w dx', `${formatResult(fluidForce(rho,h,w,a,b),8)} N`, `ρ = ${rho}`, true);
     }
   }catch(e){res.innerHTML=errBox(e.message);return;}
   res.innerHTML=html;
@@ -1337,8 +1348,8 @@ function calcParametric(){
       const s=parametricSlope(xExpr,yExpr,t0);
       const slopeStr=!isFinite(s.slope)?(s.slope>0?'+∞ (tangente vertical)':'−∞ (tangente vertical)'):fN(s.slope,6);
       res.innerHTML=
-        resBox('dx/dt', fN(s.dxdt,6))+
-        resBox('dy/dt', fN(s.dydt,6))+
+        resBox('dx/dt', formatResult(s.dxdt,6))+
+        resBox('dy/dt', formatResult(s.dydt,6))+
         resBox('dy/dx = (dy/dt)/(dx/dt)', slopeStr, '', true);
     }catch(e){res.innerHTML=errBox(e.message);}
     return;
@@ -1350,7 +1361,7 @@ function calcParametric(){
     if(op==='arc'){r=parametricArcLength(xExpr,yExpr,a,b);label='Longitud de arco L';unit='u';}
     else if(op==='area'){r=parametricArea(xExpr,yExpr,a,b);label='Área bajo la curva';unit='u²';}
     else {r=parametricSurfaceArea(xExpr,yExpr,a,b);label='Superficie de revolución (eje X)';unit='u²';}
-    res.innerHTML=resBox(label, `${fN(r,8)} ${unit}`, `[${a}, ${b}]`, true);
+    res.innerHTML=resBox(label, `${formatResult(r,8)} ${unit}`, `[${a}, ${b}]`, true);
   }catch(e){res.innerHTML=errBox(e.message);}
 }
 
@@ -1375,9 +1386,9 @@ function calcPolar(){
     try{
       const s=polarSlope(rExpr,theta);
       res.innerHTML=
-        resBox('r(θ)', fN(s.r,6))+
-        resBox("r'(θ)", fN(s.drdt,6))+
-        resBox('dy/dx de la tangente', isFinite(s.slope)?fN(s.slope,6):'indefinida', '', true);
+        resBox('r(θ)', formatResult(s.r,6))+
+        resBox("r'(θ)", formatResult(s.drdt,6))+
+        resBox('dy/dx de la tangente', isFinite(s.slope)?formatResult(s.slope,6):'indefinida', '', true);
     }catch(e){res.innerHTML=errBox(e.message);}
     return;
   }
@@ -1387,7 +1398,7 @@ function calcPolar(){
     const r=op==='area'?polarArea(rExpr,a,b):polarArcLength(rExpr,a,b);
     const label=op==='area'?'Área polar A':'Longitud de arco L';
     const unit=op==='area'?'u²':'u';
-    res.innerHTML=resBox(label, `${fN(r,8)} ${unit}`, `θ ∈ [${a}, ${b}]`, true);
+    res.innerHTML=resBox(label, `${formatResult(r,8)} ${unit}`, `θ ∈ [${a}, ${b}]`, true);
   }catch(e){res.innerHTML=errBox(e.message);}
 }
 
@@ -1400,7 +1411,7 @@ function calcConics(){
     if([A,B,C].some(isNaN)){res.innerHTML=errBox('Ingresa A, B y C');return;}
     const c=conicClassify(A,B,C);
     const names={circle:'Circunferencia',ellipse:'Elipse',hyperbola:'Hipérbola',parabola:'Parábola'};
-    html=resBox('Discriminante B²−4AC', fN(c.discriminant,6))+
+    html=resBox('Discriminante B²−4AC', formatResult(c.discriminant,6))+
       resBox('Tipo de cónica', names[c.type]||c.type, '', true);
     res.innerHTML=html; return;
   }
@@ -1412,19 +1423,19 @@ function calcConics(){
     html=resBox('Vértice', `(${h}, ${k})`)+
       resBox('Foco', `(${c.focus.x}, ${c.focus.y})`)+
       resBox('Directriz', c.directrixY!==null?`y = ${fN(c.directrixY,4)}`:`x = ${fN(c.directrixX,4)}`)+
-      resBox('Lado recto', fN(c.latusRectum,4), `Abre ${c.opens}`, true);
+      resBox('Lado recto', formatResult(c.latusRectum,4), `Abre ${c.opens}`, true);
   } else if(type==='ellipse'){
     const c=ellipse(h,k,p1,p2,true);
     html=resBox('Centro', `(${h}, ${k})`)+
       resBox('Semiejes a, b', `${fN(c.a,4)}, ${fN(c.b,4)}`)+
       resBox('Focos', c.foci.map(f=>`(${f.x}, ${f.y})`).join('  ,  '))+
-      resBox('Excentricidad e = c/a', fN(c.eccentricity,6), '', true);
+      resBox('Excentricidad e = c/a', formatResult(c.eccentricity,6), '', true);
   } else if(type==='hyperbola'){
     const c=hyperbola(h,k,p1,p2,true);
     html=resBox('Centro', `(${h}, ${k})`)+
       resBox('Focos', c.foci.map(f=>`(${f.x}, ${f.y})`).join('  ,  '))+
       resBox('Asíntotas', c.asymptotes.map(a=>`y = ${fN(a.slope,4)}x ${a.intercept>=0?'+':'−'} ${fN(Math.abs(a.intercept),4)}`).join('<br>'))+
-      resBox('Excentricidad', fN(c.eccentricity,6), '', true);
+      resBox('Excentricidad', formatResult(c.eccentricity,6), '', true);
   }
   res.innerHTML=html;
 }

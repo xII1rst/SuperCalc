@@ -2,7 +2,7 @@ import { vmag, vdot, vcross, vangle, vproj, combineVectors } from '../../math/al
 import { triangleGeometry } from '../../math/algebra/triangle.mjs';
 import { solveVectorEquation, solveUnknownComponents } from '../../math/algebra/vector-equations.mjs';
 import { createVectorCanvas } from '../../graphics/vector-canvas.mjs';
-import { fDMS, fN as formatDecimal, toFrac, formatMagnitude } from '../../utils/format.mjs';
+import { fDMS, fN as formatDecimal, formatResult, toFrac, formatMagnitude } from '../../utils/format.mjs';
 import { showToast } from '../toast.mjs';
 import { resizeCanvasToContainer, observeContainerSize } from '../canvas-size.mjs';
 
@@ -30,6 +30,9 @@ let vectorResizeObserver=null;
 // ── FRACTIONS ─────────────────────────────────────────
 function fN(value,decimals=6){
   return fracMode?toFrac(value):formatDecimal(value,decimals);
+}
+function fResult(value,decimals=6){
+  return fracMode?toFrac(value):formatResult(value,decimals);
 }
 function fV(vx,vy,vz){ return mode===3?`(${fN(vx)}, ${fN(vy)}, ${fN(vz)})`:`(${fN(vx)}, ${fN(vy)})`; }
 
@@ -265,10 +268,10 @@ function rM(){
     </div>
     <div class="collapsible-body" style="max-height:9999px">
     <div class="math-grid" style="margin-bottom:10px">
-      ${mkCard('Prod. punto',fN(d),eduHint('dot',d),dotSteps)}
+      ${mkCard('Prod. punto',fResult(d),eduHint('dot',d),dotSteps)}
       ${mkCard('Ángulo',fDMS(an),'',angSteps)}
-      ${mkCard(`Proy ${a.nm}→${b.nm}`,fN(pab),'',projABSteps)}
-      ${mkCard(`Proy ${b.nm}→${a.nm}`,fN(pba),'',projBASteps)}
+      ${mkCard(`Proy ${a.nm}→${b.nm}`,fResult(pab),'',projABSteps)}
+      ${mkCard(`Proy ${b.nm}→${a.nm}`,fResult(pba),'',projBASteps)}
       ${cr?mkCard(`${a.nm}×${b.nm}`,`(${fN(cr.x,2)}, ${fN(cr.y,2)}, ${fN(cr.z,2)})`,eduHint('cr',crM),crossSteps,true):''}
     </div></div>`;
   }
@@ -282,7 +285,7 @@ function rO(){
   const ob=['+','−','×','·'].map(o=>`<button class="op-btn ${opS===o?'on':''}" data-action="sO" data-arg="${o}">${o}</button>`).join('');
   let rh='';
   if(rV){
-    if(rV.scalar){rh=`<div class="result-box"><div class="result-title">⟶ Resultado escalar</div><div class="result-val">${fN(rV.sv,4)}</div><div class="result-sub">Valor escalar — no se grafica</div></div>`;}
+    if(rV.scalar){rh=`<div class="result-box"><div class="result-title">⟶ Resultado escalar</div><div class="result-val">${fResult(rV.sv,4)}</div><div class="result-sub">Valor escalar — no se grafica</div></div>`;}
     else{const m=vmag(rV,mode);const cp=fV(rV.vx,rV.vy,rV.vz);rh=`<div class="result-box"><div class="result-title">⟶ Resultado vector</div><div class="result-val">${cp}</div><div class="result-sub">|res| = ${fMag(m)}</div></div><button class="add-vec-btn" style="border-style:solid;border-color:${RC};color:${RC};margin-top:0" data-action="saveR">+ Guardar como vector</button>`;}
   }
   p.innerHTML=`<div class="section-title">Selecciona vectores</div>
@@ -377,7 +380,7 @@ function rI(){
     else{
       const steps=unkR.steps.map(s=>`<div class="solve-step"><b>›</b> ${s}</div>`).join('');
       resHtml=`<div class="unk-result-box"><div class="unk-result-title">✓ Solución</div>${steps}
-        ${Object.entries(unkR.vars).map(([k,v])=>`<div class="unk-result-val">${k} = ${fN(v,6)}</div>`).join('')}
+        ${Object.entries(unkR.vars).map(([k,v])=>`<div class="unk-result-val">${k} = ${fResult(v,6)}</div>`).join('')}
         <div class="unk-result-check" id="unk-check">${unkR.check}</div>
       </div>`;
     }

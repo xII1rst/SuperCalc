@@ -90,6 +90,7 @@ function makeElement(id) {
 
 test('el punto de entrada ES conserva los eventos y cálculos principales', async () => {
   const elements = new Map();
+  const headLinks = [];
   const delegatedEvents = new Map();
   const getElementById = id => {
     if (id === 'sc-bg-canvas' || id === 'sc-e1') return null;
@@ -119,7 +120,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
       querySelectorAll: selector => selector === '.tab'
         ? Array.from({length:7}, (_,i)=>makeElement(`tab-${i}`))
         : [],
-      head: { appendChild() {} },
+      head: { appendChild(element) { headLinks.push(element); } },
       body: { appendChild(element) { elements.set(element.id, element); } },
     },
     navigator: { serviceWorker: { register: async () => registration, controller: {} } },
@@ -159,6 +160,8 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     return linked.get(moduleUrl.href);
   });
   await appModule.evaluate();
+  assert.equal(headLinks.find(link => link.rel === 'icon')?.href, 'data:image/png;base64,AA==');
+  assert.equal(headLinks.find(link => link.rel === 'apple-touch-icon')?.href, 'data:image/png;base64,AA==');
   const actions=appModule.namespace.actions;
   getElementById('graf-canvas-wrap').style.display='none';
   assert.equal(actions.toggleTheme(),'light');
@@ -318,7 +321,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('int-def-a').value = '0';
   getElementById('int-def-b').value = '1';
   actions.calcIntegralDef();
-  assert.match(getElementById('res-def').innerHTML, /0\.333333/);
+  assert.match(getElementById('res-def').innerHTML, /0\.333 → 1\/3/);
 
   getElementById('int-rev-fx').value='x';
   getElementById('int-rev-a').value='0';

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fDMS, fN, matFmtNum, emFmt, grafFmt, toFrac, formatMagnitude } from '../js/utils/format.mjs';
+import { fDMS, fN, formatResult, matFmtNum, emFmt, grafFmt, toFrac, formatMagnitude } from '../js/utils/format.mjs';
 
 test('formato numérico del cálculo y de matrices', () => {
   assert.equal(fN(1.23456789), '1.234568');
@@ -10,6 +10,16 @@ test('formato numérico del cálculo y de matrices', () => {
   assert.equal(matFmtNum(1.234567), '1.2346');
   assert.equal(matFmtNum(NaN), '—');
   assert.equal(grafFmt(1.234567), '1.2346');
+});
+
+test('los resultados próximos a enteros y fracciones sencillas se muestran sin ruido', () => {
+  assert.equal(fN(3.0000001), '3');
+  assert.equal(fN(0.33333333, 8), '0.333');
+  assert.equal(formatResult(0.33333333), '0.333 → 1/3');
+  assert.equal(formatResult(-2 / 3), '-0.667 → -2/3');
+  assert.equal(formatResult(0.3332), '0.333');
+  assert.equal(fN(1e-7), '1.0000e-7');
+  assert.equal(matFmtNum(3.0000001), '3');
 });
 
 test('grados-minutos-segundos y notación de electromagnetismo', () => {

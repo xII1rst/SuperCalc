@@ -1,5 +1,5 @@
 import * as matrixMath from '../../math/algebra/matrix.mjs';
-import { matFmtNum } from '../../utils/format.mjs';
+import { formatResult, matFmtNum } from '../../utils/format.mjs';
 
 // ═══════════════════════════════════════════════════════
 // MATRICES MODULE
@@ -67,7 +67,7 @@ function matSisToggleFrac(){
 function fStr([n,d],useFrac){
   if(d===0)return'∞';
   const v=n/d;
-  if(!useFrac) return matFmtNum(v);
+  if(!useFrac) return formatResult(v,4);
   if(d===1)return`${n}`;
   return`${n}/${d}`;
 }
@@ -218,7 +218,7 @@ function matCalcDet() {
   const d=matrixMath.matDet(M);
   document.getElementById('mat-res-det').innerHTML=`<div class="mat-res">
     <div class="mat-res-lbl">Determinante</div>
-    <div class="mat-res-val" style="font-size:20px">${matFmtNum(d,6)}</div>
+    <div class="mat-res-val" style="font-size:20px">${formatResult(d,6)}</div>
     <div class="${Math.abs(d)<1e-10?'mat-err':'mat-ok'}">${Math.abs(d)<1e-10?'Matriz singular (det ≈ 0)':'Matriz invertible'}</div>
   </div>`;
 }
@@ -280,7 +280,7 @@ function matCalcSis() {
     else {
       html+=`<div class="mat-res-lbl">Cramer — det(A) = ${matFmtNum(matrixMath.matDet(A))}</div>`;
       html+=`<div class="mat-res-val">`;
-      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${sisFracMode?fStr(matrixMath.toFrac2(v),true):matFmtNum(v)}<br>`; });
+      sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${sisFracMode?fStr(matrixMath.toFrac2(v),true):formatResult(v,4)}<br>`; });
       html+='</div>';
     }
   }

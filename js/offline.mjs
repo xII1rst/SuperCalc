@@ -114,6 +114,12 @@ function reloadApp(){location.reload();}
   const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
   document.head.appendChild(l);
+  const favicon=document.createElement('link');
+  favicon.rel='icon';favicon.type='image/png';favicon.href=icon;
+  document.head.appendChild(favicon);
+  const touchIcon=document.createElement('link');
+  touchIcon.rel='apple-touch-icon';touchIcon.href=icon;
+  document.head.appendChild(touchIcon);
 })();
 
 export { installApp, dismissInstall, reloadApp };
