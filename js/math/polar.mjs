@@ -1,9 +1,10 @@
 // Coordenadas polares: conversión cartesiana, área, longitud de arco y pendiente
 // de la tangente. Sin DOM; el ángulo se expresa con la variable 't'.
 
-import { calcParse, simpsonIntegral } from './calculus.mjs';
+import { calcParse, collectVariables, simpsonIntegral } from './calculus.mjs';
 
 function parse(rExpr) {
+  if (collectVariables(rExpr).some(v => v !== 't')) return null;
   return calcParse(rExpr, 't');
 }
 

@@ -96,6 +96,7 @@ export function renderFigure(ctx, projectFn, state) {
   else if (type === 'cone') polys = genCone(ox, oy, oz, params.r, params.h);
   else if (type === 'plane') polys = genPlane(ox, oy, oz, params.nx, params.ny, params.nz, params.size);
   else if (type === 'torus') polys = genTorus(ox, oy, oz, params.R, params.r);
+  else if (Array.isArray(state.polys)) polys = state.polys;
 
   const projected = polys.map(poly => {
     const pts = poly.map(p => projectFn(p.x, p.y, p.z));

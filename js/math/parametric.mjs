@@ -1,9 +1,10 @@
 // Curvas paramétricas: pendiente dy/dx, longitud de arco, área bajo la curva y
 // área de superficie de revolución. Sin DOM; el parámetro es 't'.
 
-import { calcParse, simpsonIntegral } from './calculus.mjs';
+import { calcParse, collectVariables, simpsonIntegral } from './calculus.mjs';
 
 function parse(expr) {
+  if (collectVariables(expr).some(v => v !== 't')) return null;
   return calcParse(expr, 't');
 }
 

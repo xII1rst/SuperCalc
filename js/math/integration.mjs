@@ -5,6 +5,7 @@
 
 import {
   tokenize, parseExpr, simplify, collectTerms, astToStr, diffAST,
+  substAST, evalAST, toExact, calcParse, simpsonIntegral, fmtNum,
 } from './calculus.mjs';
 
 // ── Constructores de AST ──
@@ -786,7 +787,7 @@ function integrateNode(node, v, depth) {
 }
 
 export function integrate(exprStr, varName = 'x') {
-  const out = { result: null, technique: 'ninguna', steps: [] };
+  const out = { result: null, ast: null, technique: 'ninguna', steps: [] };
   if (!exprStr || !exprStr.trim()) return out;
   try {
     const ast = parseExpr(tokenize(exprStr));
@@ -796,6 +797,7 @@ export function integrate(exprStr, varName = 'x') {
       o = collectTerms(o);
       o = simplify(o);
       out.result = pretty(o, varName);
+      out.ast = o;
       out.technique = res.technique;
       out.steps = res.steps;
     }
@@ -806,3 +808,101 @@ export function integrate(exprStr, varName = 'x') {
 }
 
 export { partialFractions, prettyCoeff };
+
+// ── INTEGRAL DEFINIDA E IMPROPIA ──
+
+// Evalúa un AST sustituyendo varName por un valor numérico.
+function evalAt(node, varName, val) {
+  const sub = substAST(node, varName, { type: 'num', val });
+  return evalAST(simplify(sub));
+}
+
+// Regla del punto medio sobre [0,1]; evita el extremo singular t=1.
+function midpointTransform(g, n) {
+  const h = 1 / n;
+  let s = 0;
+  for (let i = 0; i < n; i++) {
+    const v = g((i + 0.5) * h);
+    if (!isFinite(v)) return null;
+    s += v;
+  }
+  return s * h;
+}
+
+// Heurística: si |f(x)·x| no decae en el infinito, la cola diverge (comparación con 1/x).
+function tailDiverges(fn, lo) {
+  for (const x of [1e4, 1e6, 1e8]) {
+    if (x <= lo) continue;
+    const v = Math.abs(fn(x, 0));
+    if (!isFinite(v) || v * x > 0.5) return true;
+  }
+  return false;
+}
+
+// Integral impropia numérica por transformación x = a + t/(1−t).
+// Devuelve un número finito o null si diverge.
+export function improperIntegral(fn, a, b, opts = {}) {
+  const n = opts.n || 10000;
+  if (!isFinite(a) && !isFinite(b)) {
+    const l = improperIntegral(fn, -Infinity, 0, opts);
+    const r = improperIntegral(fn, 0, Infinity, opts);
+    if (l === null || r === null) return null;
+    return l + r;
+  }
+  if (b === Infinity) {
+    if (tailDiverges(fn, Math.max(a, 0))) return null;
+    return midpointTransform(t => fn(a + t / (1 - t), 0) / ((1 - t) * (1 - t)), n);
+  }
+  if (a === -Infinity) {
+    if (tailDiverges(t => fn(-t, 0), Math.max(-b, 0))) return null;
+    return midpointTransform(t => fn(b - t / (1 - t), 0) / ((1 - t) * (1 - t)), n);
+  }
+  return simpsonIntegral(fn, a, b, n);
+}
+
+// Integral definida: antiderivada simbólica F(b)−F(a); impropia si algún límite es ∞;
+// en último caso, Simpson numérico.
+export function definiteIntegral(fxStr, a, b, varName = 'x') {
+  const out = {
+    value: null, valueNum: null, exact: null, antiderivative: null,
+    technique: null, steps: [], improper: false, diverges: false,
+  };
+  if (!fxStr || !fxStr.trim()) { out.error = 'Ingresa una función'; return out; }
+  a = Number(a); b = Number(b);
+
+  if (!isFinite(a) || !isFinite(b)) {
+    out.improper = true;
+    const fn = calcParse(fxStr, varName);
+    if (!fn) { out.error = 'Función inválida'; return out; }
+    const v = improperIntegral(fn, a, b);
+    if (v === null) { out.diverges = true; out.value = 'Diverge'; return out; }
+    out.valueNum = v;
+    out.exact = toExact(v);
+    out.value = out.exact || fmtNum(v, 8);
+    return out;
+  }
+
+  const ia = integrate(fxStr, varName);
+  if (ia.ast) {
+    out.antiderivative = ia.result;
+    out.technique = ia.technique;
+    out.steps = ia.steps.slice();
+    const Fb = evalAt(ia.ast, varName, b);
+    const Fa = evalAt(ia.ast, varName, a);
+    if (Fb !== null && Fa !== null && isFinite(Fb) && isFinite(Fa)) {
+      const v = Fb - Fa;
+      out.valueNum = v;
+      out.exact = toExact(v);
+      out.value = out.exact || fmtNum(v, 8);
+      return out;
+    }
+  }
+
+  const fn = calcParse(fxStr, varName);
+  if (!fn) { out.error = 'Función inválida'; return out; }
+  const v = simpsonIntegral(fn, a, b);
+  out.valueNum = v;
+  out.exact = toExact(v);
+  out.value = out.exact || fmtNum(v, 8);
+  return out;
+}

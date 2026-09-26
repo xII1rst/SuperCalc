@@ -52,7 +52,12 @@ const APP_PRECACHE = [
   './js/math/algebra/inequalities.mjs',
   './js/math/algebra/functions.mjs',
   './js/graphics/analysis.mjs',
-  './js/math/algebra/vector-equations.mjs'
+  './js/math/algebra/vector-equations.mjs',
+  './js/graphics/projection.mjs',
+  './js/graphics/revolution.mjs',
+  './js/graphics/preview-canvas.mjs',
+  './js/math/vector-calculus.mjs',
+  './js/math/multivariable.mjs'
 ];
 const FONT_URL = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap';
 

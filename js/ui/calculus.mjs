@@ -10,7 +10,7 @@ import {
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
   hyperbolicValues, inverseHyperbolic,
 } from '../math/applications.mjs';
-import { integrate } from '../math/integration.mjs';
+import { integrate, definiteIntegral } from '../math/integration.mjs';
 import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries } from '../math/series.mjs';
 import {
   areaBetweenCurves, arcLength, surfaceAreaOfRevolution, workVariable, fluidForce, centroidRegion,
@@ -18,7 +18,21 @@ import {
 import { parametricSlope, parametricArcLength, parametricArea, parametricSurfaceArea } from '../math/parametric.mjs';
 import { polarToCartesian, cartesianToPolar, polarArea, polarArcLength, polarSlope } from '../math/polar.mjs';
 import { parabola, ellipse, hyperbola, circle, conicClassify } from '../math/conics.mjs';
+import {
+  divergence, curl, gradient3D, isConservative2D, potentialFunction2D,
+  lineIntegralScalar, lineIntegralVector, greenLineIntegral,
+  fluxDivergenceTheorem, stokesLineIntegral, curvature, unitTangent, unitNormal,
+} from '../math/vector-calculus.mjs';
+import {
+  multivariableLimit, criticalPoints2D, lagrangeMultipliers, directionalDerivative,
+  doubleIntegralPolar, tripleIntegral, jacobian2D, centerOfMass2D,
+} from '../math/multivariable.mjs';
 import * as plotter from './plotter.mjs';
+import { renderPreview, sampleFn, sampleParametric, samplePolar } from '../graphics/preview-canvas.mjs';
+import { genRevolutionSolid, recenterSolid, computeSolidExtent } from '../graphics/revolution.mjs';
+import { project3D } from '../graphics/projection.mjs';
+import { renderFigure } from '../graphics/figures.mjs';
+import { readCanvasPalette } from '../graphics/colors.mjs';
 
 // ═══════════════════════════════════════════════════════
 // TECLADO — arquitectura correcta
@@ -28,6 +42,12 @@ import * as plotter from './plotter.mjs';
 let calcActiveInput = null;
 let calcCurrentTab  = 'dif';
 const trackedCalcInputs = new WeakSet();
+
+// Vista previa 2D en vivo + sólido de revolución 3D interactivo
+let revRotX = 22, revRotY = -38, revScl = 1, revFit = 1;
+let revSolidPolys = null, revDrag = null, revCanvasInit = false;
+let showRevSolid = false;
+let previewInitDone = false, previewTimer = null;
 
 // Registrar todos los inputs calc-inp con onfocus
 function initInputTracking(){
@@ -146,6 +166,11 @@ function toggleCard(id){
   body.classList.toggle('open',  !isOpen);
   arr.classList.toggle('open',   !isOpen);
   card.classList.toggle('active',!isOpen);
+
+  if(!isOpen){
+    const cv = body.querySelector('.calc-preview[data-gmode]');
+    if(cv) drawPreview(cv);
+  }
 }
 
 function clearCard(id){
@@ -161,6 +186,8 @@ function clearCard(id){
     par:'res-par',grad:'res-grad',dint:'res-dint',
     sep:'res-sep',edolin:'res-edolin',edo2:'res-edo2'};
   if(resMap[id]) { const r=document.getElementById(resMap[id]); if(r) r.innerHTML=''; }
+  const cv = body.querySelector('.calc-preview[data-gmode]');
+  if(cv) drawPreview(cv);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -188,6 +215,16 @@ function limitStepsHTML(r){
     <div class="lim-step-title">Planteamiento</div>
     <div class="lim-step-expr">lim<sub>${variable}→${a}</sub> [ ${fx} ]</div>
   </div></div>`;
+
+  // Sustitución simbólica (variables libres o 1^∞)
+  const symStep=S.find(s=>s.tipo==='simbolico');
+  if(symStep){
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Sustitución simbólica ${variable} = ${a}</div>
+      ${symStep.detail?`<div class="lim-step-hint">${symStep.detail}</div>`:''}
+      <div class="lim-step-expr lim-ok">= ${r.value}</div>
+    </div></div>`;
+  }
 
   // 2 Sustitución con desarrollo numérico
   const sub=S.find(s=>s.tipo==='sustitucion');
@@ -235,6 +272,15 @@ function limitStepsHTML(r){
     </div></div>`;
   });
 
+  // L'Hôpital simbólico (derivadas exactas)
+  S.filter(s=>s.tipo==='lhopital_simbolico').forEach(lh=>{
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">L'Hôpital — simbólico</div>
+      <div class="lim-step-hint">Se derivan num. y den. por separado</div>
+      <div class="lim-step-expr">lim = <strong class="lim-ok">${lh.result}</strong></div>
+    </div></div>`;
+  });
+
   // Cancelación
   const canc=S.find(s=>s.tipo==='cancelacion');
   if(canc){
@@ -266,6 +312,7 @@ function limitStepsHTML(r){
     <div class="calc-res-hint">${
       r.exists
         ?(r.tipo==='directo'?'✓ Sustitución directa'
+          :(r.tipo==='simbolico')?'✓ Evaluación simbólica'
           :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'✓ Resuelto por L\u2019H\u00f4pital'
           :'✓ Límite existe')
         :(r.isInfinity?'Límite infinito — la función diverge'
@@ -552,6 +599,25 @@ const APP_FORMS = {
   },
 };
 
+const APP_PREVIEWS = {
+  opt:   { src:'app-opt-fx',   a:'app-opt-a',   b:'app-opt-b' },
+  tan:   { src:'app-tan-fx' },
+  newton:{ src:'app-newton-fx' },
+  mvt:   { src:'app-mvt-fx',   a:'app-mvt-a',   b:'app-mvt-b' },
+  cont:  { src:'app-cont-fx' },
+  vel:   { src:'app-vel-st',   var:'t' },
+};
+
+function appPreviewHtml(id){
+  const pv = APP_PREVIEWS[id];
+  if(!pv) return '';
+  return `<div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="${pv.src}"` +
+    (pv.a ? ` data-a="${pv.a}"` : '') +
+    (pv.b ? ` data-b="${pv.b}"` : '') +
+    (pv.var ? ` data-var="${pv.var}"` : '') +
+    `></canvas></div>`;
+}
+
 function renderAppForm(id){
   const cfg = APP_FORMS[id];
   if(!cfg) return;
@@ -578,6 +644,7 @@ function renderAppForm(id){
           data-action="${cfg.fn}">${cfg.btn}</button>
         <button class="calc-btn sec" data-action="clearAppResult">Limpiar</button>
       </div>
+      ${appPreviewHtml(id)}
       <div id="app-res" class="calc-res"></div>
     </div>`;
   // Registrar inputs para teclado
@@ -746,21 +813,54 @@ function calcIntegralIndef(){
   res.innerHTML=html;
 }
 
+function pinf(id){
+  const s=v(id).replace(/∞/g,'Infinity').replace(/\binf\b/gi,'Infinity');
+  if(!s) return NaN;
+  return Number(s);
+}
+
 function calcIntegralDef(){
   const fxStr=v('int-def-fx');
-  const a=pf('int-def-a'), b=pf('int-def-b');
+  const a=pinf('int-def-a'), b=pinf('int-def-b');
   const res=document.getElementById('res-def');
-  const fn=calcParse(fxStr);
-  if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  if(!fxStr){res.innerHTML=errBox('Ingresa una función');return;}
   if(isNaN(a)||isNaN(b)){res.innerHTML=errBox('Ingresa los límites a y b');return;}
   if(a>=b){res.innerHTML=errBox('Se requiere a < b');return;}
 
-  const result=simpsonIntegral(fn,a,b);
+  const r=definiteIntegral(fxStr,a,b,'x');
+  if(r.error){res.innerHTML=errBox(r.error);return;}
 
-  res.innerHTML=
-    resBox(`∫ₐᵇ f(x) dx  [${a}, ${b}]`, fN(result,8), 'Simpson 1/3 con n=1000', true)+
-    resBox('Valor promedio  f̄ = (1/(b−a))∫f dx', fN(result/(b-a),6))+
-    resBox('Longitud del intervalo', fN(b-a,4)+' u');
+  const bl=x=>fmtA(String(x));
+  const label=`∫<sub>${bl(a)}</sub><sup>${bl(b)}</sup> f(x) dx`;
+
+  if(r.diverges){
+    res.innerHTML=resBox(label, 'Diverge', 'La integral impropia no converge', true);
+    return;
+  }
+
+  let hint='';
+  if(r.improper) hint='Integral impropia';
+  else if(r.technique&&r.technique!=='ninguna') hint='Antiderivada · '+r.technique;
+  else hint='Numérico (Simpson)';
+
+  let html=resBox(label, r.value, hint, true);
+
+  const steps=[];
+  if(r.antiderivative){
+    steps.push(`Antiderivada:  F(x) = ${r.antiderivative}`);
+    steps.push(`F(${bl(b)}) − F(${bl(a)}) = ${r.value}`);
+  }
+  if(r.improper) steps.push('Límite infinito: transformación x = a + t/(1−t) sobre [0,1]');
+  if(r.steps&&r.steps.length) steps.push(...r.steps);
+  if(steps.length){
+    html+=`<div class="calc-res-box"><div class="calc-res-label">Pasos</div><div class="calc-res-hint">${steps.map(s=>String(s).replace(/</g,'&lt;')).join('<br>')}</div></div>`;
+  }
+
+  if(Number.isFinite(a)&&Number.isFinite(b)){
+    html+=resBox('Valor promedio  f̄ = (1/(b−a))∫f dx', fN(r.valueNum/(b-a),6))+
+          resBox('Longitud del intervalo', fN(b-a,4)+' u');
+  }
+  res.innerHTML=html;
 }
 
 function calcRevolutionVolume(){
@@ -776,6 +876,7 @@ function calcRevolutionVolume(){
     res.innerHTML=
       resBox('Volumen V',`${fN(volume,8)} u³`,`${method} · Simpson 1/3`,true)+
       resBox('Integral usada',formula,`a = ${a}, b = ${b}`);
+    renderRevolutionSolid(fn, a, b, axis);
   }catch(error){
     res.innerHTML=errBox(error.message);
   }
@@ -862,6 +963,216 @@ function calcDoubleIntegral(){
     resBox(`∬ f dx dy — [${x1},${x2}]×[${y1},${y2}]`, fN(result,8), 'Punto medio 100×100', true)+
     resBox('Área de la región', fN((x2-x1)*(y2-y1),4)+' u²')+
     resBox('Valor promedio f̄', fN(result/((x2-x1)*(y2-y1)),6));
+}
+
+// ═══════════════════════════════════════════════════════
+// CÁLCULO VECTORIAL Y MULTIVARIABLE (nuevas tarjetas)
+// ═══════════════════════════════════════════════════════
+function calcGrad3D(){
+  const fxyz=v('vec-grad-fxyz');
+  const x=pf('vec-grad-x'), y=pf('vec-grad-y'), z=pf('vec-grad-z');
+  const res=document.getElementById('res-vecgrad');
+  if(!fxyz){res.innerHTML=errBox('Ingresa f(x,y,z)');return;}
+  if(isNaN(x)||isNaN(y)||isNaN(z)){res.innerHTML=errBox('Ingresa el punto (x, y, z)');return;}
+  try{
+    const g=gradient3D(fxyz,x,y,z);
+    res.innerHTML=
+      resBox('∂f/∂x', fN(g.x,6))+
+      resBox('∂f/∂y', fN(g.y,6))+
+      resBox('∂f/∂z', fN(g.z,6))+
+      resBox('∇f =', `(${fN(g.x,4)}, ${fN(g.y,4)}, ${fN(g.z,4)})`, 'Gradiente 3D', true);
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcDirectional(){
+  const fxy=v('vec-dir-fxy');
+  const x0=pf('vec-dir-x0'), y0=pf('vec-dir-y0');
+  const dx=pf('vec-dir-dx'), dy=pf('vec-dir-dy');
+  const res=document.getElementById('res-vecdir');
+  if(!fxy){res.innerHTML=errBox('Ingresa f(x,y)');return;}
+  if([x0,y0,dx,dy].some(isNaN)){res.innerHTML=errBox('Ingresa el punto y la dirección');return;}
+  if(dx===0&&dy===0){res.innerHTML=errBox('La dirección no puede ser (0,0)');return;}
+  try{
+    const v=directionalDerivative(fxy,x0,y0,{x:dx,y:dy});
+    res.innerHTML=resBox('D_u f', fN(v,8), `en dirección (${dx}, ${dy})`, true);
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcCurvature(){
+  const x=v('vec-cur-x'), y=v('vec-cur-y');
+  const t=pf('vec-cur-t');
+  const res=document.getElementById('res-veccur');
+  if(!x||!y){res.innerHTML=errBox('Ingresa x(t) y y(t)');return;}
+  if(isNaN(t)){res.innerHTML=errBox('Ingresa el parámetro t');return;}
+  try{
+    const k=curvature(x,y,t);
+    const T=unitTangent(x,y,t);
+    const N=unitNormal(x,y,t);
+    res.innerHTML=
+      resBox('Curvatura κ', fN(k,8), '', true)+
+      resBox('Tangente unitaria T', `(${fN(T.x,4)}, ${fN(T.y,4)})`)+
+      resBox('Normal unitaria N', `(${fN(N.x,4)}, ${fN(N.y,4)})`);
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcDivCurl(){
+  const fx=v('vec-fx'), fy=v('vec-fy'), fz=v('vec-fz');
+  const x=pf('vec-px'), y=pf('vec-py'), z=pf('vec-pz');
+  const res=document.getElementById('res-divcurl');
+  if(!fx||!fy||!fz){res.innerHTML=errBox('Ingresa Fx, Fy y Fz');return;}
+  if(isNaN(x)||isNaN(y)||isNaN(z)){res.innerHTML=errBox('Ingresa el punto (x, y, z)');return;}
+  try{
+    const d=divergence(fx,fy,fz,x,y,z);
+    const c=curl(fx,fy,fz,x,y,z);
+    res.innerHTML=
+      resBox('Divergencia ∇·F', fN(d,8), '', true)+
+      resBox('Rotacional ∇×F', `(${fN(c.x,4)}, ${fN(c.y,4)}, ${fN(c.z,4)})`);
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcConservative(){
+  const fx=v('cons-fx'), fy=v('cons-fy');
+  const x0=pf('cons-x0'), y0=pf('cons-y0');
+  const res=document.getElementById('res-cons');
+  if(!fx||!fy){res.innerHTML=errBox('Ingresa Fx y Fy');return;}
+  try{
+    const conservative=isConservative2D(fx,fy);
+    let html=resBox('¿Conservativo? (∂P/∂y = ∂Q/∂x)',
+      conservative?'Sí ✓':'No ✗',
+      conservative?'Campo gradiente':'No es gradiente', true);
+    if(conservative){
+      const phi=potentialFunction2D(fx,fy);
+      if(!isNaN(x0)&&!isNaN(y0))
+        html+=resBox(`Potencial φ(${x0},${y0})`, fN(phi(x0,y0),8), 'φ vía integral de línea');
+    }
+    res.innerHTML=html;
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcLineIntegral(){
+  const fs=v('li-s-f'), xs=v('li-s-x'), ys=v('li-s-y');
+  const st0=pf('li-s-t0'), st1=pf('li-s-t1');
+  const fx=v('li-v-fx'), fy=v('li-v-fy'), xv=v('li-v-x'), yv=v('li-v-y');
+  const vt0=pf('li-v-t0'), vt1=pf('li-v-t1');
+  const res=document.getElementById('res-lineint');
+  let html='';
+  if(fs&&xs&&ys&&!isNaN(st0)&&!isNaN(st1)){
+    try{
+      html+=resBox('∫_C f ds (escalar)', fN(lineIntegralScalar(fs,xs,ys,st0,st1),8),
+        `f=${fs}, C: (${xs}, ${ys})`, true);
+    }catch(e){ html+=errBox('Escalar: '+e.message); }
+  }
+  if(fx&&fy&&xv&&yv&&!isNaN(vt0)&&!isNaN(vt1)){
+    try{
+      html+=resBox('∫_C F·dr (vectorial)', fN(lineIntegralVector(fx,fy,xv,yv,vt0,vt1),8),
+        `F=(${fx}, ${fy})`, true);
+    }catch(e){ html+=errBox('Vectorial: '+e.message); }
+  }
+  if(!html) html=errBox('Completa la integral escalar o la vectorial');
+  res.innerHTML=html;
+}
+
+function calcTheorems(){
+  const p=v('th-p'), q=v('th-q');
+  const x1=pf('th-x1'), x2=pf('th-x2'), y1=pf('th-y1'), y2=pf('th-y2');
+  const fx=v('th-fx'), fy=v('th-fy'), fz=v('th-fz'), R=pf('th-r');
+  const res=document.getElementById('res-theorems');
+  let html='';
+  if(p&&q&&![x1,x2,y1,y2].some(isNaN)){
+    try{
+      html+=resBox('Green ∮ P dx + Q dy', fN(greenLineIntegral(p,q,x1,x2,y1,y2),8),
+        `región [${x1},${x2}]×[${y1},${y2}]`, true);
+      html+=resBox('Flujo (Gauss 2D)', fN(fluxDivergenceTheorem(p,q,x1,x2,y1,y2),8));
+    }catch(e){ html+=errBox('Green: '+e.message); }
+  }
+  if(fx&&fy&&fz&&!isNaN(R)&&R>0){
+    try{
+      html+=resBox('Stokes sobre disco de radio R', fN(stokesLineIntegral(fx,fy,fz,R),8),
+        `F=(${fx}, ${fy}, ${fz})`, true);
+    }catch(e){ html+=errBox('Stokes: '+e.message); }
+  }
+  if(!html) html=errBox('Completa Green (P,Q,región) o Stokes (F,R)');
+  res.innerHTML=html;
+}
+
+function calcMvLimit(){
+  const fxy=v('mvlim-fxy');
+  const x0=pf('mvlim-x0'), y0=pf('mvlim-y0');
+  const res=document.getElementById('res-mvlim');
+  if(!fxy){res.innerHTML=errBox('Ingresa f(x,y)');return;}
+  if(isNaN(x0)||isNaN(y0)){res.innerHTML=errBox('Ingresa el punto (x₀, y₀)');return;}
+  try{
+    const r=multivariableLimit(fxy,x0,y0);
+    let html=resBox('Límite', r.exists?(fmtA(String(r.value))):'No existe',
+      r.exists?'Coincide en todas las trayectorias':'Las trayectorias dan valores distintos', true);
+    html+=`<div class="calc-res-box"><div class="calc-res-label">Trayectorias</div><div class="calc-res-hint">${r.paths.map(p=>`${p.name}: ${p.value===null?'—':fN(p.value,4)}`).join('<br>')}</div></div>`;
+    res.innerHTML=html;
+  }catch(e){ res.innerHTML=errBox(e.message); }
+}
+
+function calcExtrema(){
+  const fxy=v('extr-fxy');
+  const x1=pf('extr-x1'), x2=pf('extr-x2'), y1=pf('extr-y1'), y2=pf('extr-y2');
+  const g=v('extr-g'), c=pf('extr-c');
+  const res=document.getElementById('res-extr');
+  if(!fxy){res.innerHTML=errBox('Ingresa f(x,y)');return;}
+  if([x1,x2,y1,y2].some(isNaN)){res.innerHTML=errBox('Ingresa la región de búsqueda');return;}
+  let html='';
+  try{
+    const pts=criticalPoints2D(fxy,x1,x2,y1,y2);
+    html+=pts.length
+      ? `<div class="calc-res-box"><div class="calc-res-label">Puntos críticos</div><div class="calc-res-hint">${pts.map(p=>`(${fN(p.x,4)}, ${fN(p.y,4)}) — ${p.type} (D=${fN(p.D,4)})`).join('<br>')}</div></div>`
+      : resBox('Puntos críticos','No se hallaron en la región','');
+  }catch(e){ html+=errBox(e.message); }
+  if(g&&!isNaN(c)){
+    try{
+      const sols=lagrangeMultipliers(fxy,g,c,x1,x2,y1,y2);
+      html+=`<div class="calc-res-box"><div class="calc-res-label">Lagrange ∇f=λ∇g, g=${c}</div><div class="calc-res-hint">${sols.length?sols.map(s=>`(${fN(s.x,4)}, ${fN(s.y,4)}) — λ=${fN(s.lambda,4)}`).join('<br>'):'Sin soluciones'}</div></div>`;
+    }catch(e){ html+=errBox('Lagrange: '+e.message); }
+  }
+  res.innerHTML=html;
+}
+
+function calcMvIntegral(){
+  const res=document.getElementById('res-mvint');
+  let html='';
+  // Doble polar
+  const fp=v('mvint-pf');
+  const pr1=pf('mvint-pr1'), pr2=pf('mvint-pr2'), pt1=pf('mvint-pt1'), pt2=pf('mvint-pt2');
+  if(fp&&![pr1,pr2,pt1,pt2].some(isNaN)){
+    try{
+      html+=resBox('∬ f dA (polar)', fN(doubleIntegralPolar(fp,pr1,pr2,pt1,pt2),8),
+        `r∈[${pr1},${pr2}], θ∈[${pt1},${pt2}]`, true);
+    }catch(e){ html+=errBox('Polar: '+e.message); }
+  }
+  // Triple
+  const ft=v('mvint-tf');
+  const tx1=pf('mvint-tx1'),tx2=pf('mvint-tx2'),ty1=pf('mvint-ty1'),ty2=pf('mvint-ty2'),tz1=pf('mvint-tz1'),tz2=pf('mvint-tz2');
+  if(ft&&![tx1,tx2,ty1,ty2,tz1,tz2].some(isNaN)){
+    try{
+      html+=resBox('∭ f dV (triple)', fN(tripleIntegral(ft,tx1,tx2,ty1,ty2,tz1,tz2),8),
+        `caja [${tx1},${tx2}]×[${ty1},${ty2}]×[${tz1},${tz2}]`, true);
+    }catch(e){ html+=errBox('Triple: '+e.message); }
+  }
+  // Jacobiano
+  const jx=v('mvint-jx'), jy=v('mvint-jy'), ju=pf('mvint-ju'), jv=pf('mvint-jv');
+  if(jx&&jy&&!isNaN(ju)&&!isNaN(jv)){
+    try{
+      html+=resBox('Jacobiano ∂(x,y)/∂(u,v)', fN(jacobian2D(jx,jy,ju,jv),8),
+        `en (u,v)=(${ju},${jv})`, true);
+    }catch(e){ html+=errBox('Jacobiano: '+e.message); }
+  }
+  // Centro de masa
+  const cf=v('mvint-cf');
+  const cx1=pf('mvint-cx1'),cx2=pf('mvint-cx2'),cy1=pf('mvint-cy1'),cy2=pf('mvint-cy2');
+  if(cf&&![cx1,cx2,cy1,cy2].some(isNaN)){
+    try{
+      const c=centerOfMass2D(cf,cx1,cx2,cy1,cy2);
+      html+=resBox('Centro de masa (x̄,ȳ)', `(${fN(c.x,4)}, ${fN(c.y,4)})`, `masa = ${fN(c.mass,6)}`, true);
+    }catch(e){ html+=errBox('Centro de masa: '+e.message); }
+  }
+  if(!html) html=errBox('Completa una de las integrales');
+  res.innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1119,11 +1430,184 @@ function calcConics(){
 }
 
 // ═══════════════════════════════════════════════════════
+// VISTA PREVIA 2D EN VIVO
+// ═══════════════════════════════════════════════════════
+function initLivePreviews(){
+  if(previewInitDone) return;
+  previewInitDone = true;
+  const app = document.getElementById('calc-app');
+  if(!app) return;
+  app.addEventListener('input', handlePreviewInput);
+  app.addEventListener('change', handlePreviewInput);
+}
+
+function handlePreviewInput(e){
+  const t = e.target;
+  const root = t?.closest?.('.calc-card-body, .app-form');
+  const cv = root?.querySelector?.('.calc-preview[data-gmode]');
+  if(cv) schedulePreview(cv);
+}
+
+function schedulePreview(cv){
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => drawPreview(cv), 250);
+}
+
+function readInputValue(id){
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function readInputNum(id){
+  const el = document.getElementById(id);
+  const v = el ? parseFloat(el.value) : NaN;
+  return Number.isFinite(v) ? v : NaN;
+}
+
+function drawPreview(cv){
+  if(!cv) return;
+  const mode = cv.dataset.gmode;
+  const src = cv.dataset.src || '';
+  const a = readInputNum(cv.dataset.a);
+  const b = readInputNum(cv.dataset.b);
+  let points = [];
+
+  if(mode === 'fn'){
+    const fn = calcParse(readInputValue(src), cv.dataset.var || 'x');
+    if(!fn){ renderPreview(cv, []); return; }
+    const [x0, x1] = (a < b) ? [a, b] : [-8, 8];
+    points = sampleFn(fn, x0, x1);
+  } else if(mode === 'param'){
+    const ids = src.split(',');
+    const xFn = calcParse(readInputValue(ids[0]), 't');
+    const yFn = calcParse(readInputValue(ids[1]), 't');
+    if(!xFn || !yFn){ renderPreview(cv, []); return; }
+    const [t0, t1] = (a < b) ? [a, b] : [0, 2 * Math.PI];
+    points = sampleParametric(xFn, yFn, t0, t1);
+  } else if(mode === 'polar'){
+    const rFn = calcParse(readInputValue(src), 't');
+    if(!rFn){ renderPreview(cv, []); return; }
+    const [t0, t1] = (a < b) ? [a, b] : [0, 2 * Math.PI];
+    points = samplePolar(rFn, t0, t1);
+  } else {
+    renderPreview(cv, []);
+    return;
+  }
+  renderPreview(cv, points);
+}
+
+// ═══════════════════════════════════════════════════════
+// SÓLIDO DE REVOLUCIÓN 3D INTERACTIVO
+// ═══════════════════════════════════════════════════════
+function initRevolutionCanvas(){
+  if(revCanvasInit) return;
+  revCanvasInit = true;
+  const cv = document.getElementById('rev-solid');
+  if(!cv) return;
+
+  cv.addEventListener('pointerdown', e => {
+    revDrag = { x: e.clientX, y: e.clientY };
+    cv.setPointerCapture?.(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => {
+    if(!revDrag) return;
+    const dx = e.clientX - revDrag.x, dy = e.clientY - revDrag.y;
+    revDrag = { x: e.clientX, y: e.clientY };
+    revRotY += dx * 0.5;
+    revRotX += dy * 0.5;
+    drawRevolutionSolid();
+  });
+  cv.addEventListener('pointerup', e => {
+    revDrag = null;
+    cv.releasePointerCapture?.(e.pointerId);
+  });
+  cv.addEventListener('pointercancel', () => { revDrag = null; });
+  cv.addEventListener('wheel', e => {
+    e.preventDefault();
+    revScl *= (e.deltaY < 0 ? 1.1 : 0.9);
+    revScl = Math.max(0.2, Math.min(20, revScl));
+    drawRevolutionSolid();
+  }, { passive: false });
+}
+
+function drawRevolutionSolid(){
+  const cv = document.getElementById('rev-solid');
+  if(!cv || !revSolidPolys) return;
+  if(!showRevSolid){
+    const ctx = cv.getContext && cv.getContext('2d');
+    if(ctx) ctx.clearRect(0, 0, cv.width, cv.height);
+    return;
+  }
+  const W = cv.clientWidth || cv.offsetWidth || 300;
+  const H = cv.clientHeight || cv.offsetHeight || 240;
+  const dpr = globalThis.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.floor(W * dpr));
+  cv.height = Math.max(1, Math.floor(H * dpr));
+  const ctx = cv.getContext && cv.getContext('2d');
+  if(!ctx) return;
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const s = Math.min(W, H) / 22 * revScl * revFit;
+  const projectFn = (x, y, z) => project3D(x, y, z, {
+    rotX: revRotX, rotY: revRotY, scale: s, cx: W / 2, cy: H / 2,
+  });
+  renderFigure(ctx, projectFn, {
+    polys: revSolidPolys,
+    color: readCanvasPalette()('ca2'),
+    opacity: 60,
+  });
+  ctx.restore();
+}
+
+function renderRevolutionSolid(fn, a, b, axis){
+  try{
+    revSolidPolys = recenterSolid(genRevolutionSolid(fn, a, b, axis));
+    const ext = computeSolidExtent(revSolidPolys);
+    revFit = ext.maxR > 0 ? 9 / ext.maxR : 1;
+    initRevolutionCanvas();
+    drawRevolutionSolid();
+  }catch(_e){
+    // La vista 3D es un extra visual; nunca debe tumbar el resultado numérico.
+  }
+}
+
+function toggleRevSolid(){
+  showRevSolid = !showRevSolid;
+  const tog = document.getElementById('rev-fig-tog');
+  if(tog) tog.classList.toggle('on', showRevSolid);
+  const lbl = document.getElementById('rev-fig-lbl');
+  if(lbl) lbl.textContent = showRevSolid ? 'SÓLIDO' : '2D';
+  const wrap = document.getElementById('rev-canvas-wrap');
+  if(wrap) wrap.style.display = showRevSolid ? '' : 'none';
+  drawRevolutionSolid();
+}
+
+// ═══════════════════════════════════════════════════════
 // CALC INIT
 // ═══════════════════════════════════════════════════════
+let enterKeyBound = false;
+function initEnterKey(){
+  if(enterKeyBound) return;
+  enterKeyBound = true;
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Enter' || e.isComposing) return;
+    const inp = e.target;
+    if(!inp || !inp.classList || !inp.classList.contains('calc-inp')) return;
+    const card = inp.closest ? inp.closest('.calc-card') : null;
+    if(!card) return;
+    const btn = card.querySelector('.calc-btn:not(.sec)');
+    if(btn){ e.preventDefault(); btn.click(); }
+  });
+}
+
 function calcInit(tab='dif'){
   ['dif','int','mul','edo'].forEach(id=>buildKB('calc-kb-'+id));
   initInputTracking();
+  initEnterKey();
+  initLivePreviews();
   calcTab(tab);
 }
 
@@ -1137,4 +1621,7 @@ export {
   appNewton, appMVT, appContinuity, appHyperbolic,
   calcIntegrateCAS, calcSeries, calcIntegralApp,
   calcParametric, calcPolar, calcConics,
+  toggleRevSolid, calcGrad3D, calcDirectional, calcCurvature,
+  calcDivCurl, calcConservative, calcLineIntegral, calcTheorems,
+  calcMvLimit, calcExtrema, calcMvIntegral,
 };

@@ -1,5 +1,5 @@
-import { calcParse } from './expression.mjs';
-export { calcParse } from './expression.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
+export { calcParse, collectVariables } from './expression.mjs';
 
 // Sólo para límites: la notación polinómica a/b+c puede significar
 // (polinomio)/(polinomio). Fuera de ese contexto se conserva la precedencia JS.
@@ -545,6 +545,23 @@ function toExact(v){
       }
     }
   }
+  // e y potencias enteras de e
+  if(Math.abs(v-Math.E)<1e-7) return 'e';
+  if(Math.abs(v+Math.E)<1e-7) return '-e';
+  if(v>0){
+    const lne=Math.log(v);
+    if(isFinite(lne)){
+      const k=Math.round(lne);
+      if(k!==0&&Math.abs(lne-k)<1e-6){
+        if(k===1) return 'e';
+        if(k===-1) return '1/e';
+        return 'e^'+k;
+      }
+    }
+  }
+  // √π
+  if(Math.abs(v-Math.sqrt(Math.PI))<1e-7) return '√π';
+  if(Math.abs(v+Math.sqrt(Math.PI))<1e-7) return '-√π';
   return null;
 }
 
@@ -652,6 +669,171 @@ function resolveIndet(fxStr,a,stepsOut,varName='x'){
   return NaN;
 }
 
+// ── LÍMITES SIMBÓLICOS ──
+// Sustituye varName por valueNode dentro del AST (inmutable).
+function substAST(node, varName, valueNode){
+  if(!node) return {type:'num',val:0};
+  switch(node.type){
+    case 'var': return node.val===varName ? valueNode : node;
+    case 'num': return node;
+    case 'fn': return {type:'fn', fn:node.fn, arg:substAST(node.arg,varName,valueNode)};
+    case 'neg': return {type:'neg', arg:substAST(node.arg,varName,valueNode)};
+    default: return {type:node.type, left:substAST(node.left,varName,valueNode), right:substAST(node.right,varName,valueNode)};
+  }
+}
+
+// ¿Queda alguna variable libre en el AST?
+function hasVar(node){
+  if(!node) return false;
+  if(node.type==='var') return true;
+  if(node.type==='fn') return hasVar(node.arg);
+  if(node.type==='neg') return hasVar(node.arg);
+  return hasVar(node.left) || hasVar(node.right);
+}
+
+// Constante numérica directa (num o neg·num); null en otro caso.
+function constOf(node){
+  if(!node) return null;
+  if(node.type==='num') return node.val;
+  if(node.type==='neg'&&node.arg.type==='num') return -node.arg.val;
+  return null;
+}
+
+// Determina si node ≈ a·v + b con a,b constantes; null en otro caso.
+function linearOfExpr(node, v){
+  if(!node) return null;
+  switch(node.type){
+    case 'num': return {a:0,b:node.val};
+    case 'var': return node.val===v?{a:1,b:0}:null;
+    case 'neg': { const l=linearOfExpr(node.arg,v); return l?{a:-l.a,b:-l.b}:null; }
+    case '+': { const L=linearOfExpr(node.left,v),R=linearOfExpr(node.right,v); return (L&&R)?{a:L.a+R.a,b:L.b+R.b}:null; }
+    case '-': { const L=linearOfExpr(node.left,v),R=linearOfExpr(node.right,v); return (L&&R)?{a:L.a-R.a,b:L.b-R.b}:null; }
+    case '*': {
+      const L=linearOfExpr(node.left,v),R=linearOfExpr(node.right,v);
+      if(L&&R){
+        if(L.a===0) return {a:L.b*R.a,b:L.b*R.b};
+        if(R.a===0) return {a:L.a*R.b,b:L.b*R.b};
+      }
+      return null;
+    }
+    default: return null;
+  }
+}
+
+// Evalúa node en varName=a; null si quedan variables libres.
+function evalAt(node, varName, a){
+  const sub = substAST(node, varName, {type:'num',val:a});
+  const s = simplify(sub);
+  if(hasVar(s)) return null;
+  return evalAST(s);
+}
+
+function expStr(ck){
+  if(Math.abs(ck-1)<1e-9) return 'e';
+  if(Math.abs(ck+1)<1e-9) return '1/e';
+  if(Math.abs(ck-Math.round(ck))<1e-9) return 'e^'+Math.round(ck);
+  const neg=ck<0, a=Math.abs(ck);
+  for(let d=2;d<=12;d++){
+    const n=Math.round(a*d);
+    if(Math.abs(n/d-a)<1e-9) return 'e^('+(neg?'-':'')+(n===1?'':n)+'/'+d+')';
+  }
+  return 'e^('+fmtNum(ck,6)+')';
+}
+
+// lim_{v→∞} (1 + c/v)^(k·v) = e^(c·k)
+function oneInfinity(fxStr, varName, a){
+  if(isFinite(a)) return null;
+  let ast;
+  try { ast = parseExpr(tokenize(groupPolynomialQuotient(fxStr,varName))); } catch { return null; }
+  if(!ast || ast.type!=='^') return null;
+  const base=ast.left, exp=ast.right;
+  const cOver=(node)=>{
+    node=simplify(node);
+    if(node.type==='/'){ const nc=constOf(node.left); if(nc!==null && node.right.type==='var' && node.right.val===varName) return nc; }
+    if(node.type==='^' && node.left.type==='var' && node.left.val===varName && node.right.type==='num' && node.right.val===-1) return 1;
+    if(node.type==='*'){
+      const isInv=(n)=>n&&n.type==='^'&&n.left&&n.left.type==='var'&&n.left.val===varName&&n.right&&n.right.type==='num'&&n.right.val===-1;
+      if(isInv(node.left)){ const r=constOf(node.right); if(r!==null) return r; }
+      if(isInv(node.right)){ const l=constOf(node.left); if(l!==null) return l; }
+    }
+    return null;
+  };
+  let c=null;
+  if(base.type==='+'){
+    if(base.left.type==='num' && Math.abs(base.left.val-1)<1e-12) c=cOver(base.right);
+    if(c===null && base.right.type==='num' && Math.abs(base.right.val-1)<1e-12) c=cOver(base.left);
+  }
+  if(c===null) return null;
+  const lin=linearOfExpr(exp, varName);
+  if(!lin || lin.b!==0 || lin.a===0) return null;
+  const ck=c*lin.a;
+  if(!isFinite(ck)) return null;
+  return { value: expStr(ck), valueNum: Math.exp(ck) };
+}
+
+// L'Hôpital simbólico para 0/0 y ∞/∞; devuelve valor numérico exacto o null.
+function lHopitalSymbolic(numAST, denAST, varName, a){
+  let num=numAST, den=denAST;
+  for(let order=1; order<=4; order++){
+    num=simplify(diffAST(num, varName));
+    den=simplify(diffAST(den, varName));
+    const nv=evalAt(num, varName, a);
+    const dv=evalAt(den, varName, a);
+    if(nv===null || dv===null) return null;
+    if(Math.abs(dv)>1e-12 && isFinite(nv) && isFinite(dv)){
+      const r=nv/dv;
+      if(isFinite(r)) return r;
+    }
+    if(!(Math.abs(nv)<1e-9 && Math.abs(dv)<1e-9)) return null;
+  }
+  return null;
+}
+
+// Límite simbólico: sustitución con variables libres, L'Hôpital exacto y 1^∞.
+// Devuelve {value, valueNum, symbolic, method} o null si no procede.
+export function symbolicLimit(fxStr, aStr, varName='x'){
+  try{
+    const a=evalA(aStr);
+    if(isNaN(a)) return null;
+    const norm=groupPolynomialQuotient(fxStr,varName);
+    const freeVars=collectVariables(fxStr).filter(v=>v!==varName);
+
+    if(!isFinite(a) && freeVars.length===0){
+      const oi=oneInfinity(norm, varName, a);
+      if(oi) return { value: oi.value, valueNum: oi.valueNum, symbolic:false, method:'1inf' };
+    }
+
+    const ast=parseExpr(tokenize(norm));
+
+    if(freeVars.length>0){
+      const sub=substAST(ast, varName, {type:'num',val:a});
+      const s=simplify(collectTerms(simplify(sub)));
+      return { value: astToStr(s), valueNum: null, symbolic:true, method:'sustitucion' };
+    }
+
+    let numAST=ast, denAST=null, nv=null, dv=null;
+    if(ast.type==='/'){ numAST=ast.left; denAST=ast.right; }
+    if(denAST){
+      nv=evalAt(numAST, varName, a);
+      dv=evalAt(denAST, varName, a);
+    }
+    const isZZ=denAST && nv!==null && dv!==null && Math.abs(nv)<1e-9 && Math.abs(dv)<1e-9;
+    const isII=denAST && nv!==null && dv!==null && !isFinite(nv) && !isFinite(dv);
+    if(isZZ || isII){
+      const r=lHopitalSymbolic(numAST, denAST, varName, a);
+      if(r===null) return null;
+      return { value: toExact(r)||fmtNum(r,8), valueNum: r, symbolic:false, method:'lhopital' };
+    }
+
+    const sub=substAST(ast, varName, {type:'num',val:a});
+    const s=simplify(collectTerms(simplify(sub)));
+    if(hasVar(s)) return null;
+    const v=evalAST(s);
+    if(!isFinite(v)) return null;
+    return { value: toExact(v)||fmtNum(v,8), valueNum: v, symbolic:false, method:'directo' };
+  }catch(e){ return null; }
+}
+
 // ── COMPUTE LIMIT ──
 export function computeLimit(fxStr,aStr,side,varName='x'){
   const steps=[]; const r={steps,fxStr,aStr,side,varName};
@@ -665,6 +847,30 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
   const normalizedFx=groupPolynomialQuotient(fxStr,varName);
   const fn=calcParse(normalizedFx,varName);
   if(!fn){ r.error='Función inválida. Ej: sin('+varName+')/'+varName+', ('+varName+'^2-4)/('+varName+'-2)'; return r; }
+
+  const freeVars=collectVariables(fxStr).filter(v=>v!==varName);
+
+  // Variables libres: emitir resultado simbólico (p. ej. lim_{x→2} 12x²−y = 48−y).
+  if(freeVars.length>0){
+    const sym=symbolicLimit(fxStr,aStr,varName);
+    if(sym){
+      r.value=sym.value; r.valueNum=sym.valueNum===null?NaN:sym.valueNum;
+      r.exact=null; r.exists=true; r.tipo='simbolico'; r.symbolic=true;
+      steps.push({tipo:'simbolico',aDisplay:fmtA(aStr),result:sym.value});
+      return r;
+    }
+  }
+
+  // Forma 1^∞ en el infinito (p. ej. (1+1/x)^x → e).
+  if(!isFinite(a) && freeVars.length===0){
+    const oi=oneInfinity(normalizedFx,varName,a);
+    if(oi){
+      r.value=oi.value; r.valueNum=oi.valueNum; r.exact=oi.value; r.exists=true;
+      r.tipo='directo'; r.vr=oi.valueNum; r.vl=oi.valueNum;
+      steps.push({tipo:'simbolico',aDisplay:fmtA(aStr),detail:'Forma 1^∞ → e^(c·k)',result:oi.value});
+      return r;
+    }
+  }
 
   // Sustitución directa
   let direct=null;
@@ -717,7 +923,13 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
   // Resolver
   let resolved=NaN;
   if(r.isIndet){
-    resolved=resolveIndet(normalizedFx,a,steps,varName);
+    const sym=symbolicLimit(fxStr,aStr,varName);
+    if(sym && !sym.symbolic && sym.valueNum!==null && isFinite(sym.valueNum)){
+      resolved=sym.valueNum;
+      steps.push({tipo:'lhopital_simbolico',result:sym.value});
+    } else {
+      resolved=resolveIndet(normalizedFx,a,steps,varName);
+    }
   } else if(isFinite(vr)&&isFinite(vl)&&Math.abs(vr-vl)<5e-5){
     resolved=(vr+vl)/2;
   } else if(side==='right') resolved=vr;
@@ -892,4 +1104,4 @@ export function implicitDerivative(fn,x,y,h=1e-7){
 }
 
 // AST internals shared with the symbolic integration engine.
-export { tokenize, parseExpr, simplify, astToStr, collectTerms, evalAST, diffAST, isConst };
+export { tokenize, parseExpr, simplify, astToStr, collectTerms, evalAST, diffAST, isConst, substAST, toExact };

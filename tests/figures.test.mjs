@@ -34,6 +34,25 @@ test('el renderer usa una proyección inyectada y el contexto recibido', () => {
   assert.equal(strokes, 48);
 });
 
+test('el renderer acepta mallas externas vía state.polys', () => {
+  let fills = 0;
+  let strokes = 0;
+  const ctx = {
+    save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, closePath() {},
+    fill() { fills++; },
+    stroke() { strokes++; },
+  };
+  const polys = [
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }],
+    [{ x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 1 }, { x: 0, y: 1, z: 1 }],
+  ];
+  renderFigure(ctx, (x, y, z) => ({ sx: x, sy: y, z2: z }), {
+    polys, color: '#fff', opacity: 100,
+  });
+  assert.equal(fills, 2);
+  assert.equal(strokes, 2);
+});
+
 test('pasos de ejes y cuadrícula independientes del canvas', () => {
   assert.equal(adaptiveStep(8),2);
   assert.equal(graphGridStep(17,7),2);

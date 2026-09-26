@@ -51,6 +51,11 @@ const modules = new Map([
   ['./js/math/algebra/functions.mjs', new URL('../js/math/algebra/functions.mjs', import.meta.url)],
   ['./js/graphics/analysis.mjs', new URL('../js/graphics/analysis.mjs', import.meta.url)],
   ['./js/math/algebra/vector-equations.mjs', new URL('../js/math/algebra/vector-equations.mjs', import.meta.url)],
+  ['./js/graphics/projection.mjs', new URL('../js/graphics/projection.mjs', import.meta.url)],
+  ['./js/graphics/revolution.mjs', new URL('../js/graphics/revolution.mjs', import.meta.url)],
+  ['./js/graphics/preview-canvas.mjs', new URL('../js/graphics/preview-canvas.mjs', import.meta.url)],
+  ['./js/math/vector-calculus.mjs', new URL('../js/math/vector-calculus.mjs', import.meta.url)],
+  ['./js/math/multivariable.mjs', new URL('../js/math/multivariable.mjs', import.meta.url)],
 ]);
 
 function makeElement(id) {
