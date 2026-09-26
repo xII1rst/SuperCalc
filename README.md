@@ -110,4 +110,4 @@ node --experimental-vm-modules --test tests/*.test.mjs
 
 La suite comprueba motores matemáticos, acciones de interfaz simuladas, renderizadores con canvas simulado, temas y precarga offline. La interacción, el aspecto visual y el control offline real se comprueban desde el navegador y sus DevTools.
 
-© 2026 Ing. Rafael Miranda (xII1rst) — SuperCalc
+© Rafael Miranda — SuperCalc
