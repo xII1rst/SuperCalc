@@ -1,6 +1,6 @@
 # SuperCalc v1.0.0
 
-SuperCalc es una aplicación web progresiva de cálculo científico y visualización matemática, desarrollada por **Ing. Rafael Miranda (xII1rst)**. Funciona con JavaScript modular nativo, Canvas 2D y un service worker; no requiere framework, dependencias de npm ni compilación.
+SuperCalc es una aplicación web progresiva de cálculo científico y visualización matemática, desarrollada por **Rafael Miranda**. Funciona con JavaScript modular nativo, Canvas 2D y un service worker; no requiere framework, dependencias de npm ni compilación.
 
 Disponible en: https://supercalc-sooty.vercel.app
 
