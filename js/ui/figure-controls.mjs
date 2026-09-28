@@ -67,7 +67,7 @@ function figDraw(){
   figureState.vector={ type:figCurrentType, params:figGetParams(), cx, cy, cz, color, opacity };
   // Forzar redraw del canvas AL
   draw();
-  document.getElementById('fig-res').textContent='✓ Figura graficada en el canvas.';
+  document.getElementById('fig-res').textContent='Figura graficada en el canvas.';
 }
 
 function figClear(){

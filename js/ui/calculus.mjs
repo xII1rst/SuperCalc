@@ -211,7 +211,7 @@ function resBox(label,val,hint='',big=false){
     ${hint?`<div class="calc-res-hint">${hint}</div>`:''}
   </div>`;
 }
-function errBox(msg){ return `<div class="calc-err">⚠ ${msg}</div>`; }
+function errBox(msg){ return `<div class="calc-err">${msg}</div>`; }
 
 // ── HTML DE PASOS ──
 function limitStepsHTML(r){
@@ -306,7 +306,7 @@ function limitStepsHTML(r){
   if(r.tipo!=='directo'){
     const lat=S.find(s=>s.tipo==='laterales');
     if(lat){
-      html+=`<div class="lim-step"><div class="lim-step-num">✓</div><div class="lim-step-body">
+      html+=`<div class="lim-step"><div class="lim-step-num"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-check"></use></svg></div><div class="lim-step-body">
         <div class="lim-step-title">Verificación numérica</div>
         <div class="lim-step-expr">${variable}→${a}⁺ ≈ ${fmtNum(lat.vr)} , ${variable}→${a}⁻ ≈ ${fmtNum(lat.vl)}</div>
       </div></div>`;
@@ -322,12 +322,12 @@ function limitStepsHTML(r){
     ${showApprox?`<div class="calc-res-hint">≈ ${fN(r.valueNum,8)}</div>`:''}
     <div class="calc-res-hint">${
       r.exists
-        ?(r.tipo==='directo'?'✓ Sustitución directa'
-          :(r.tipo==='simbolico')?'✓ Evaluación simbólica'
-          :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'✓ Resuelto por L\u2019H\u00f4pital'
-          :'✓ Límite existe')
+        ?(r.tipo==='directo'?'Sustitución directa'
+          :(r.tipo==='simbolico')?'Evaluación simbólica'
+          :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'Resuelto por L\u2019H\u00f4pital'
+          :'Límite existe')
         :(r.isInfinity?'Límite infinito — la función diverge'
-          :'⚠ El límite no existe (laterales distintos)')
+          :'El límite no existe (laterales distintos)')
     }</div>
   </div>`;
   return html;
@@ -450,7 +450,7 @@ function calcImplicit(){
   if(!isNaN(x0)&&!isNaN(y0)){
     const {fval,fx:fx0,fy:fy0,slope}=implicitDerivative(Fxy,x0,y0);
     if(Math.abs(fval)>0.1)
-      html+=resBox('Verificación',`F(${x0},${y0}) ≈ ${fN(fval,4)}`,'⚠ El punto puede no estar en la curva');
+      html+=resBox('Verificación',`F(${x0},${y0}) ≈ ${fN(fval,4)}`,'El punto puede no estar en la curva');
     html+=resBox(`∂F/∂x en (${x0},${y0})`, formatResult(fx0,6));
     html+=resBox(`∂F/∂y en (${x0},${y0})`, formatResult(fy0,6));
     html+=resBox(`dy/dx en (${x0},${y0})`, isFinite(slope)?fmtResult(slope)||fN(slope,6):'indefinido',
@@ -689,7 +689,7 @@ function appGrowth(){
     resBox('P(t) = P₀·eᵏᵗ',`P(${t}) = ${fN(p0)} · e^(${k}·${t}) = ${fN(Pt,4)}`,`P₀=${p0}, k=${k}`,true)+
     resBox('Tasa de cambio dP/dt = k·P(t)', formatResult(dPdt,4)+' unidades/tiempo',`Proporcional a la población actual`)+
     resBox('Tiempo de duplicación  t₂ = ln(2)/k', isFinite(t2x)?formatResult(t2x,4)+' unidades de tiempo':'∞ (k=0)')+
-    resBox('Verificación: P\'(t)/P(t)', formatResult(k),' = k ✓')
+    resBox('Verificación: P\'(t)/P(t)', formatResult(k),' = k')
   );
 }
 
@@ -757,7 +757,7 @@ function appNewton(){
   const {root,iterations,converged}=newtonMethod(fn,x0);
   const last=iterations[iterations.length-1];
   appRes(
-    resBox('Raíz de f(x) = 0', formatResult(root,10), converged?'✓ Convergió':'⚠ No convergió', true)+
+    resBox('Raíz de f(x) = 0', formatResult(root,10), converged?'Convergió':'No convergió', true)+
     resBox('Iteraciones', String(iterations.length), last?`Último paso: x = ${fN(last.xNext,6)}`:'')
   );
 }
@@ -784,7 +784,7 @@ function appContinuity(){
   appRes(
     resBox(`f(${a})`, Number.isFinite(r.value)?formatResult(r.value,6):'no definida')+
     resBox('Límites laterales', `lim₋ ≈ ${fN(r.leftLimit,4)}   lim₊ ≈ ${fN(r.rightLimit,4)}`)+
-    resBox('Conclusión', r.continuous?`✓ Continua en x = ${a}`:(typeMap[r.discontinuityType]||r.discontinuityType), '', true)
+    resBox('Conclusión', r.continuous?`Continua en x = ${a}`:(typeMap[r.discontinuityType]||r.discontinuityType), '', true)
   );
 }
 
@@ -1049,7 +1049,7 @@ function calcConservative(){
   try{
     const conservative=isConservative2D(fx,fy);
     let html=resBox('¿Conservativo? (∂P/∂y = ∂Q/∂x)',
-      conservative?'Sí ✓':'No ✗',
+      conservative?'Sí':'No',
       conservative?'Campo gradiente':'No es gradiente', true);
     if(conservative){
       const phi=potentialFunction2D(fx,fy);

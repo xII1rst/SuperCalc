@@ -129,7 +129,7 @@ function renderVecs(){
         <input class="vec-name-input" value="${v.nm}" maxlength="4" data-action="uN" data-event="input" data-id="${v.id}" style="color:${c}"/>
         <button class="badge ${v.on?'badge-on':'badge-off'}" data-action="togV" data-arg="${v.id}" data-arg-type="number">${v.on?'ON':'OFF'}</button>
         ${zeroWarn}
-        ${vecs.length>1?`<button class="badge badge-del" data-action="delV" data-arg="${v.id}" data-arg-type="number">✕</button>`:''}
+        ${vecs.length>1?`<button class="badge badge-del" data-action="delV" data-arg="${v.id}" data-arg-type="number" aria-label="Eliminar vector ${v.nm}"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-close"></use></svg></button>`:''}
       </div>
       <div class="vec-inputs">
         <div class="inp-group"><label style="color:var(--red)">X</label><input type="number" value="${v.vx}" data-action="uV" data-event="input" data-id="${v.id}" data-key="vx"/></div>
@@ -251,7 +251,7 @@ function rM(){
         <div class="math-value${full?' sm':''}">${value}</div>
         ${hint?`<div class="math-hint">${hint}</div>`:''}
         <div class="math-steps-tog" data-action="mathTogSteps" data-arg="${sid}">
-          <span class="tog-arr">▶</span><span>ver pasos</span>
+          <span class="tog-arr"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></span><span>ver pasos</span>
         </div>
         <div class="math-steps-body" id="${sid}">
           ${steps.map(s=>`<div class="math-step-line">${s}</div>`).join('')}
@@ -264,7 +264,7 @@ function rM(){
         <span style="color:${ci}">${a.nm}</span>&nbsp;—&nbsp;<span style="color:${cj}">${b.nm}</span>
         ${hint?`<span style="font-size:9px;color:var(--green);font-style:italic;font-weight:400;margin-left:6px">${hint}</span>`:''}
       </div>
-      <span class="collapsible-arrow open">▶</span>
+      <span class="collapsible-arrow open"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></span>
     </div>
     <div class="collapsible-body" style="max-height:9999px">
     <div class="math-grid" style="margin-bottom:10px">
@@ -285,8 +285,8 @@ function rO(){
   const ob=['+','−','×','·'].map(o=>`<button class="op-btn ${opS===o?'on':''}" data-action="sO" data-arg="${o}">${o}</button>`).join('');
   let rh='';
   if(rV){
-    if(rV.scalar){rh=`<div class="result-box"><div class="result-title">⟶ Resultado escalar</div><div class="result-val">${fResult(rV.sv,4)}</div><div class="result-sub">Valor escalar — no se grafica</div></div>`;}
-    else{const m=vmag(rV,mode);const cp=fV(rV.vx,rV.vy,rV.vz);rh=`<div class="result-box"><div class="result-title">⟶ Resultado vector</div><div class="result-val">${cp}</div><div class="result-sub">|res| = ${fMag(m)}</div></div><button class="add-vec-btn" style="border-style:solid;border-color:${RC};color:${RC};margin-top:0" data-action="saveR">+ Guardar como vector</button>`;}
+    if(rV.scalar){rh=`<div class="result-box"><div class="result-title">Resultado escalar</div><div class="result-val">${fResult(rV.sv,4)}</div><div class="result-sub">Valor escalar — no se grafica</div></div>`;}
+    else{const m=vmag(rV,mode);const cp=fV(rV.vx,rV.vy,rV.vz);rh=`<div class="result-box"><div class="result-title">Resultado vector</div><div class="result-val">${cp}</div><div class="result-sub">|res| = ${fMag(m)}</div></div><button class="add-vec-btn" style="border-style:solid;border-color:${RC};color:${RC};margin-top:0" data-action="saveR">+ Guardar como vector</button>`;}
   }
   p.innerHTML=`<div class="section-title">Selecciona vectores</div>
     <div class="ops-vec-btns">${sb}</div>
@@ -324,10 +324,10 @@ function rE(){
   const ex=vecs.length>=2?`${vecs[0].nm}+2${vecs[1].nm}-x=4(x-${vecs[0].nm})`:'A+2B-x=4(x-A)';
   let sh='';
   if(sR){
-    if(sR.err){sh=`<div class="error-box">⚠ ${sR.err}</div>`;}
+    if(sR.err){sh=`<div class="error-box">${sR.err}</div>`;}
     else{const cp=fV(sR.vx,sR.vy,sR.vz);const m=vmag({vx:sR.vx,vy:sR.vy,vz:sR.vz||0},mode);
-      sh=`<div class="solve-result"><div class="solve-title">✓ ${sR.nm} resuelto</div>
-        ${sR.steps.map(s=>`<div class="solve-step"><b>›</b> ${s}</div>`).join('')}
+      sh=`<div class="solve-result"><div class="solve-title">${sR.nm} resuelto</div>
+        ${sR.steps.map(s=>`<div class="solve-step"><b><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></b> ${s}</div>`).join('')}
         <div class="solve-final">${sR.nm} = ${cp}</div>
         <div class="solve-mag">|${sR.nm}| = ${fMag(m)}</div></div>
         <button class="add-vec-btn" style="border-style:solid;border-color:${SC};color:${SC};margin-top:0" data-action="saveSol">+ Graficar ${sR.nm}</button>`;}
@@ -369,17 +369,17 @@ function rI(){
       <div class="unk-vec-name" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <input style="background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-family:'Space Mono',monospace;font-size:14px;font-weight:700;width:44px;outline:none;text-align:center;padding:1px 2px" value="${v.nm}" data-action="updUnkName" data-event="input" data-index="${i}"/>
         <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">vector ${i+1}</span>
-        ${canDel?`<button class="badge badge-del" data-action="delUnkVec" data-arg="${i}" data-arg-type="number" style="margin-left:auto">✕</button>`:''}
+        ${canDel?`<button class="badge badge-del" data-action="delUnkVec" data-arg="${i}" data-arg-type="number" style="margin-left:auto" aria-label="Eliminar vector ${v.nm}"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-close"></use></svg></button>`:''}
       </div>
       <div class="unk-comp-row">${compInputs}</div>
     </div>`;
   });
   let resHtml='';
   if(unkR){
-    if(unkR.err){resHtml=`<div class="error-box">⚠ ${unkR.err}</div>`;}
+    if(unkR.err){resHtml=`<div class="error-box">${unkR.err}</div>`;}
     else{
-      const steps=unkR.steps.map(s=>`<div class="solve-step"><b>›</b> ${s}</div>`).join('');
-      resHtml=`<div class="unk-result-box"><div class="unk-result-title">✓ Solución</div>${steps}
+      const steps=unkR.steps.map(s=>`<div class="solve-step"><b><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></b> ${s}</div>`).join('');
+      resHtml=`<div class="unk-result-box"><div class="unk-result-title">Solución</div>${steps}
         ${Object.entries(unkR.vars).map(([k,v])=>`<div class="unk-result-val">${k} = ${fResult(v,6)}</div>`).join('')}
         <div class="unk-result-check" id="unk-check">${unkR.check}</div>
       </div>`;
@@ -556,8 +556,8 @@ function triCalc(){
   ];
 
   const verif=Math.abs(sumAng-180)<0.01
-    ?`<span style="color:var(--green)">✓ ${fDMS(angP)} + ${fDMS(angQ)} + ${fDMS(angR)} = ${fmt(sumAng)}° ≈ 180°</span>`
-    :`<span style="color:var(--red)">⚠ Suma = ${fmt(sumAng)}° (revisar datos)</span>`;
+    ?`<span style="color:var(--green)">${fDMS(angP)} + ${fDMS(angQ)} + ${fDMS(angR)} = ${fmt(sumAng)}° ≈ 180°</span>`
+    :`<span style="color:var(--red)">Suma = ${fmt(sumAng)}° (revisar datos)</span>`;
 
   document.getElementById('tri-res').innerHTML=`
     <!-- Resumen superior -->
@@ -622,7 +622,7 @@ function triDrawCanvas(P, Q, R){
     if(pV && !document.getElementById('tri-restore-btn')){
       const btn = document.createElement('button');
       btn.id = 'tri-restore-btn';
-      btn.textContent = '← Restaurar mis vectores';
+      btn.innerHTML = '<svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Restaurar mis vectores';
       btn.style.cssText = 'margin:8px 14px;padding:7px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:Space Mono,monospace;font-size:10px;cursor:pointer;display:block;width:calc(100% - 28px)';
       btn.onclick = ()=>{
         vecs = triVecsBackup || vecs;

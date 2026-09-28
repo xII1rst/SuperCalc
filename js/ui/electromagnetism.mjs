@@ -198,7 +198,7 @@ function emCalcCoulomb(){
   const result=emMath.coulomb(q1,q2,[x1,y1,z1],[x2,y2,z2]);
   if(!result){
     document.getElementById('em-res-coulomb').innerHTML=
-      '<div class="em-result-hint" style="color:var(--red);margin-top:10px">⚠ Las posiciones de q₁ y q₂ son iguales — la distancia es indefinida.</div>';
+      '<div class="em-result-hint" style="color:var(--red);margin-top:10px">Las posiciones de q₁ y q₂ son iguales — la distancia es indefinida.</div>';
     return;
   }
 

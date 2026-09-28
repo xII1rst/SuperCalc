@@ -170,7 +170,7 @@ function solveRationalInequality(numStr,denStr,sym){
       const sc=sn*sd;
       const lbl=isFinite(lo)?matFmtNum(lo):'-∞';
       const sat=checkIneq(sc,sym,0);
-      steps.push(`  (${lbl}, ${isFinite(hi)?matFmtNum(hi):'+∞'}) → signo = ${sc>0?'+':'−'} → ${sat?'✓':'✗'}`);
+      steps.push(`  (${lbl}, ${isFinite(hi)?matFmtNum(hi):'+∞'}) → signo = ${sc>0?'+':'−'} → ${sat?'cumple':'no cumple'}`);
     }
   }
   const sol=signTableSolve(numRoots,denRoots,numLead,denLead,sym);

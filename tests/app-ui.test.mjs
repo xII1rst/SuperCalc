@@ -6,6 +6,18 @@ import vm from 'node:vm';
 const appUrl = new URL('../app.js', import.meta.url);
 const modules = new Map([
   ['./js/math/algebra/matrix.mjs', new URL('../js/math/algebra/matrix.mjs', import.meta.url)],
+  ['./js/math/statistics.mjs', new URL('../js/math/statistics.mjs', import.meta.url)],
+  ['./js/graphics/statistics-charts.mjs', new URL('../js/graphics/statistics-charts.mjs', import.meta.url)],
+  ['./js/math/probability.mjs', new URL('../js/math/probability.mjs', import.meta.url)],
+  ['./js/ui/probability.mjs', new URL('../js/ui/probability.mjs', import.meta.url)],
+  ['./js/math/mechanics.mjs', new URL('../js/math/mechanics.mjs', import.meta.url)],
+  ['./js/math/mechanics-units.mjs', new URL('../js/math/mechanics-units.mjs', import.meta.url)],
+  ['./js/math/mechanics-solver.mjs', new URL('../js/math/mechanics-solver.mjs', import.meta.url)],
+  ['./js/ui/mechanics.mjs', new URL('../js/ui/mechanics.mjs', import.meta.url)],
+  ['./js/graphics/mechanics-trajectory.mjs', new URL('../js/graphics/mechanics-trajectory.mjs', import.meta.url)],
+  ['./js/math/experiments.mjs', new URL('../js/math/experiments.mjs', import.meta.url)],
+  ['./js/ui/statistics.mjs', new URL('../js/ui/statistics.mjs', import.meta.url)],
+  ['./js/ui/experiments.mjs', new URL('../js/ui/experiments.mjs', import.meta.url)],
   ['./js/math/algebra/vector.mjs', new URL('../js/math/algebra/vector.mjs', import.meta.url)],
   ['./js/math/algebra/triangle.mjs', new URL('../js/math/algebra/triangle.mjs', import.meta.url)],
   ['./js/graphics/figures.mjs', new URL('../js/graphics/figures.mjs', import.meta.url)],
@@ -59,7 +71,7 @@ const modules = new Map([
 ]);
 
 function makeElement(id) {
-  const classes = new Set(id === 'submod-screen' ? ['visible'] : []);
+  const classes = new Set();
   const classList = {
     add: name => classes.add(name),
     remove: name => classes.delete(name),
@@ -92,6 +104,29 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   const elements = new Map();
   const headLinks = [];
   const delegatedEvents = new Map();
+  const windowEvents = new Map();
+  const navEntries = [{sc:'launcher'}];
+  let navIndex = 0;
+  const history = {
+    pushState(state) {
+      navEntries.splice(navIndex + 1);
+      navEntries.push(state);
+      navIndex++;
+    },
+    replaceState(state) { navEntries[navIndex] = state; },
+    back() {
+      if (navIndex > 0) {
+        navIndex--;
+        windowEvents.get('popstate')?.({state:navEntries[navIndex]});
+      }
+    },
+    forward() {
+      if (navIndex < navEntries.length - 1) {
+        navIndex++;
+        windowEvents.get('popstate')?.({state:navEntries[navIndex]});
+      }
+    },
+  };
   const getElementById = id => {
     if (id === 'sc-bg-canvas' || id === 'sc-e1') return null;
     if (id === 'update-banner' || id === 'install-banner' || id === 'tri-restore-btn') return elements.get(id) || null;
@@ -125,7 +160,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     },
     navigator: { serviceWorker: { register: async () => registration, controller: {} } },
     location: { pathname: '/' },
-    history: { pushState() {} },
+    history,
     URL: { createObjectURL: () => 'blob:test' },
     Blob,
     Event: class { constructor(type){this.type=type;} },
@@ -134,7 +169,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     requestAnimationFrame() {},
     setTimeout: callback => callback(),
     clearTimeout() {},
-    addEventListener() {},
+    addEventListener(type, listener) { windowEvents.set(type, listener); },
     alert: message => { throw new Error(message); },
     console,
   };
@@ -190,12 +225,20 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.equal(actions.matOpsState, undefined);
   assert.equal(typeof actions.matOpsSetScalar, 'function');
 
+  actions.openSubmod('math');
+  const mathCards=getElementById('submod-cards').innerHTML;
+  for (const id of ['al','ca','stats','prob','exp'])
+    assert.match(mathCards,new RegExp(`data-arg="${id}"`));
   actions.openSubmod('al');
+  assert.match(getElementById('submod-back').innerHTML, /Matemáticas/);
   const algebraCards=getElementById('submod-cards').innerHTML;
   assert.match(algebraCards,/Vectores y matrices/);
   assert.match(algebraCards,/Funciones y relaciones/);
   for(const id of ['vectors','mat','ineq','fn','seq'])
     assert.match(algebraCards,new RegExp(`data-arg="${id}"`));
+  actions.closeSubmod();
+  assert.match(getElementById('submod-cards').innerHTML,/Estadística/);
+  assert.match(getElementById('submod-back').innerHTML, /Inicio/);
   actions.openSubmod('ca');
   const calcCards=getElementById('submod-cards').innerHTML;
   for(const id of ['calc-dif','calc-int','calc-cur','calc-mul','calc-edo','calc-graf'])
@@ -208,9 +251,135 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     delegatedEvents.get('click')({type:'click',target:card});
     assert.equal(getElementById('calc-p'+panel).classList.contains('on'),true,id);
     actions.closeModule('calc');
+    assert.equal(getElementById('submod-title').innerHTML.includes('Cálculo'), true);
   }
 
+  actions.closeSubmod();
+  actions.openSubmod('fi');
+  assert.match(getElementById('submod-cards').innerHTML, /data-action="openSubmod" data-arg="mech"/);
+  actions.openSubmod('mech');
+  assert.match(getElementById('submod-back').innerHTML, /Física/);
+  for (const id of ['mech-motion','mech-projectile','mech-dynamics'])
+    assert.match(getElementById('submod-cards').innerHTML, new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('mech-motion');
+  assert.equal(getElementById('mech-app').classList.contains('visible'), true);
+  assert.equal(getElementById('mech-motion-card').hidden, false);
+  assert.equal(getElementById('mech-projectile-card').hidden, true);
+  for (const [id, value] of Object.entries({
+    'mech-x0':'0', 'mech-v0':'10', 'mech-a':'2', 'mech-t':'5',
+    'mech-x':'', 'mech-v':'', 'mech-speed':'10', 'mech-angle':'45', 'mech-vx':'', 'mech-vy':'', 'mech-destination':'', 'mech-height':'0', 'mech-landing':'0', 'mech-flight-time':'', 'mech-g':'10',
+    'mech-mass':'2', 'mech-accel':'3', 'mech-energy-speed':'4',
+    'mech-force':'', 'mech-energy-height':'5', 'mech-energy-g':'10', 'mech-kinetic':'', 'mech-potential':'', 'mech-total':'',
+  })) getElementById(id).value = value;
+  actions.mechCalculateMotion();
+  assert.match(getElementById('mech-motion-result').innerHTML, /75/);
+  getElementById('mech-v0-unit').dataset.previous = 'm/s';
+  getElementById('mech-v0-unit').value = 'mph';
+  actions.mechUnitChanged('motion:v0');
+  assert.ok(Math.abs(Number(getElementById('mech-v0').value) - 22.3693629) < 1e-5);
+  actions.mechCalculateMotion();
+  assert.match(getElementById('mech-motion-result').innerHTML, /75/);
+  getElementById('mech-motion-slider').value = '2';
+  actions.mechTimeChanged('motion:slider');
+  assert.match(getElementById('mech-motion-state').innerHTML, /24/);
+  actions.closeModule('mech');
+  assert.match(getElementById('submod-title').innerHTML, /Mecánica/);
+  actions.launchSubmod('mech-projectile');
+  assert.equal(getElementById('mech-projectile-card').hidden, false);
+  assert.equal(getElementById('mech-motion-card').hidden, true);
+  actions.mechCalculateProjectile();
+  assert.match(getElementById('mech-projectile-result').innerHTML, /Trayectoria y vectores/);
+  getElementById('mech-projectile-slider').value = '0.5';
+  actions.mechTimeChanged('projectile:slider');
+  assert.match(getElementById('mech-projectile-state').innerHTML, /vₓ/);
+  actions.closeModule('mech');
+  history.forward();
+  assert.equal(getElementById('mech-app').classList.contains('visible'), true);
+  assert.equal(getElementById('mech-projectile-card').hidden, false);
+  history.back();
+  actions.launchSubmod('mech-dynamics');
+  assert.equal(getElementById('mech-dynamics-card').hidden, false);
+  actions.mechCalculateDynamics();
+  assert.match(getElementById('mech-dynamics-result').innerHTML, /116/);
+  actions.closeModule('mech');
+  actions.closeSubmod();
+  assert.match(getElementById('submod-title').innerHTML, /Física/);
+  actions.closeSubmod();
+  actions.openSubmod('math');
+
   assert.equal(getElementById('submod-screen').classList.contains('visible'), true);
+  actions.closeSubmod();
+  assert.equal(getElementById('submod-title').innerHTML.includes('Matemáticas'), true);
+  actions.launchSubmod('stats');
+  assert.equal(getElementById('stats-app').classList.contains('visible'), true);
+  getElementById('stats-values').value = '2, 4, 4, 6, 9';
+  actions.statsAnalyze();
+  assert.match(getElementById('stats-result').innerHTML, /Mediana/);
+  assert.match(getElementById('stats-result').innerHTML, /Varianza muestral/);
+  assert.match(getElementById('stats-result').innerHTML, /Diagrama de caja/);
+  actions.closeModule('stats');
+  assert.equal(getElementById('submod-title').innerHTML.includes('Matemáticas'), true);
+  history.forward();
+  assert.equal(getElementById('stats-app').classList.contains('visible'), true);
+  history.back();
+  actions.openSubmod('prob');
+  assert.match(getElementById('submod-back').innerHTML, /Matemáticas/);
+  for (const id of ['prob-combinations','prob-coin','prob-dice'])
+    assert.match(getElementById('submod-cards').innerHTML, new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('prob-combinations');
+  getElementById('prob-combinations-n').value = '10';
+  getElementById('prob-combinations-k').value = '3';
+  actions.probCalculateCombinations();
+  assert.match(getElementById('prob-combinations-result').innerHTML, /120/);
+  actions.closeModule('prob');
+  actions.launchSubmod('prob-coin');
+  assert.equal(getElementById('prob-app').classList.contains('visible'), true);
+  assert.equal(getElementById('prob-coin-card').hidden, false);
+  assert.equal(getElementById('prob-dice-card').hidden, true);
+  getElementById('prob-coin-n').value = '4';
+  getElementById('prob-coin-p').value = '0.5';
+  getElementById('prob-coin-k').value = '2';
+  actions.probCalculateCoin();
+  assert.match(getElementById('prob-coin-result').innerHTML, /37\.5 %/);
+  actions.closeModule('prob');
+  assert.match(getElementById('submod-title').innerHTML, /Probabilidad/);
+  actions.launchSubmod('prob-dice');
+  assert.equal(getElementById('prob-dice-card').hidden, false);
+  getElementById('prob-dice-n').value = '2';
+  getElementById('prob-dice-sum').value = '7';
+  actions.probCalculateDice();
+  assert.match(getElementById('prob-dice-result').innerHTML, /Casos favorables/);
+  actions.closeModule('prob');
+  actions.closeSubmod();
+  actions.openSubmod('exp');
+  for (const id of ['exp-dice','exp-coin','exp-pi'])
+    assert.match(getElementById('submod-cards').innerHTML, new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('exp-pi');
+  assert.equal(getElementById('exp-app').classList.contains('visible'), true);
+  assert.equal(getElementById('exp-pi-card').hidden, false);
+  getElementById('exp-pi-digits').value = '10';
+  actions.expCalculatePi();
+  assert.match(getElementById('exp-pi-result').innerHTML, /3\.1415926535/);
+  actions.closeModule('exp');
+  actions.launchSubmod('exp-dice');
+  getElementById('exp-dice-count').value = '20';
+  actions.expRollDice();
+  assert.match(getElementById('exp-dice-result').innerHTML, /20 lanzamientos/);
+  actions.closeModule('exp');
+  actions.launchSubmod('exp-coin');
+  getElementById('exp-coin-count').value = '20';
+  actions.expFlipCoins();
+  assert.match(getElementById('exp-coin-result').innerHTML, /Cara/);
+  actions.closeModule('exp');
+  actions.closeSubmod();
+  actions.closeSubmod();
+  assert.equal(getElementById('launcher').style.display, 'flex');
+  history.forward();
+  assert.equal(getElementById('submod-title').innerHTML.includes('Matemáticas'), true);
+  assert.equal(getElementById('launcher').style.display, 'none');
+  history.back();
+  actions.openSubmod('math');
+  actions.openSubmod('al');
   const openMatrix={dataset:{action:'launchSubmod',arg:'mat'},closest(){return this;}};
   delegatedEvents.get('click')({type:'click',target:openMatrix});
   assert.equal(actions.matDet, undefined);

@@ -1,4 +1,4 @@
-// SuperCalc v1.0.0 — Application Logic
+// SuperCalc v1.0 — Application Logic
 import * as matrixUI from './js/ui/algebra/matrix.mjs';
 import * as ineqUI from './js/ui/algebra/inequalities.mjs';
 import * as functionsUI from './js/ui/algebra/functions.mjs';
@@ -6,6 +6,10 @@ import * as sequencesUI from './js/ui/algebra/sequences.mjs';
 import * as calculusUI from './js/ui/calculus.mjs';
 import * as emUI from './js/ui/electromagnetism.mjs';
 import * as vectorsUI from './js/ui/algebra/vectors.mjs';
+import * as statisticsUI from './js/ui/statistics.mjs';
+import * as probabilityUI from './js/ui/probability.mjs';
+import * as experimentsUI from './js/ui/experiments.mjs';
+import * as mechanicsUI from './js/ui/mechanics.mjs';
 import { createNavigation } from './js/ui/navigation.mjs';
 import { createFigureControls } from './js/ui/figure-controls.mjs';
 import * as plotter from './js/ui/plotter.mjs';
@@ -23,6 +27,9 @@ const navigation = createNavigation({
   emInit: emUI.emInit, emResizeCanvas: emUI.emResizeCanvas,
   calcInit: calculusUI.calcInit,
   fnBack: functionsUI.fnBack, seqSetMode: sequencesUI.seqSetMode,
+  mechOpenPanel: mechanicsUI.mechOpenPanel,
+  probOpenPanel: probabilityUI.probOpenPanel,
+  expOpenPanel: experimentsUI.expOpenPanel,
 });
 export const actions = {
   ...navigation,
@@ -33,15 +40,21 @@ export const actions = {
   ...calculusUI,
   ...emUI,
   ...vectorsUI,
+  ...statisticsUI,
+  ...probabilityUI,
+  ...experimentsUI,
+  ...mechanicsUI,
   ...plotter,
   ...figureControls,
   installApp, dismissInstall, reloadApp, toggleTheme,
 };
 bindActions(document,actions);
+mechanicsUI.mechInitialize();
 document.addEventListener('supercalc:themechange', () => {
   if (document.getElementById('app')?.style.display === 'flex') vectorsUI.draw();
   if (document.getElementById('em-app')?.classList.contains('visible')) emUI.emDraw();
   plotter.grafUpdate();
   redrawAnalysisCanvases();
+  mechanicsUI.mechRedrawTrajectory();
 });
 initTheme();

@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0.0';
+const CACHE = 'supercalc-v1.0';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -57,7 +57,19 @@ const APP_PRECACHE = [
   './js/graphics/revolution.mjs',
   './js/graphics/preview-canvas.mjs',
   './js/math/vector-calculus.mjs',
-  './js/math/multivariable.mjs'
+  './js/math/multivariable.mjs',
+  './js/math/statistics.mjs',
+  './js/graphics/statistics-charts.mjs',
+  './js/math/probability.mjs',
+  './js/math/mechanics.mjs',
+  './js/math/mechanics-units.mjs',
+  './js/math/mechanics-solver.mjs',
+  './js/math/experiments.mjs',
+  './js/ui/statistics.mjs',
+  './js/ui/probability.mjs',
+  './js/ui/mechanics.mjs',
+  './js/graphics/mechanics-trajectory.mjs',
+  './js/ui/experiments.mjs'
 ];
 const FONT_URL = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap';
 
