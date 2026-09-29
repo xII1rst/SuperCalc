@@ -106,7 +106,6 @@ SuperCalc/
 │   ├── canvas.test.mjs, canvas-size.test.mjs, analysis-graphics.test.mjs
 │   ├── figures.test.mjs, formula-background.test.mjs
 │   └── theme.test.mjs, toast.test.mjs
-└── docs/plan-cuentas-historial-cloudflare.md   Plan y seguimiento de cuentas, guardados y alojamiento
 ```
 
 El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. `js/state/` y `js/utils/` sirven a varios dominios; `js/offline.mjs` y `sw.js` gestionan recursos y caché por separado. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable.
