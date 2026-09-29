@@ -2,6 +2,14 @@ function squareMatrix(matrix) {
   if(!Array.isArray(matrix)||!matrix.length||matrix.length>12||matrix.some(row=>!Array.isArray(row)||row.length!==matrix.length||row.some(value=>!Number.isFinite(value)))) throw new RangeError('Matriz cuadrada finita de orden 1 a 12 requerida');
   return matrix.length;
 }
+function quantizeSignificant(value,digits,mode) {
+  if(!Number.isFinite(value)) throw new RangeError('Resultado no finito');
+  if(value===0) return 0;
+  if(mode==='round') return Number(value.toPrecision(digits));
+  const [mantissa,exponent]=Math.abs(value).toExponential(15).split('e');
+  const kept=mantissa[0]+(digits>1?'.'+mantissa.slice(2,digits+1):'');
+  return Math.sign(value)*Number(`${kept}e${exponent}`);
+}
 export function luSolve(matrix,vector) {
   const n=squareMatrix(matrix);
   if(!Array.isArray(vector)||vector.length!==n||vector.some(value=>!Number.isFinite(value))) throw new RangeError('Vector b incompatible');
@@ -28,6 +36,47 @@ export function luSolve(matrix,vector) {
   for(let i=n-1;i>=0;i--) solution[i]=(y[i]-upper[i].slice(i+1).reduce((sum,value,j)=>sum+value*solution[i+1+j],0))/upper[i][i];
   const residual=matrix.map((row,i)=>row.reduce((sum,value,j)=>sum+value*solution[j],0)-vector[i]);
   return {lower,upper,permutation,permuted,y,solution,residual,residualInfinity:Math.max(...residual.map(Math.abs)),steps};
+}
+
+export function finitePrecisionElimination(matrix,vector,{digits=4,mode='round',pivoting=false}={}) {
+  const n=squareMatrix(matrix);
+  if(!Array.isArray(vector)||vector.length!==n||vector.some(value=>!Number.isFinite(value)))
+    throw new RangeError('Vector b incompatible');
+  if(!Number.isInteger(digits)||digits<2||digits>15||!['round','chop'].includes(mode)||typeof pivoting!=='boolean')
+    throw new RangeError('Precisión o pivoteo inválido');
+  const quantize=value=>{
+    if(!Number.isFinite(value)||Math.abs(value)>1e100) throw new RangeError('Desbordamiento en aritmética finita');
+    return quantizeSignificant(value,digits,mode);
+  };
+  const a=matrix.map(row=>row.map(quantize)),b=vector.map(quantize);
+  const history=[],permutation=Array.from({length:n},(_,i)=>i);
+  for(let col=0;col<n;col++) {
+    let pivot=col;
+    if(pivoting) for(let row=col+1;row<n;row++)
+      if(Math.abs(a[row][col])>Math.abs(a[pivot][col])) pivot=row;
+    if(pivot!==col) {
+      [a[col],a[pivot]]=[a[pivot],a[col]];
+      [b[col],b[pivot]]=[b[pivot],b[col]];
+      [permutation[col],permutation[pivot]]=[permutation[pivot],permutation[col]];
+      history.push({type:'swap',rows:[col,pivot],matrix:a.map(row=>row.slice()),rhs:b.slice()});
+    }
+    if(a[col][col]===0) return {status:'zero_pivot',column:col,history,permutation,matrix:a,rhs:b,solution:null};
+    for(let row=col+1;row<n;row++) {
+      const multiplier=quantize(a[row][col]/a[col][col]);
+      a[row][col]=0;
+      for(let k=col+1;k<n;k++) a[row][k]=quantize(a[row][k]-quantize(multiplier*a[col][k]));
+      b[row]=quantize(b[row]-quantize(multiplier*b[col]));
+      history.push({type:'eliminate',column:col,row,multiplier,matrix:a.map(item=>item.slice()),rhs:b.slice()});
+    }
+  }
+  const solution=Array(n).fill(0);
+  for(let row=n-1;row>=0;row--) {
+    let remainder=b[row];
+    for(let col=row+1;col<n;col++) remainder=quantize(remainder-quantize(a[row][col]*solution[col]));
+    solution[row]=quantize(remainder/a[row][row]);
+  }
+  const residualInfinity=Math.max(...matrix.map((row,i)=>Math.abs(row.reduce((sum,value,j)=>sum+value*solution[j],0)-vector[i])));
+  return {status:'completed',solution,residualInfinity,history,permutation,matrix:a,rhs:b,digits,mode,pivoting};
 }
 function factorIteration(coefficients,r,s) {
   const n=coefficients.length-1,b=Array(n+1).fill(0),dr=Array(n+1).fill(0),ds=Array(n+1).fill(0);
@@ -117,10 +166,7 @@ export function finitePrecisionTrace(operands,operations,digits,mode='round') {
     !Array.isArray(operations)||operations.length!==operands.length-1||operations.some(value=>!['+','-','*','/'].includes(value))||
     !Number.isInteger(digits)||digits<1||digits>15||!['round','chop'].includes(mode)) throw new RangeError('Operación o precisión inválida');
   const quantize=value=>{
-    if(!Number.isFinite(value)) throw new RangeError('Resultado no finito');
-    if(value===0) return 0;
-    const shift=digits-1-Math.floor(Math.log10(Math.abs(value))),factor=10**shift;
-    return (mode==='chop'?Math.trunc(value*factor):Math.round(Math.abs(value)*factor)*Math.sign(value))/factor;
+    return quantizeSignificant(value,digits,mode);
   };
   let exact=operands[0],approximate=quantize(exact);
   const history=[{step:0,operand:operands[0],operation:'inicio',exact,approximate,error:Math.abs(exact-approximate)}];
@@ -180,4 +226,22 @@ export function quadratureWithBound(fn,start,end,subintervals,method,derivativeB
   return {value,refined,refinementDifference:Math.abs(refined-value),bound,
     formula:method==='trapezoid'?'|E| ≤ M₂(b−a)³/(12n²)':'|E| ≤ M₄(b−a)⁵/(180n⁴)',
     assumption:`La cota solo vale si el usuario ha establecido |f${method==='trapezoid'?'″':'⁽⁴⁾'}(x)| ≤ M en todo [a,b].`};
+}
+
+export function minimumSubintervalsForBound(start,end,method,derivativeBound,targetError,maxSubintervals=1000) {
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end||
+    !['trapezoid','simpson'].includes(method)||!Number.isFinite(derivativeBound)||derivativeBound<0||
+    !Number.isFinite(targetError)||targetError<=0||!Number.isInteger(maxSubintervals)||maxSubintervals<2)
+    throw new RangeError('Intervalo, cota o error objetivo inválidos');
+  const length=end-start;
+  const coefficient=method==='trapezoid'?derivativeBound*length**3/12:derivativeBound*length**5/180;
+  if(!Number.isFinite(coefficient)) throw new RangeError('La cota excede el rango numérico');
+  const power=method==='trapezoid'?2:4;
+  let count=Math.max(2,Math.floor((coefficient/targetError)**(1/power)));
+  if(method==='simpson'&&count%2) count++;
+  const increment=method==='simpson'?2:1;
+  while(count<=maxSubintervals&&coefficient/count**power>=targetError) count+=increment;
+  if(count>maxSubintervals) throw new RangeError(`Se necesitan más de ${maxSubintervals} subintervalos`);
+  return {subintervals:count,bound:coefficient/count**power,targetError,
+    formula:method==='trapezoid'?'M₂(b−a)³/(12n²) < ε':'M₄(b−a)⁵/(180n⁴) < ε'};
 }

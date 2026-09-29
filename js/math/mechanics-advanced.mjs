@@ -149,6 +149,51 @@ export function standardInertia(shape,mass,size) {
   return {inertia:factor*mass*size**2,shape,factor};
 }
 
+export function rollingDownIncline(mass,radius,angleDegrees,distance,shape='solidCylinder',staticFriction=null,gravity=MECH_G) {
+  positive(mass,'Masa');positive(radius,'Radio');positive(distance,'Distancia');positive(gravity,'Gravedad');finite(angleDegrees,'Ángulo');
+  const factor={solidCylinder:0.5,hoop:1,solidSphere:0.4}[shape];
+  if(factor===undefined||angleDegrees<=0||angleDegrees>=90) throw new RangeError('Cuerpo o ángulo de rodadura inválido');
+  if(staticFriction!==null&&(!Number.isFinite(staticFriction)||staticFriction<0)) throw new RangeError('Fricción estática inválida');
+  const angle=radians(angleDegrees),normal=mass*gravity*Math.cos(angle);
+  const acceleration=gravity*Math.sin(angle)/(1+factor),friction=mass*factor*acceleration;
+  const requiredStaticFriction=friction/normal;
+  if(staticFriction!==null&&staticFriction+1e-12<requiredStaticFriction)
+    throw new RangeError(`La fricción estática debe ser al menos ${requiredStaticFriction} para rodar sin deslizar`);
+  const speed=Math.sqrt(2*acceleration*distance),finalOmega=speed/radius;
+  const translationalEnergy=0.5*mass*speed**2,rotationalEnergy=0.5*factor*mass*radius**2*finalOmega**2;
+  return {inertiaFactor:factor,normal,friction,requiredStaticFriction,acceleration,
+    angularAcceleration:acceleration/radius,timeFromRest:Math.sqrt(2*distance/acceleration),speed,finalOmega,
+    translationalEnergy,rotationalEnergy,potentialDrop:mass*gravity*distance*Math.sin(angle),
+    energyResidual:translationalEnergy+rotationalEnergy-mass*gravity*distance*Math.sin(angle),
+    assumption:'parte del reposo, rueda sin deslizar y no pierde energía'};
+}
+
+export function angularMomentumSkater(initialInertia,initialOmega,finalInertia) {
+  positive(initialInertia,'Inercia inicial');positive(finalInertia,'Inercia final');finite(initialOmega,'Velocidad angular inicial');
+  const angularMomentum=initialInertia*initialOmega,finalOmega=angularMomentum/finalInertia;
+  const initialKinetic=0.5*initialInertia*initialOmega**2,finalKinetic=0.5*finalInertia*finalOmega**2;
+  return {angularMomentum,finalOmega,initialKinetic,finalKinetic,energyChange:finalKinetic-initialKinetic,
+    assumption:'sin torque externo; el cambio de energía proviene del trabajo interno'};
+}
+
+export function hingedRodDrop(mass,length,gravity=MECH_G) {
+  positive(mass,'Masa');positive(length,'Longitud');positive(gravity,'Gravedad');
+  const inertia=mass*length**2/3,initialTorque=mass*gravity*length/2;
+  const potentialDrop=mass*gravity*length/2,finalOmega=Math.sqrt(2*potentialDrop/inertia);
+  return {inertia,initialTorque,initialAngularAcceleration:initialTorque/inertia,finalOmega,
+    potentialDrop,finalKinetic:0.5*inertia*finalOmega**2,
+    assumption:'varilla uniforme, articulación sin fricción; se suelta desde horizontal y llega a vertical'};
+}
+
+export function apsisAngularMomentum(periapsisRadius,periapsisSpeed,apoapsisRadius) {
+  positive(periapsisRadius,'Radio periapsis');positive(periapsisSpeed,'Rapidez periapsis');positive(apoapsisRadius,'Radio apoapsis');
+  if(apoapsisRadius<periapsisRadius) throw new RangeError('El apoapsis debe estar al menos tan lejos como el periapsis');
+  const specificAngularMomentum=periapsisRadius*periapsisSpeed;
+  const apoapsisSpeed=specificAngularMomentum/apoapsisRadius;
+  return {specificAngularMomentum,apoapsisSpeed,angularMomentumResidual:specificAngularMomentum-apoapsisRadius*apoapsisSpeed,
+    assumption:'órbita de fuerza central; en ambos ápsides la velocidad es tangencial'};
+}
+
 export function circularOrbit(centralMass,radius,satelliteMass=null) {
   positive(centralMass,'Masa central');positive(radius,'Radio orbital');
   if (satelliteMass!==null) positive(satelliteMass,'Masa de satélite');

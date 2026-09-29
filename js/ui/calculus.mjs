@@ -1,7 +1,9 @@
 import {
   calcParse, normalizeExpression, symbolicDeriv, computeLimit, calculateLimitOperation, fmtA, fmtNum,
   fmtResult, visSubstitute, basicAntideriv, rk4Refinement,
-  simpsonIntegral, revolutionVolume, taylorCoefficients, partialDerivative,
+  simpsonIntegral, revolutionVolume, revolutionVolumeBetween, revolutionVolumeAboutLine, parseRevolutionFunction,
+  curveIntersections,
+  taylorCoefficients, partialDerivative,
   gradient2D, midpointIntegral2D, implicitDerivative,
 } from '../math/calculus.mjs';
 import { fN, formatResult } from '../utils/format.mjs';
@@ -30,7 +32,7 @@ import {
 } from '../math/multivariable.mjs';
 import * as plotter from './plotter.mjs';
 import { renderPreview, sampleFn, sampleParametric, samplePolar } from '../graphics/preview-canvas.mjs';
-import { genRevolutionSolid, recenterSolid, computeSolidExtent } from '../graphics/revolution.mjs';
+import { genRevolutionSolid, genRevolutionSolidBetween, recenterSolid, computeSolidExtent } from '../graphics/revolution.mjs';
 import { project3D } from '../graphics/projection.mjs';
 import { renderFigure } from '../graphics/figures.mjs';
 import { readCanvasPalette } from '../graphics/colors.mjs';
@@ -187,6 +189,11 @@ function clearCard(id){
   const body = document.getElementById('body-'+id);
   if(!body) return;
   body.querySelectorAll('.calc-inp').forEach(el=>el.value='');
+  if(id==='rev'){
+    document.getElementById('int-rev-m').value='1';
+    document.getElementById('int-rev-offset').value='0';
+    document.getElementById('int-rev-shift').value='2';
+  }
   // Limpiar res dentro de body-id
   body.querySelectorAll('[id^="res-"]').forEach(el=>el.innerHTML='');
   body.querySelectorAll('[id^="preview-"]').forEach(el=>el.textContent='');
@@ -198,6 +205,10 @@ function clearCard(id){
   if(resMap[id]) { const r=document.getElementById(resMap[id]); if(r) r.innerHTML=''; }
   const cv = body.querySelector('.calc-preview[data-gmode]');
   if(cv) drawPreview(cv);
+  if(id==='rev'){
+    revSolidPolys=null;
+    drawRevolutionSolid();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -914,21 +925,89 @@ function calcIntegralNumeric(){
 
 function calcRevolutionVolume(){
   const res=document.getElementById('res-rev');
-  const fn=calcParse(v('int-rev-fx'));
+  revSolidPolys=null;
+  drawRevolutionSolid();
+  const addMode=v('int-rev-mode')==='add';
+  const fx=v('int-rev-fx');
+  if(!addMode&&usesRevolutionCoefficients(fx)){
+    res.innerHTML=errBox('Para usar m y b, selecciona Agregar función');
+    return;
+  }
+  const parameters=addMode ? readRevolutionParameters() : {m:1,b:0};
+  if(!parameters){res.innerHTML=errBox('m y b deben ser números finitos');return;}
+  const fn=parseRevolutionFunction(fx,parameters);
   if(!fn){res.innerHTML=errBox('Función inválida');return;}
+  const gx=addMode ? v('int-rev-gx') : '';
+  if(addMode&&!gx){res.innerHTML=errBox('Ingresa la segunda función g(x)');return;}
+  const gn=gx ? parseRevolutionFunction(gx,parameters) : null;
+  if(gx&&!gn){res.innerHTML=errBox('Segunda función inválida');return;}
   const a=pf('int-rev-a'), b=pf('int-rev-b');
-  const axis=v('int-rev-axis');
+  const axisChoice=v('int-rev-axis');
+  const shifted=axisChoice.endsWith('-shift');
+  const axis=axisChoice.startsWith('x')?'x':'y';
+  const offset=shifted ? pf('int-rev-shift') : 0;
   try{
-    const volume=revolutionVolume(fn,a,b,axis);
-    const formula=axis==='x' ? 'π∫ₐᵇ [f(x)]² dx' : '2π∫ₐᵇ |x|·|f(x)| dx';
-    const method=axis==='x' ? 'Discos alrededor del eje X' : 'Cascarones alrededor del eje Y';
+    const volume=shifted ? revolutionVolumeAboutLine(fn,gn,a,b,axis,offset)
+      : gn ? revolutionVolumeBetween(fn,gn,a,b,axis) : revolutionVolume(fn,a,b,axis);
+    const formula=shifted
+      ? (axis==='x' ? 'π∫ₓ₀ˣ₁ [R꜀(x)² − r꜀(x)²] dx'
+        : `2π∫ₓ₀ˣ₁ |x−c|·|f(x)${gn?' − g(x)':''}| dx`)
+      : gn
+        ? (axis==='x' ? 'π∫ₓ₀ˣ₁ [R(x)² − r(x)²] dx' : '2π∫ₓ₀ˣ₁ |x|·|f(x) − g(x)| dx')
+        : (axis==='x' ? 'π∫ₓ₀ˣ₁ [f(x)]² dx' : '2π∫ₓ₀ˣ₁ |x|·|f(x)| dx');
+    const method=shifted ? (axis==='x'?`Discos/arandelas alrededor de y = ${offset}`:`Cascarones alrededor de x = ${offset}`)
+      : axis==='x' ? (gn?'Arandelas/discos alrededor del eje X':'Discos alrededor del eje X') : 'Cascarones alrededor del eje Y';
+    const radiusHint=axis==='x'&&(gn||shifted)
+      ? `x₀ = ${a}, x₁ = ${b}; R = max(|f−c|, |${gn?'g':'0'}−c|), r = min(...) si la región no cruza y = c; si cruza, r = 0. c = ${offset}.`
+      : `x₀ = ${a}, x₁ = ${b}${shifted?`; c = ${offset}`:''}`;
     res.innerHTML=
       resBox('Volumen V',`${formatResult(volume,8)} u³`,`${method} · Simpson 1/3`,true)+
-      resBox('Integral usada',formula,`a = ${a}, b = ${b}`);
-    renderRevolutionSolid(fn, a, b, axis);
+      resBox('Integral usada',formula,radiusHint);
+    if(addMode&&usesRevolutionCoefficients(`${fx} ${gx}`))
+      res.innerHTML+=resBox('Coeficientes sustituidos',`m = ${parameters.m}; b = ${parameters.b}`);
+    if(gn){
+      const crossings=curveIntersections(fn,gn,a,b);
+      if(crossings.length) res.innerHTML+=resBox('Intersecciones en [x₀, x₁]',crossings.map(p=>`(${formatResult(p.x,6)}, ${formatResult(p.y,6)})`).join(' · '));
+    }
+    const preview=document.querySelector('#body-rev .calc-preview');
+    if(preview) drawPreview(preview);
+    renderRevolutionSolid(fn, a, b, axis, gn, offset);
   }catch(error){
     res.innerHTML=errBox(error.message);
   }
+}
+
+function calcRevolutionModeChanged(){
+  const addMode=v('int-rev-mode')==='add';
+  for(const id of ['rev-add-fields','rev-legend-g','rev-legend-cross']){
+    const element=document.getElementById(id);
+    if(element) element.hidden=!addMode;
+  }
+  const fx=document.getElementById('int-rev-fx');
+  if(fx) fx.placeholder=addMode ? 'ej: x², y=-mx+b' : 'ej: x², sqrt(x), y=-2x+1';
+  const res=document.getElementById('res-rev');
+  if(res) res.innerHTML='';
+  revSolidPolys=null;
+  drawRevolutionSolid();
+  const preview=document.querySelector('#body-rev .calc-preview');
+  if(preview) drawPreview(preview);
+}
+
+function calcRevolutionAxisChanged(){
+  const choice=v('int-rev-axis');
+  const shifted=choice.endsWith('-shift');
+  const field=document.getElementById('rev-shift-fields');
+  if(field) field.hidden=!shifted;
+  const hint=document.getElementById('rev-axis-hint');
+  if(hint) hint.textContent=choice.startsWith('y')
+    ? 'Con cascarones, [x₀, x₁] debe quedar a un solo lado de la recta de giro.'
+    : 'Para y = c, se usan discos o arandelas según dónde queden las curvas.';
+  const res=document.getElementById('res-rev');
+  if(res) res.innerHTML='';
+  revSolidPolys=null;
+  drawRevolutionSolid();
+  const preview=document.querySelector('#body-rev .calc-preview');
+  if(preview) drawPreview(preview);
 }
 
 function calcTaylor(){
@@ -1522,6 +1601,10 @@ function initLivePreviews(){
 function handlePreviewInput(e){
   const t = e.target;
   const root = t?.closest?.('.calc-card-body, .app-form');
+  if(root?.id==='body-rev'){
+    revSolidPolys=null;
+    drawRevolutionSolid();
+  }
   const cv = root?.querySelector?.('.calc-preview[data-gmode]');
   if(cv) schedulePreview(cv);
 }
@@ -1542,6 +1625,16 @@ function readInputNum(id){
   return Number.isFinite(v) ? v : NaN;
 }
 
+function readRevolutionParameters(){
+  const mText=readInputValue('int-rev-m'), bText=readInputValue('int-rev-offset');
+  const m=mText===''?1:Number(mText), b=bText===''?0:Number(bText);
+  return Number.isFinite(m)&&Number.isFinite(b) ? {m,b} : null;
+}
+
+function usesRevolutionCoefficients(expression){
+  return /\b(?:mx|m|b)\b/.test(expression);
+}
+
 function drawPreview(cv){
   if(!cv) return;
   const mode = cv.dataset.gmode;
@@ -1551,10 +1644,36 @@ function drawPreview(cv){
   let points = [];
 
   if(mode === 'fn'){
-    const fn = calcParse(readInputValue(src), cv.dataset.var || 'x');
+    const isRevolution=Boolean(cv.dataset.secondary);
+    const addMode=isRevolution&&v('int-rev-mode')==='add';
+    const axisChoice=isRevolution?v('int-rev-axis'):'';
+    const shift=readInputNum('int-rev-shift');
+    const referenceLine=axisChoice.endsWith('-shift')&&Number.isFinite(shift)
+      ? {axis:axisChoice.startsWith('x')?'x':'y',value:shift} : null;
+    const revParams=isRevolution ? (addMode ? readRevolutionParameters() : {m:1,b:0}) : null;
+    const expression=readInputValue(src);
+    const fn = cv.dataset.secondary
+      ? (revParams&&(addMode||!usesRevolutionCoefficients(expression))&&parseRevolutionFunction(expression,revParams))
+      : calcParse(expression, cv.dataset.var || 'x');
     if(!fn){ renderPreview(cv, []); return; }
     const [x0, x1] = (a < b) ? [a, b] : [-8, 8];
     points = sampleFn(fn, x0, x1);
+    if(addMode){
+      const secondExpression=readInputValue(cv.dataset.secondary);
+      if(secondExpression){
+        const gn=parseRevolutionFunction(secondExpression,revParams);
+        if(!gn){ renderPreview(cv, points, {referenceLine}); return; }
+        const secondPoints=sampleFn(gn,x0,x1);
+        renderPreview(cv,points,{
+          secondPoints,
+          markers:curveIntersections(fn,gn,x0,x1),
+          referenceLine,
+        });
+        return;
+      }
+    }
+    renderPreview(cv,points,{referenceLine});
+    return;
   } else if(mode === 'param'){
     const ids = src.split(',');
     const xFn = calcParse(readInputValue(ids[0]), 't');
@@ -1610,8 +1729,8 @@ function initRevolutionCanvas(){
 
 function drawRevolutionSolid(){
   const cv = document.getElementById('rev-solid');
-  if(!cv || !revSolidPolys) return;
-  if(!showRevSolid){
+  if(!cv) return;
+  if(!showRevSolid || !revSolidPolys){
     const ctx = cv.getContext && cv.getContext('2d');
     if(ctx) ctx.clearRect(0, 0, cv.width, cv.height);
     return;
@@ -1640,9 +1759,11 @@ function drawRevolutionSolid(){
   ctx.restore();
 }
 
-function renderRevolutionSolid(fn, a, b, axis){
+function renderRevolutionSolid(fn, a, b, axis, gn=null, offset=0){
   try{
-    revSolidPolys = recenterSolid(genRevolutionSolid(fn, a, b, axis));
+    revSolidPolys = recenterSolid(gn||offset!==0
+      ? genRevolutionSolidBetween(fn,gn||(()=>0),a,b,axis,{offset})
+      : genRevolutionSolid(fn, a, b, axis));
     const ext = computeSolidExtent(revSolidPolys);
     revFit = ext.maxR > 0 ? 9 / ext.maxR : 1;
     initRevolutionCanvas();
@@ -1693,7 +1814,7 @@ export {
   previewCalcExpression,
   calcInit, calcTab, toggleCard, clearCard, kbInsert,
   calcLimit, calcLimitOp, calcDerivative, calcImplicit, calcAnalysis,
-  calcIntegralIndef, calcIntegralDef, calcIntegralNumeric, calcRevolutionVolume, calcTaylor, calcPartial,
+  calcIntegralIndef, calcIntegralDef, calcIntegralNumeric, calcRevolutionVolume, calcRevolutionModeChanged, calcRevolutionAxisChanged, calcTaylor, calcPartial,
   calcGradient, calcDoubleIntegral, calcEDOSep, calcEDOLinear,
   calcEDO2nd, toggleLimOp, toggleApps, setApp,
   appOptimize, appGrowth, appMotion, appTangent, appRelated, clearAppResult,

@@ -5,7 +5,8 @@ import {
   riverCrossing, inclinedPlane, atwood, bankedCurve, verticalLoop,
   collisionOneDimensional, collisionTwoDimensional, centerOfMass,
   kineticDecomposition, standardInertia, circularOrbit, galileanTransform,
-  rotatingFrameVelocity,
+  rotatingFrameVelocity, rollingDownIncline, angularMomentumSkater,
+  hingedRodDrop, apsisAngularMomentum,
 } from '../js/math/mechanics-advanced.mjs';
 
 const close=(actual,expected,tol=1e-8)=>assert.ok(Math.abs(actual-expected)<=tol*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
@@ -36,6 +37,25 @@ test('Mecánica 10, 23–25, 30, 36–37 y 43: movimiento y fuerzas',()=>{
   assert.equal(loop.contactAtTop,true);
   close(loop.minimumStartHeight,5);
   assert.ok(bankedCurve(80,20,0.3).maxSpeed>20);
+});
+
+test('Mecánica 33, 44, 46 y 47: rodadura, momento angular y varilla',()=>{
+  const rolling=rollingDownIncline(10,0.2,30,3,'solidCylinder');
+  close(rolling.acceleration,MECH_G/3);
+  close(rolling.timeFromRest,Math.sqrt(18/MECH_G));
+  close(rolling.energyResidual,0);
+  assert.throws(()=>rollingDownIncline(10,0.2,30,3,'solidCylinder',0.1),/fricción estática/);
+  const skater=angularMomentumSkater(3,2,1.2);
+  close(skater.finalOmega,5);
+  close(skater.energyChange,9);
+  const rod=hingedRodDrop(2,1);
+  close(rod.initialAngularAcceleration,1.5*MECH_G);
+  close(rod.finalOmega,Math.sqrt(3*MECH_G));
+  close(rod.finalKinetic,rod.potentialDrop);
+  const orbit=apsisAngularMomentum(1e7,9000,2e7);
+  close(orbit.specificAngularMomentum,9e10);
+  close(orbit.apoapsisSpeed,4500);
+  assert.throws(()=>apsisAngularMomentum(2e7,9000,1e7),/apoapsis/);
 });
 
 test('Mecánica 27–28, 31, 40–42 y 50: choques y centro de masa',()=>{

@@ -22,10 +22,13 @@ const SUBMOD_CONFIG = {
     title: '<span class="math-c">Análisis numérico</span>',
     cards: [
       { icon:'analysis', name:'Errores y cifras', desc:'Error absoluto/relativo y cifras significativas', id:'num-errors', cls:'math-sub' },
+      { icon:'analysis', name:'Precisión finita', desc:'Redondeo o corte tras cada operación', id:'num-precision', cls:'math-sub' },
       { icon:'root', name:'Raíces', desc:'Bisección y Newton con historial', id:'num-roots', cls:'math-sub' },
       { icon:'matrix', name:'Sistemas iterativos', desc:'Jacobi y Gauss-Seidel', id:'num-linear', cls:'math-sub' },
+      { icon:'root', name:'Newton 2×2', desc:'Sistema no lineal con jacobiano y residuo', id:'num-system2d', cls:'math-sub' },
       { icon:'curve', name:'Interpolación y ajuste', desc:'Newton, Lagrange y mínimos cuadrados', id:'num-interpolation', cls:'math-sub' },
       { icon:'tangent', name:'Derivación numérica', desc:'Diferencias finitas y refinamiento', id:'num-derivative', cls:'math-sub' },
+      { icon:'analysis', name:'Cuadratura con cota', desc:'Trapecio y Simpson con hipótesis de derivada', id:'num-quadrature', cls:'math-sub' },
       { icon:'ode', name:'PVI numérico', desc:'Euler, RK2, RK4 y Adams-Bashforth', id:'num-ode', cls:'math-sub' },
     ]
   },
@@ -383,7 +386,7 @@ function launchSubmod(id, recordHistory = true) {
       screen.classList.add('visible');
       linearInit();
     });
-  } else if (id.startsWith('num-') && ['errors','roots','linear','interpolation','derivative','ode'].includes(id.slice(4))) {
+  } else if (id.startsWith('num-') && ['errors','precision','roots','linear','system2d','interpolation','derivative','quadrature','ode'].includes(id.slice(4))) {
     document.getElementById('submod-screen').classList.remove('visible');
     scheduleModuleLaunch(() => {
       const screen = document.getElementById('num-app');

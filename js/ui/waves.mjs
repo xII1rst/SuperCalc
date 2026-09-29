@@ -39,6 +39,20 @@ const modes={
 };
 const groupNames={oscillations:'Oscilaciones',mechanical:'Ondas mecánicas',optics:'Ondas EM y óptica'};
 const visualModes=new Set(['harmonic','traveling','standing','lissajous']);
+const unitFactors={
+  length:{m:1,cm:0.01,mm:0.001,km:1000,µm:1e-6,nm:1e-9,ft:0.3048,in:0.0254},
+  speed:{'m/s':1,'km/h':1/3.6,mph:0.44704,'ft/s':0.3048},
+  frequency:{Hz:1,kHz:1000,MHz:1e6,GHz:1e9},
+};
+const unitsByMode={
+  harmonic:{a:'length'},pendulum:{length:'length',distance:'length'},beats:{f1:'frequency',f2:'frequency'},
+  traveling:{a:'length',x:'length'},string:{length:'length'},tube:{length:'length',speed:'speed'},
+  standing:{a:'length',length:'length'},dispersion:{lambda:'length'},stringpower:{a:'length',speed:'speed'},
+  sound:{distance:'length'},doppler:{frequency:'frequency',speed:'speed',source:'speed',observer:'speed',wall:'speed'},
+  material:{source:'speed'},refraction:{lambda:'length'},young:{lambda:'length',separation:'length',screen:'length',thickness:'length'},
+  film:{thickness:'length',minimum:'length',maximum:'length'},rings:{radius:'length',lambda:'length'},
+  multislit:{separation:'length',lambda:'length'},grating:{separation:'length',lambda:'length',minimum:'length',maximum:'length'},
+};
 let playing=false,lastFrame=0;
 
 function read(key) {return document.getElementById(`waves-${key}`).value.trim();}
@@ -46,7 +60,13 @@ function number(key,optional=false) {
   const raw=read(key);
   if (!raw&&optional) return null;
   if (!raw||!Number.isFinite(Number(raw))) throw new RangeError(`${key}: introduce un número finito`);
-  return Number(raw);
+  const mode=document.getElementById('waves-mode').value;
+  const unitType=unitsByMode[mode]?.[key];
+  const selected=unitType?document.getElementById(`waves-${key}-unit`)?.value:null;
+  const factor=unitType?(unitFactors[unitType][selected]??1):1;
+  const converted=Number(raw)*factor;
+  if(!Number.isFinite(converted)) throw new RangeError(`${key}: conversión fuera de rango`);
+  return converted;
 }
 function numbers(key) {
   const parts=read(key).split(/[,;\s]+/).filter(Boolean);
@@ -75,13 +95,16 @@ export function wavesSelect() {
   if(play) play.textContent='Reproducir';
   const config=modes[document.getElementById('waves-mode').value];
   if (!config) return;
-  document.getElementById('waves-fields').innerHTML=config.fields.map(([key,label,defaultValue,type])=>
-    `<label class="linear-field" for="waves-${key}"><span>${label}</span>${type==='select'
+  const mode=document.getElementById('waves-mode').value;
+  document.getElementById('waves-fields').innerHTML=config.fields.map(([key,label,defaultValue,type])=>{
+    const unitType=unitsByMode[mode]?.[key];
+    const unitSelector=unitType?`<select id="waves-${key}-unit" class="tool-input waves-unit" aria-label="Unidad de ${label}">${Object.keys(unitFactors[unitType]).map(unit=>`<option value="${unit}">${unit}</option>`).join('')}</select>`:'';
+    return `<label class="linear-field" for="waves-${key}"><span>${unitType?label.replace(/\s*\((?:m|m\/s|Hz)(?:,\s*opcional)?\)/,''):label}</span>${type==='select'
       ? `<select id="waves-${key}" class="tool-input"><option value="open-open">Ambos abiertos</option><option value="closed-open">Uno cerrado</option></select>`
       :type==='textarea'
       ? `<textarea id="waves-${key}" class="tool-textarea" rows="4">${defaultValue}</textarea>`
-      : `<input id="waves-${key}" class="tool-input" type="number" step="any" value="${defaultValue}">`}</label>`
-  ).join('');
+      : `<input id="waves-${key}" class="tool-input" type="number" step="any" value="${defaultValue}">`}${unitSelector}</label>`;
+  }).join('')+'<p class="calc-res-hint">Las entradas se convierten a SI para calcular; los resultados indican sus unidades.</p>';
   const target=document.getElementById('waves-result');
   target.textContent='';
   target.classList.remove('tool-error');

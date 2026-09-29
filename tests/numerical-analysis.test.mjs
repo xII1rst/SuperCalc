@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   numericError, significantArithmetic, bisection, newtonTrace, iterativeLinearSystem,
-  newtonInterpolation, lagrangeInterpolation, leastSquaresPolynomial,
+  newtonInterpolation, lagrangeInterpolation, interpolationErrorStudy, leastSquaresPolynomial,
   finiteDifference, ivpTrace,
 } from '../js/math/numerical-analysis.mjs';
 
@@ -49,6 +49,17 @@ test('Análisis 10–12, 27: interpolación y mínimos cuadrados',()=>{
   close(fit.coefficients[0],1.5);
   close(fit.coefficients[1],0.8);
   assert.throws(()=>newtonInterpolation([[1,2],[1,3]]),RangeError);
+});
+
+test('Análisis 42: cota de interpolación de ln(x) y error real',()=>{
+  const points=[1,2,3].map(x=>[x,Math.log(x)]);
+  const result=interpolationErrorStudy(points,2.5,2,Math.log);
+  close(result.approximation,0.75*Math.log(2)+0.375*Math.log(3));
+  close(result.bound,0.125);
+  close(result.actualError,Math.abs(Math.log(2.5)-result.approximation));
+  assert.ok(result.actualError<result.bound);
+  assert.throws(()=>interpolationErrorStudy([[1,0],[2,1],[3,1]],2.5,2,Math.log),/no coinciden/);
+  assert.throws(()=>interpolationErrorStudy(points,2.5,-1,Math.log),/no negativa/);
 });
 
 test('Análisis 13, 16, 31 y 48: diferencias, Euler, RK4 y AB2',()=>{

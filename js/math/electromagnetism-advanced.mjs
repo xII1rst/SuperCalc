@@ -54,6 +54,66 @@ export function dielectricPlate(area,separation,relativePermittivity,initialVolt
   return {initialCapacitance,capacitance,initialCharge,charge,voltage,field:voltage/separation,
     energy:0.5*capacitance*voltage**2,connection:connected?'conectado a fuente':'aislado'};
 }
+export function chargedRingAxis(charge,radius,position) {
+  finite(charge,'Carga');positive(radius,'Radio');finite(position,'Posición axial');
+  const distance=Math.hypot(radius,position);
+  return {field:EM_K*charge*position/distance**3,potential:EM_K*charge/distance,
+    formula:'Ez = kQz/(R²+z²)^(3/2); V = kQ/√(R²+z²)',assumption:'anillo delgado con carga uniforme; resultado sobre su eje'};
+}
+export function infiniteChargedPlane(surfaceDensity,paired=false) {
+  finite(surfaceDensity,'Densidad superficial');
+  return {field:(paired?1:0.5)*surfaceDensity/EM_EPS0,
+    formula:paired?'Eentre = σ/ε₀':'E = σ/(2ε₀)',
+    assumption:paired?'dos planos infinitos paralelos con densidades +σ y −σ; campo entre ellos':'plano infinito no conductor; campo con signo del lado positivo'};
+}
+export function conductingSphere(charge,radius,position) {
+  finite(charge,'Carga');positive(radius,'Radio');
+  if(!Number.isFinite(position)||position<0) throw new RangeError('Distancia radial no negativa requerida');
+  const outside=position>=radius;
+  return {field:outside?EM_K*charge/position**2:0,
+    potential:EM_K*charge/(outside?position:radius),
+    formula:'r < R: E = 0, V = kQ/R; r ≥ R: E = kQ/r², V = kQ/r',
+    assumption:'esfera conductora aislada en equilibrio; V(∞)=0'};
+}
+export function uniformSolidSphere(chargeDensity,radius,position) {
+  finite(chargeDensity,'Densidad volumétrica');positive(radius,'Radio');
+  if(!Number.isFinite(position)||position<0) throw new RangeError('Distancia radial no negativa requerida');
+  const charge=4*Math.PI*radius**3*chargeDensity/3,outside=position>=radius;
+  return {charge,field:outside?EM_K*charge/position**2:chargeDensity*position/(3*EM_EPS0),
+    potential:outside?EM_K*charge/position:EM_K*charge*(3*radius**2-position**2)/(2*radius**3),
+    formula:'r ≤ R: E = ρr/(3ε₀), V = kQ(3R²−r²)/(2R³); r ≥ R: E = kQ/r², V = kQ/r',
+    assumption:'esfera aislante con densidad uniforme; V(∞)=0'};
+}
+export function longCurrentCable(current,radius,position) {
+  finite(current,'Corriente');positive(radius,'Radio');
+  if(!Number.isFinite(position)||position<0) throw new RangeError('Distancia radial no negativa requerida');
+  return {field:EM_MU0*current*(position<=radius?position/radius**2:1/position)/(2*Math.PI),
+    formula:'r ≤ R: B = μ₀Ir/(2πR²); r ≥ R: B = μ₀I/(2πr)',
+    assumption:'cable recto infinito con densidad de corriente uniforme; signo según regla de mano derecha'};
+}
+export function coaxialCapacitor(innerRadius,outerRadius,length,relativePermittivity=1,voltage=0) {
+  positive(innerRadius,'Radio interior');positive(outerRadius,'Radio exterior');positive(length,'Longitud');
+  positive(relativePermittivity,'Permitividad relativa');finite(voltage,'Voltaje');
+  if(outerRadius<=innerRadius) throw new RangeError('El radio exterior debe superar al interior');
+  const capacitance=2*Math.PI*EM_EPS0*relativePermittivity*length/Math.log(outerRadius/innerRadius);
+  return {capacitance,charge:capacitance*voltage,energy:0.5*capacitance*voltage**2,
+    formula:'C = 2πε₀κL/ln(b/a); Q = CV; U = ½CV²',
+    assumption:'cilindros coaxiales largos; se ignoran efectos de borde'};
+}
+export function layeredPlateCapacitor(area,layers,voltage=0) {
+  positive(area,'Área');finite(voltage,'Voltaje');
+  if(!Array.isArray(layers)||!layers.length||layers.length>20) throw new RangeError('Introduce entre 1 y 20 capas');
+  let weightedThickness=0;
+  for(const [index,layer] of layers.entries()) {
+    positive(layer.thickness,`Espesor ${index+1}`);positive(layer.relativePermittivity,`Permitividad ${index+1}`);
+    weightedThickness+=layer.thickness/layer.relativePermittivity;
+  }
+  const capacitance=EM_EPS0*area/weightedThickness,charge=capacitance*voltage;
+  return {capacitance,charge,energy:0.5*capacitance*voltage**2,
+    layerFields:layers.map(layer=>charge/(EM_EPS0*layer.relativePermittivity*area)),
+    formula:'C = ε₀A/Σ(dᵢ/κᵢ); Eᵢ = Q/(ε₀κᵢA); U = ½CV²',
+    assumption:'capas apiladas en dirección del campo; se ignoran efectos de borde'};
+}
 function solveSystem(matrix,rhs) {
   const n=rhs.length,a=matrix.map((row,i)=>[...row,rhs[i]]);
   for(let col=0;col<n;col++) {

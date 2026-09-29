@@ -2,7 +2,8 @@ import {
   forceSystem2D, twoCableEquilibrium, beamReactions, circularMotion, riverCrossing,
   inclinedPlane, atwood, bankedCurve, verticalLoop, collisionOneDimensional,
   collisionTwoDimensional, centerOfMass, kineticDecomposition, standardInertia,
-  circularOrbit, galileanTransform, rotatingFrameVelocity,
+  circularOrbit, galileanTransform, rotatingFrameVelocity, rollingDownIncline,
+  angularMomentumSkater, hingedRodDrop, apsisAngularMomentum,
 } from '../math/mechanics-advanced.mjs';
 import { MECHANICS_UNITS } from '../math/mechanics-units.mjs';
 
@@ -21,6 +22,10 @@ const fields={
   center:[['particles','Partículas: masa, x, y; una por línea','2, 0, 0\n1, 3, 0','textarea']],
   kinetic:[['particles','Partículas: masa, x, y, vx, vy; una por línea','2, 0, 0, 1, 0\n1, 3, 0, 0, 0','textarea']],
   inertia:[['shape','Cuerpo: disk, hoop, rodCenter, rodEnd, solidSphere','disk'],['mass','Masa (kg)','2'],['size','Radio o longitud (m)','0.5']],
+  rolling:[['shape','Cuerpo: solidCylinder, hoop, solidSphere','solidCylinder','text'],['mass','Masa (kg)','10'],['radius','Radio (m)','0.2'],['angle','Ángulo del plano (°)','30'],['distance','Distancia recorrida (m)','3'],['friction','μ estática disponible (opcional)','','text']],
+  skater:[['initialInertia','Inercia inicial (kg·m²)','3'],['initialOmega','ω inicial (rad/s)','2'],['finalInertia','Inercia final (kg·m²)','1.2']],
+  hingedrod:[['mass','Masa de varilla (kg)','2'],['length','Longitud de varilla (m)','1']],
+  apsides:[['periapsisRadius','Radio periapsis (m)','10000000'],['periapsisSpeed','Rapidez periapsis (m/s)','9000'],['apoapsisRadius','Radio apoapsis (m)','20000000']],
   orbit:[['mass','Masa central (kg)','5.972e24'],['radius','Radio orbital desde el centro (m)','6771000'],['satellite','Masa del satélite (kg), opcional','1000']],
   galileo:[['position','Posición inicial x, y','10, 2','text'],['velocity','Velocidad vx, vy','5, 0','text'],['frame','Velocidad del marco vx, vy','2, 0','text'],['time','Tiempo','3']],
   rotating:[['position','Posición x, y','2, 0','text'],['velocity','Velocidad inercial vx, vy','0, 5','text'],['omega','Velocidad angular del marco','2']],
@@ -40,6 +45,10 @@ const modes={
   center:['collisions','Centro de masa','rCM = Σmᵢrᵢ / Σmᵢ'],
   kinetic:['collisions','Energía y momento del sistema','K = ½MvCM² + Krel; L₀ = Σrᵢ×mᵢvᵢ'],
   inertia:['rotation','Inercia de cuerpo estándar','I = factor·m·R² o factor·m·L²'],
+  rolling:['rotation','Rodadura sin deslizamiento','a = g sen θ/(1+I/mR²); mgh = ½mv²+½Iω²'],
+  skater:['rotation','Momento angular de patinador','I₀ω₀ = Iω; ΔK = ½Iω²−½I₀ω₀²'],
+  hingedrod:['rotation','Varilla articulada al caer','α₀ = 3g/(2L); ωvertical = √(3g/L)'],
+  apsides:['rotation','Velocidad en los ápsides','h = rₚvₚ = rₐvₐ'],
   orbit:['rotation','Órbita circular','v = √(GM/r); T = 2π√(r³/GM); E = −GMm/(2r)'],
   galileo:['motion','Transformación de Galileo','r′ = r−Vt; v′ = v−V'],
   rotating:['motion','Velocidad en marco giratorio','vrel = vinercial−ω×r'],
@@ -51,7 +60,7 @@ const unitSpecs={
   angle:{'°':1,'rad':180/Math.PI},angularSpeed:{'rad/s':1,'°/s':Math.PI/180,'rpm':2*Math.PI/60},
   angularAcceleration:{'rad/s²':1,'°/s²':Math.PI/180},inertia:{'kg·m²':1,'lb·ft²':0.45359237*0.3048**2},
 };
-const scalarDimensions={weight:'force',left:'angle',right:'angle',angle:'angle',length:'length',radius:'length',height:'length',distance:'length',size:'length',time:'time',mass:'mass',m1:'mass',m2:'mass',satellite:'mass',boat:'speed',current:'speed',speed:'speed',v1:'speed',v2:'speed',omega:'angularSpeed',alpha:'angularAcceleration',inertia:'inertia'};
+const scalarDimensions={weight:'force',left:'angle',right:'angle',angle:'angle',length:'length',radius:'length',height:'length',distance:'length',size:'length',time:'time',mass:'mass',m1:'mass',m2:'mass',satellite:'mass',boat:'speed',current:'speed',speed:'speed',v1:'speed',v2:'speed',omega:'angularSpeed',alpha:'angularAcceleration',inertia:'inertia',initialInertia:'inertia',finalInertia:'inertia',initialOmega:'angularSpeed',periapsisRadius:'length',apoapsisRadius:'length',periapsisSpeed:'speed'};
 const vectorDimensions={vi1:'speed',vi2:'speed',vf1:'speed',position:'length',velocity:'speed',frame:'speed'};
 const rowDimensions={forces:{rows:['force','force','length','length']},beam:{loads:['force','length']},
   center:{particles:['mass','length','length']},kinetic:{particles:['mass','length','length','speed','speed']}};
@@ -93,12 +102,16 @@ function calculate(mode) {
   if(mode==='center') return centerOfMass(rows('particles',3).map(([mass,x,y])=>({mass,position:[x,y]})));
   if(mode==='kinetic') return kineticDecomposition(rows('particles',5).map(([mass,x,y,vx,vy])=>({mass,position:[x,y],velocity:[vx,vy]})));
   if(mode==='inertia') return standardInertia(value('shape'),num('mass'),num('size'));
+  if(mode==='rolling') return rollingDownIncline(num('mass'),num('radius'),num('angle'),num('distance'),value('shape'),num('friction',true));
+  if(mode==='skater') return angularMomentumSkater(num('initialInertia'),num('initialOmega'),num('finalInertia'));
+  if(mode==='hingedrod') return hingedRodDrop(num('mass'),num('length'));
+  if(mode==='apsides') return apsisAngularMomentum(num('periapsisRadius'),num('periapsisSpeed'),num('apoapsisRadius'));
   if(mode==='orbit') return circularOrbit(num('mass'),num('radius'),num('satellite',true));
   if(mode==='galileo') return galileanTransform(vector('position'),vector('velocity'),vector('frame'),num('time'));
   if(mode==='rotating') return rotatingFrameVelocity(vector('velocity'),vector('position'),num('omega'));
   throw new RangeError('Problema no disponible');
 }
-const labels={resultant:'Fuerza resultante (N)',magnitude:'Magnitud (N)',angleDegrees:'Ángulo (°)',torque:'Torque (N·m)',equilibrium:'Equilibrio',leftTension:'Tensión izquierda (N)',rightTension:'Tensión derecha (N)',horizontalResidual:'Residuo horizontal (N)',verticalResidual:'Residuo vertical (N)',left:'Reacción izquierda (N)',right:'Reacción derecha (N)',total:'Total',moment:'Momento (N·m)',requiresHoldDown:'Requiere sujeción',finalOmega:'ω final (rad/s)',angle:'Ángulo girado (rad)',speed:'Rapidez',tangentialAcceleration:'Aceleración tangencial (m/s²)',radialAcceleration:'Aceleración radial (m/s²)',totalAcceleration:'Aceleración total (m/s²)',headingDegrees:'Rum­bo contracorriente (°)',perpendicularSpeed:'Rapidez perpendicular (m/s)',normal:'Normal (N)',gravityAlong:'Peso paralelo (N)',friction:'Fricción (N)',acceleration:'Aceleración (m/s²)',timeFromRest:'Tiempo desde reposo (s)',tensionOne:'Tensión 1 (N)',tensionTwo:'Tensión 2 (N)',maxSpeed:'Rapidez máxima (m/s)',bottomSpeed:'Rapidez en fondo (m/s)',topSpeed:'Rapidez en cima (m/s)',contactAtTop:'Contacto en cima',minimumStartHeight:'Altura mínima (m)',firstFinal:'Velocidad final 1 (m/s)',secondFinal:'Velocidad final 2 (m/s)',momentum:'Momento lineal inicial (kg·m/s)',initialEnergy:'Energía inicial (J)',finalEnergy:'Energía final (J)',lostEnergy:'Energía perdida (J)',secondFinal:'Velocidad final 2',initialMomentum:'Momento lineal inicial',totalMass:'Masa total (kg)',position:'Posición (m)',centerVelocity:'Velocidad CM (m/s)',totalKinetic:'Energía cinética total (J)',centerKinetic:'Energía cinética CM (J)',relativeKinetic:'Energía cinética relativa (J)',angularMomentum:'Momento angular (kg·m²/s)',inertia:'Inercia (kg·m²)',period:'Período (s)',escapeSpeed:'Rapidez de escape (m/s)',totalEnergy:'Energía orbital total (J)',specificAngularMomentum:'Momento angular específico (m²/s)',velocity:'Velocidad (m/s)',rotational:'Velocidad de arrastre (m/s)',relative:'Velocidad relativa (m/s)'};
+const labels={resultant:'Fuerza resultante (N)',magnitude:'Magnitud (N)',angleDegrees:'Ángulo (°)',torque:'Torque (N·m)',equilibrium:'Equilibrio',leftTension:'Tensión izquierda (N)',rightTension:'Tensión derecha (N)',horizontalResidual:'Residuo horizontal (N)',verticalResidual:'Residuo vertical (N)',left:'Reacción izquierda (N)',right:'Reacción derecha (N)',total:'Total',moment:'Momento (N·m)',requiresHoldDown:'Requiere sujeción',finalOmega:'ω final (rad/s)',angle:'Ángulo girado (rad)',speed:'Rapidez (m/s)',tangentialAcceleration:'Aceleración tangencial (m/s²)',radialAcceleration:'Aceleración radial (m/s²)',totalAcceleration:'Aceleración total (m/s²)',headingDegrees:'Rum­bo contracorriente (°)',perpendicularSpeed:'Rapidez perpendicular (m/s)',normal:'Normal (N)',gravityAlong:'Peso paralelo (N)',friction:'Fricción (N)',acceleration:'Aceleración (m/s²)',timeFromRest:'Tiempo desde reposo (s)',tensionOne:'Tensión 1 (N)',tensionTwo:'Tensión 2 (N)',maxSpeed:'Rapidez máxima (m/s)',bottomSpeed:'Rapidez en fondo (m/s)',topSpeed:'Rapidez en cima (m/s)',contactAtTop:'Contacto en cima',minimumStartHeight:'Altura mínima (m)',firstFinal:'Velocidad final 1 (m/s)',secondFinal:'Velocidad final 2 (m/s)',momentum:'Momento lineal inicial (kg·m/s)',initialEnergy:'Energía inicial (J)',finalEnergy:'Energía final (J)',lostEnergy:'Energía perdida (J)',secondFinal:'Velocidad final 2',initialMomentum:'Momento lineal inicial',totalMass:'Masa total (kg)',position:'Posición (m)',centerVelocity:'Velocidad CM (m/s)',totalKinetic:'Energía cinética total (J)',centerKinetic:'Energía cinética CM (J)',relativeKinetic:'Energía cinética relativa (J)',angularMomentum:'Momento angular (kg·m²/s)',inertia:'Inercia (kg·m²)',inertiaFactor:'Factor I/(mR²)',period:'Período (s)',escapeSpeed:'Rapidez de escape (m/s)',totalEnergy:'Energía orbital total (J)',specificAngularMomentum:'Momento angular específico (m²/s)',velocity:'Velocidad (m/s)',rotational:'Velocidad de arrastre (m/s)',relative:'Velocidad relativa (m/s)',requiredStaticFriction:'μ estática mínima',angularAcceleration:'Aceleración angular (rad/s²)',translationalEnergy:'Energía de traslación (J)',rotationalEnergy:'Energía de rotación (J)',potentialDrop:'Caída de energía potencial (J)',energyResidual:'Residuo energético (J)',initialKinetic:'Energía cinética inicial (J)',finalKinetic:'Energía cinética final (J)',energyChange:'Cambio de energía (J)',initialTorque:'Torque inicial (N·m)',initialAngularAcceleration:'α inicial (rad/s²)',apoapsisSpeed:'Rapidez en apoapsis (m/s)',angularMomentumResidual:'Residuo de h (m²/s)',assumption:'Hipótesis'};
 const fmt=item=>item===null?'no alcanzada':typeof item==='boolean'?(item?'sí':'no'):typeof item==='number'?(Number.isFinite(item)?String(Number(item.toPrecision(10))):'∞'):Array.isArray(item)?`(${item.map(fmt).join(', ')})`:String(item);
 
 export function mechPlusOpenPanel(group) {

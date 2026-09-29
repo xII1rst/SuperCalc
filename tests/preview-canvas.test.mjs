@@ -39,6 +39,7 @@ test('renderPreview no lanza y omite los ejes cuando el 0 está fuera de rango',
   const COLORS = {
     '--graph-bg': '#ffffff', '--graph-grid': '#eeeeee',
     '--graph-axis': '#000000', '--graph-text': '#333333', '--graph-curve': '#2563eb',
+    '--graph-point': '#ef4444', '--ca2': '#34d399',
   };
   globalThis.document = { documentElement: {} };
   globalThis.getComputedStyle = () => ({ getPropertyValue: n => COLORS[n] || '' });
@@ -77,6 +78,19 @@ test('renderPreview no lanza y omite los ejes cuando el 0 está fuera de rango',
     renderPreview(make(c.ctx), sampleParametric(t => Math.cos(t), t => Math.sin(t), 0, 2 * Math.PI), { dpr: 1 });
     const d = recordingCtx();
     renderPreview(make(d.ctx), samplePolar(() => 1, 0, 2 * Math.PI), { dpr: 1 });
+
+    const e = recordingCtx();
+    renderPreview(make(e.ctx), [{x:0,y:0},{x:1,y:1}], {
+      dpr:1, secondPoints:[{x:0,y:1},{x:1,y:0}], markers:[{x:0.5,y:0.5}],
+    });
+    assert.ok(e.strokes.includes('#2563eb'));
+    assert.ok(e.strokes.includes('#34d399'));
+
+    const shifted = recordingCtx();
+    renderPreview(make(shifted.ctx), [{x:0,y:0},{x:1,y:1}], {
+      dpr:1,referenceLine:{axis:'x',value:2},
+    });
+    assert.ok(shifted.strokes.includes('#ef4444'));
   } finally {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete globalThis[key]; else globalThis[key] = value;

@@ -160,6 +160,29 @@ export function lagrangeInterpolation(points, x) {
   return {value:terms.reduce((sum,item)=>sum+item.term,0),terms};
 }
 
+export function interpolationErrorStudy(points,x,derivativeBound,referenceFn=null) {
+  const data=checkedPoints(points);
+  finite(x,'x');
+  finite(derivativeBound,'Cota de la derivada');
+  if(derivativeBound<0) throw new RangeError('La cota de la derivada debe ser no negativa');
+  if(referenceFn!==null&&typeof referenceFn!=='function') throw new TypeError('Función de referencia inválida');
+  if(referenceFn) for(const [node,value] of data) {
+    const expected=evaluate(referenceFn,node,'f(xᵢ)');
+    if(Math.abs(expected-value)>1e-8*Math.max(1,Math.abs(expected),Math.abs(value)))
+      throw new RangeError('Los valores de los nodos no coinciden con la función de referencia');
+  }
+  const approximation=lagrangeInterpolation(data,x).value;
+  const factors=data.map(([node])=>x-node);
+  let factorial=1,product=1;
+  for(let i=0;i<data.length;i++) { factorial*=i+1;product*=Math.abs(factors[i]); }
+  const bound=derivativeBound*product/factorial;
+  if(!Number.isFinite(bound)||!Number.isFinite(approximation)) throw new RangeError('La interpolación excede el rango numérico');
+  const reference=referenceFn?evaluate(referenceFn,x,'f(x)'):null;
+  return {approximation,bound,factors,factorial,reference,
+    actualError:reference===null?null:Math.abs(reference-approximation),
+    assumption:`La cota requiere |f⁽${data.length}⁾(t)| ≤ M en el intervalo que contiene todos los nodos y x.`};
+}
+
 export function leastSquaresPolynomial(points, degree) {
   const data=checkedPoints(points);
   if (!Number.isInteger(degree)||degree<0||degree>5||degree>=data.length) throw new RangeError('Grado entero entre 0 y 5, menor que la cantidad de puntos');

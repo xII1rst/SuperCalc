@@ -65,6 +65,87 @@ export function genRevolutionSolid(fn, a, b, axis = 'x', { segments = 48, rings 
   return polys;
 }
 
+// Malla de la región comprendida entre dos curvas al girarla alrededor del eje.
+export function genRevolutionSolidBetween(fn, gn, a, b, axis = 'x', { segments = 48, rings = 32, offset = 0 } = {}) {
+  const seg = Math.max(3, segments | 0), ring = Math.max(2, rings | 0);
+  const polys = [], sections = [];
+  for(let i=0;i<=ring;i++){
+    const x=a+(b-a)*i/ring, f=fn(x,0), g=gn(x,0);
+    if(!Number.isFinite(f)||!Number.isFinite(g))
+      throw new RangeError('Las funciones deben ser finitas en todo el intervalo');
+    const first=f-offset,second=g-offset;
+    const outer=Math.max(Math.abs(first),Math.abs(second));
+    const inner=first*second<=0 ? 0 : Math.min(Math.abs(first),Math.abs(second));
+    sections.push({x,outer,inner,lower:Math.min(f,g),upper:Math.max(f,g)});
+  }
+  for(let i=0;i<ring;i++){
+    const p=sections[i], q=sections[i+1];
+    for(let j=0;j<seg;j++){
+      const t0=2*Math.PI*j/seg, t1=2*Math.PI*(j+1)/seg;
+      if(axis==='x'){
+        revolutionQuad(polys,p.x,p.outer,q.x,q.outer,t0,t1);
+        if(p.inner>0||q.inner>0)
+          revolutionQuad(polys,p.x,p.inner,q.x,q.inner,t0,t1);
+      }else{
+        horizontalQuad(polys,Math.abs(p.x-offset),p.upper,Math.abs(q.x-offset),q.upper,t0,t1);
+        horizontalQuad(polys,Math.abs(p.x-offset),p.lower,Math.abs(q.x-offset),q.lower,t0,t1);
+      }
+    }
+  }
+  if(axis==='x'){
+    capAnnulus(polys,sections[0].x,sections[0].outer,sections[0].inner,seg);
+    capAnnulus(polys,sections[ring].x,sections[ring].outer,sections[ring].inner,seg);
+  }else{
+    wallBetween(polys,Math.abs(a-offset),sections[0].lower,sections[0].upper,seg);
+    wallBetween(polys,Math.abs(b-offset),sections[ring].lower,sections[ring].upper,seg);
+  }
+  return polys;
+}
+
+function revolutionQuad(polys,x0,r0,x1,r1,t0,t1){
+  polys.push([
+    {x:x0,y:r0*Math.cos(t0),z:r0*Math.sin(t0)},
+    {x:x1,y:r1*Math.cos(t0),z:r1*Math.sin(t0)},
+    {x:x1,y:r1*Math.cos(t1),z:r1*Math.sin(t1)},
+    {x:x0,y:r0*Math.cos(t1),z:r0*Math.sin(t1)},
+  ]);
+}
+
+function horizontalQuad(polys,r0,y0,r1,y1,t0,t1){
+  polys.push([
+    {x:r0*Math.cos(t0),y:y0,z:r0*Math.sin(t0)},
+    {x:r1*Math.cos(t0),y:y1,z:r1*Math.sin(t0)},
+    {x:r1*Math.cos(t1),y:y1,z:r1*Math.sin(t1)},
+    {x:r0*Math.cos(t1),y:y0,z:r0*Math.sin(t1)},
+  ]);
+}
+
+function capAnnulus(polys,x,outer,inner,seg){
+  if(outer<=inner) return;
+  for(let j=0;j<seg;j++){
+    const t0=2*Math.PI*j/seg, t1=2*Math.PI*(j+1)/seg;
+    polys.push([
+      {x,y:inner*Math.cos(t0),z:inner*Math.sin(t0)},
+      {x,y:outer*Math.cos(t0),z:outer*Math.sin(t0)},
+      {x,y:outer*Math.cos(t1),z:outer*Math.sin(t1)},
+      {x,y:inner*Math.cos(t1),z:inner*Math.sin(t1)},
+    ]);
+  }
+}
+
+function wallBetween(polys,r,lower,upper,seg){
+  if(r===0||lower===upper) return;
+  for(let j=0;j<seg;j++){
+    const t0=2*Math.PI*j/seg, t1=2*Math.PI*(j+1)/seg;
+    polys.push([
+      {x:r*Math.cos(t0),y:lower,z:r*Math.sin(t0)},
+      {x:r*Math.cos(t0),y:upper,z:r*Math.sin(t0)},
+      {x:r*Math.cos(t1),y:upper,z:r*Math.sin(t1)},
+      {x:r*Math.cos(t1),y:lower,z:r*Math.sin(t1)},
+    ]);
+  }
+}
+
 function capDisc(polys, x, r, seg) {
   if (!(r > 0)) return;
   for (let j = 0; j < seg; j++) {

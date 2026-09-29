@@ -2,6 +2,8 @@ import {
   pointChargeSystem, equivalentComponents, capacitorState, resistiveWire, dielectricPlate,
   nodalCircuit, magneticGeometries, magneticForceWire, hallEffect, motionalEmf,
   rlTransient, seriesRlcAc, displacementCurrent, poissonOneDimensional,
+  chargedRingAxis, infiniteChargedPlane, conductingSphere, uniformSolidSphere,
+  longCurrentCable, coaxialCapacitor, layeredPlateCapacitor,
 } from '../math/electromagnetism-advanced.mjs';
 
 const fields={
@@ -10,8 +12,15 @@ const fields={
   capacitor:[['capacitance','Capacitancia (F)','0.000002'],['voltage','Voltaje (V)','10']],
   wire:[['resistivity','Resistividad (Ω·m)','1.7e-8'],['length','Longitud (m)','10'],['area','Sección (m²)','1e-6'],['voltage','Voltaje (V, opcional)','12']],
   dielectric:[['area','Área de placas (m²)','0.01'],['distance','Separación (m)','0.001'],['er','Permitividad relativa εr','4'],['voltage','Voltaje antes de insertar (V)','12'],['connected','Estado: isolated o connected','isolated','select','isolated,connected']],
+  ring:[['charge','Carga total Q (C)','1e-8'],['radius','Radio del anillo (m)','0.1'],['position','Posición axial z (m)','0.2']],
+  plane:[['density','Densidad superficial σ (C/m²)','3e-6'],['paired','Configuración','un plano','select','un plano,dos planos']],
+  conductingsphere:[['charge','Carga total Q (C)','5e-9'],['radius','Radio de la esfera (m)','0.2'],['position','Distancia al centro r (m)','0.1']],
+  solidsphere:[['density','Densidad volumétrica ρ (C/m³)','2e-6'],['radius','Radio de la esfera (m)','0.1'],['position','Distancia al centro r (m)','0.05']],
+  coaxial:[['inner','Radio interior a (m)','0.001'],['outer','Radio exterior b (m)','0.004'],['length','Longitud L (m)','0.5'],['er','Permitividad relativa κ','1'],['voltage','Voltaje (V)','100']],
+  layered:[['area','Área de placas A (m²)','0.01'],['layers','Capas: espesor (m), κ; una por línea','0.001, 2\n0.002, 4','textarea'],['voltage','Voltaje (V)','100']],
   nodal:[['nodes','Número de nodos (0 = tierra)','3'],['resistors','Resistores: nodo a, nodo b, ohmios; una por línea','1, 2, 1000\n2, 0, 1000','textarea'],['fixed','Potenciales fijos: nodo, V; una por línea','0, 0\n1, 10','textarea'],['injections','Corrientes inyectadas: nodo, A; opcional','','textarea']],
   magnetic:[['shape','Geometría: loop, solenoid, toroid','loop','select','loop,solenoid,toroid'],['current','Corriente (A)','2'],['turns','Vueltas N','100'],['size','Radio R o longitud L (m)','0.2'],['position','Radio de observación en toroide (m)','0.1']],
+  cable:[['current','Corriente I (A)','8'],['radius','Radio del cable R (m)','0.002'],['position','Distancia al eje r (m)','0.001']],
   magneticforce:[['current','Corriente (A)','2'],['length','Longitud (m)','0.5'],['field','Campo magnético (T)','0.1'],['angle','Ángulo I-B (°)','90']],
   hall:[['current','Corriente (A)','1'],['field','Campo (T)','0.5'],['density','Densidad de portadores (m⁻³)','1e20'],['charge','Carga por portador (C)','-1.6e-19'],['thickness','Espesor (m)','0.001']],
   motional:[['field','Campo B (T)','0.5'],['length','Longitud de barra (m)','0.2'],['speed','Rapidez (m/s)','10'],['angle','Ángulo (°)','90']],
@@ -26,8 +35,15 @@ const modes={
   capacitor:['electrostatics','Carga y energía de capacitor','Q = CV; U = ½CV²'],
   wire:['circuits','Resistividad de un conductor','R = ρL/A; I = V/R; P = V²/R'],
   dielectric:['electrostatics','Dieléctrico en placas','C = εr ε₀A/d; aislado conserva Q; conectado conserva V'],
+  ring:['electrostatics','Anillo cargado: campo axial','Ez = kQz/(R²+z²)^(3/2); V = kQ/√(R²+z²)'],
+  plane:['electrostatics','Plano infinito cargado','E = σ/(2ε₀); entre planos ±σ: E = σ/ε₀'],
+  conductingsphere:['electrostatics','Esfera conductora','Interior E = 0, V = kQ/R; exterior E = kQ/r², V = kQ/r'],
+  solidsphere:['electrostatics','Esfera aislante uniforme','Interior E = ρr/(3ε₀); exterior E = kQ/r²'],
+  coaxial:['electrostatics','Capacitor cilíndrico','C = 2πε₀κL/ln(b/a); U = ½CV²'],
+  layered:['electrostatics','Capacitor de capas','C = ε₀A/Σ(dᵢ/κᵢ); Eᵢ = Q/(ε₀κᵢA)'],
   nodal:['circuits','Circuito por nodos','KCL en cada nodo desconocido: Σ(Vn−Vm)/R = Iinyectada'],
   magnetic:['magnetism','Campo de espira, solenoide o toroide','Biot–Savart o Ampère bajo la geometría ideal indicada'],
+  cable:['magnetism','Cable con corriente uniforme','r ≤ R: B = μ₀Ir/(2πR²); r ≥ R: B = μ₀I/(2πr)'],
   magneticforce:['magnetism','Fuerza sobre un conductor','F = ILB sen θ'],
   hall:['magnetism','Efecto Hall','VH = IB/(nqt)'],
   motional:['magnetism','FEM motriz','ε = Bℓv sen θ'],
@@ -68,9 +84,16 @@ function solve(mode) {
   if(mode==='capacitor') return capacitorState(number('capacitance'),number('voltage'));
   if(mode==='wire') return resistiveWire(number('resistivity'),number('length'),number('area'),number('voltage',true));
   if(mode==='dielectric') return dielectricPlate(number('area'),number('distance'),number('er'),number('voltage'),read('connected')==='connected');
+  if(mode==='ring') return chargedRingAxis(number('charge'),number('radius'),number('position'));
+  if(mode==='plane') return infiniteChargedPlane(number('density'),read('paired')==='dos planos');
+  if(mode==='conductingsphere') return conductingSphere(number('charge'),number('radius'),number('position'));
+  if(mode==='solidsphere') return uniformSolidSphere(number('density'),number('radius'),number('position'));
+  if(mode==='coaxial') return coaxialCapacitor(number('inner'),number('outer'),number('length'),number('er'),number('voltage'));
+  if(mode==='layered') return layeredPlateCapacitor(number('area'),rows('layers',2).map(([thickness,relativePermittivity])=>({thickness,relativePermittivity})),number('voltage'));
   if(mode==='nodal') return nodalCircuit(number('nodes'),rows('resistors',3).map(([a,b,resistance])=>({a,b,resistance})),
     rows('fixed',2).map(([node,voltage])=>({node,voltage})),rows('injections',2,true).map(([node,current])=>({node,current})));
   if(mode==='magnetic') return magneticGeometries(read('shape'),number('current'),number('turns'),number('size'),read('shape')==='toroid'?number('position'):null);
+  if(mode==='cable') return longCurrentCable(number('current'),number('radius'),number('position'));
   if(mode==='magneticforce') return magneticForceWire(number('current'),number('length'),number('field'),number('angle'));
   if(mode==='hall') return hallEffect(number('current'),number('field'),number('density'),number('charge'),number('thickness'));
   if(mode==='motional') return motionalEmf(number('field'),number('length'),number('speed'),number('angle'));
@@ -80,7 +103,7 @@ function solve(mode) {
   if(mode==='poisson') return poissonOneDimensional(number('length'),number('left'),number('right'),number('rho'),number('position'));
   throw new RangeError('Problema no disponible');
 }
-const labels={field:'Campo E (N/C) o B (T)',magnitude:'Magnitud',potential:'Potencial (V)',equivalent:'Equivalente (Ω o F)',charge:'Carga (C)',energy:'Energía (J)',voltage:'Voltaje (V)',resistance:'Resistencia (Ω)',current:'Corriente (A)',power:'Potencia (W)',initialCapacitance:'Capacitancia inicial (F)',capacitance:'Capacitancia final (F)',initialCharge:'Carga inicial (C)',connection:'Condición',voltages:'Potenciales de nodos (V)',branchCurrents:'Corrientes de ramas (A)',kclResiduals:'Residuos KCL (A)',signedForce:'Fuerza con signo (N)',hallVoltage:'Voltaje Hall (V)',emf:'FEM (V)',tau:'Constante de tiempo (s)',growingCurrent:'Corriente de subida (A)',decayingCurrent:'Corriente de bajada (A)',growingInductorVoltage:'Voltaje de bobina (V)',reactanceInductive:'XL (Ω)',reactanceCapacitive:'XC (Ω)',reactance:'Reactancia neta (Ω)',impedance:'Impedancia (Ω)',phaseRadians:'Fase (rad)',powerFactor:'Factor de potencia',averagePower:'Potencia media (W)',resonanceFrequency:'Frecuencia de resonancia (Hz)',quality:'Factor Q',bandwidthHz:'Ancho de banda (Hz)',formula:'Fórmula',assumption:'Hipótesis',convention:'Convención'};
+const labels={field:'Campo E (N/C) o B (T)',magnitude:'Magnitud',potential:'Potencial (V)',equivalent:'Equivalente (Ω o F)',charge:'Carga (C)',energy:'Energía (J)',voltage:'Voltaje (V)',resistance:'Resistencia (Ω)',current:'Corriente (A)',power:'Potencia (W)',initialCapacitance:'Capacitancia inicial (F)',capacitance:'Capacitancia (F)',initialCharge:'Carga inicial (C)',connection:'Condición',voltages:'Potenciales de nodos (V)',branchCurrents:'Corrientes de ramas (A)',kclResiduals:'Residuos KCL (A)',signedForce:'Fuerza con signo (N)',hallVoltage:'Voltaje Hall (V)',emf:'FEM (V)',tau:'Constante de tiempo (s)',growingCurrent:'Corriente de subida (A)',decayingCurrent:'Corriente de bajada (A)',growingInductorVoltage:'Voltaje de bobina (V)',reactanceInductive:'XL (Ω)',reactanceCapacitive:'XC (Ω)',reactance:'Reactancia neta (Ω)',impedance:'Impedancia (Ω)',phaseRadians:'Fase (rad)',powerFactor:'Factor de potencia',averagePower:'Potencia media (W)',resonanceFrequency:'Frecuencia de resonancia (Hz)',quality:'Factor Q',bandwidthHz:'Ancho de banda (Hz)',layerFields:'Campos por capa (N/C)',formula:'Fórmula',assumption:'Hipótesis',convention:'Convención'};
 const fmt=item=>item===null?'—':typeof item==='number'?(Number.isFinite(item)?String(Number(item.toPrecision(10))):'∞'):Array.isArray(item)?`(${item.map(fmt).join(', ')})`:String(item);
 export function emPlusOpenPanel(group) {
   if(!groupNames[group]) return;

@@ -107,6 +107,71 @@ export function integrateVariableRegion(integrand,xStart,xEnd,lowerY,upperY,nx=8
   }
   return {value:sum,nx,ny,formula:'∫[xa,xb]∫[yinf(x),ysup(x)] f(x,y) dy dx',assumption:'regla de puntos medios; compara mallas para estimar convergencia'};
 }
+export function integrateTripleRegion(integrand,coordinates,outerStart,outerEnd,middleLower,middleUpper,innerLower,innerUpper,subintervals=40) {
+  if(typeof integrand!=='function'||![middleLower,middleUpper,innerLower,innerUpper].every(fn=>typeof fn==='function')||
+    !['cartesian','cylindrical','spherical'].includes(coordinates)||!Number.isFinite(outerStart)||!Number.isFinite(outerEnd)||outerStart>=outerEnd||
+    !Number.isInteger(subintervals)||subintervals<8||subintervals>60||subintervals%4!==0)
+    throw new RangeError('Coordenadas, límites o malla inválidos (n múltiplo de 4 entre 8 y 60)');
+  const integrate1d=(fn,a,b,n,label)=>{
+    if(!Number.isFinite(a)||!Number.isFinite(b)||b<a) throw new RangeError(`${label}: límites inválidos`);
+    if(a===b) return 0;
+    const h=(b-a)/n;let sum=0;
+    for(let i=0;i<=n;i++) {
+      const value=fn(a+i*h);
+      if(!Number.isFinite(value)) throw new RangeError(`${label}: valor no finito`);
+      sum+=(i===0||i===n?1:i%2?4:2)*value;
+    }
+    return sum*h/3;
+  };
+  const compute=n=>integrate1d(u=>{
+    if(coordinates!=='cartesian'&&u<0) throw new RangeError('Radio negativo');
+    const v0=middleLower(u),v1=middleUpper(u);
+    return integrate1d(v=>{
+      if(coordinates==='spherical'&&(v<0||v>Math.PI+1e-12)) throw new RangeError('Ángulo polar fuera de [0,π]');
+      const w0=innerLower(u,v),w1=innerUpper(u,v);
+      return integrate1d(w=>{
+        let x,y,z,jacobian;
+        if(coordinates==='cartesian') {x=u;y=v;z=w;jacobian=1;}
+        else if(coordinates==='cylindrical') {x=u*Math.cos(v);y=u*Math.sin(v);z=w;jacobian=u;}
+        else {x=u*Math.sin(v)*Math.cos(w);y=u*Math.sin(v)*Math.sin(w);z=u*Math.cos(v);jacobian=u*u*Math.sin(v);}
+        return integrand(x,y,z)*jacobian;
+      },w0,w1,n,'Límite interior');
+    },v0,v1,n,'Límite medio');
+  },outerStart,outerEnd,n,'Límite exterior');
+  const value=compute(subintervals),coarse=compute(subintervals/2);
+  return {value,coarse,refinementDifference:Math.abs(value-coarse),subintervals,
+    formula:coordinates==='cartesian'?'∫∫∫ f(x,y,z) dz dy dx':coordinates==='cylindrical'?'∫∫∫ f(r cosθ,r senθ,z)·r dz dθ dr':'∫∫∫ f(ρ senφ cosθ,ρ senφ senθ,ρ cosφ)·ρ² senφ dθ dφ dρ',
+    assumption:'Simpson anidado sobre límites variables; la diferencia de mallas no es una cota de error ni verifica todo el dominio'};
+}
+export function integrateParametricSurface(parameterization,integrand,uStart,uEnd,vStart,vEnd,subintervals=40) {
+  if(typeof parameterization!=='function'||typeof integrand!=='function'||
+    ![uStart,uEnd,vStart,vEnd].every(Number.isFinite)||uStart>=uEnd||vStart>=vEnd||
+    !Number.isInteger(subintervals)||subintervals<8||subintervals>80||subintervals%4!==0)
+    throw new RangeError('Superficie, límites o malla inválidos (n múltiplo de 4 entre 8 y 80)');
+  const position=(u,v)=>{
+    const point=parameterization(u,v);
+    if(!Array.isArray(point)||point.length!==3||point.some(value=>!Number.isFinite(value)))
+      throw new RangeError('Parametrización fuera de dominio');
+    return point;
+  };
+  const weight=(u,v)=>{
+    const h=1e-5*Math.max(1,Math.abs(u),Math.abs(v));
+    const plusU=position(u+h,v),minusU=position(u-h,v),plusV=position(u,v+h),minusV=position(u,v-h);
+    const pu=plusU.map((item,i)=>(item-minusU[i])/(2*h));
+    const pv=plusV.map((item,i)=>(item-minusV[i])/(2*h));
+    const cross=[pu[1]*pv[2]-pu[2]*pv[1],pu[2]*pv[0]-pu[0]*pv[2],pu[0]*pv[1]-pu[1]*pv[0]];
+    return Math.hypot(...cross);
+  };
+  const calculate=(n,weighted)=>simpson(u=>simpson(v=>{
+    const point=position(u,v),jacobian=weight(u,v);
+    const value=weighted?integrand(...point):1;
+    return safe(value,'Integrando')*safe(jacobian,'Elemento de área');
+  },vStart,vEnd,n),uStart,uEnd,n);
+  const value=calculate(subintervals,true),area=calculate(subintervals,false),coarse=calculate(subintervals/2,true);
+  return {value,area,coarse,refinementDifference:Math.abs(value-coarse),subintervals,
+    formula:'∫∫ f(r(u,v)) · |∂r/∂u × ∂r/∂v| du dv',
+    assumption:'derivadas de la parametrización por diferencias centradas; superficie regular salvo singularidades de coordenadas y sin recubrimiento múltiple'};
+}
 export function tangentPlane(functionXY,x,y,step=1e-5) {
   finite(x,'x');finite(y,'y');if(typeof functionXY!=='function'||!Number.isFinite(step)||step<=0) throw new RangeError('Función o paso inválidos');
   const z=safe(functionXY(x,y),'f(x,y)'),fx=(functionXY(x+step,y)-functionXY(x-step,y))/(2*step),

@@ -54,7 +54,15 @@ export function autoRange(points, pad = 0.12) {
 
 export function renderPreview(cv, points, opts = {}) {
   const color = readCanvasPalette();
-  const { xMin, xMax, yMin, yMax } = autoRange(points);
+  const secondPoints = opts.secondPoints || [];
+  const markers = opts.markers || [];
+  const referenceLine = opts.referenceLine;
+  const referencePoint = referenceLine&&Number.isFinite(referenceLine.value)
+    ? (referenceLine.axis==='x' ? {x:points[0]?.x??0,y:referenceLine.value} : {x:referenceLine.value,y:points[0]?.y??0})
+    : null;
+  const { xMin, xMax, yMin, yMax } = autoRange([
+    ...points, ...secondPoints, ...markers, ...(referencePoint?[referencePoint]:[]),
+  ]);
 
   const ratio = (opts.dpr > 0 ? opts.dpr : (globalThis.devicePixelRatio || 1));
   const W = cv.clientWidth || cv.offsetWidth || 300;
@@ -98,6 +106,22 @@ export function renderPreview(cv, points, opts = {}) {
   if (showX) { ctx.beginPath(); ctx.moveTo(0, axisY); ctx.lineTo(W, axisY); ctx.stroke(); }
   if (showY) { ctx.beginPath(); ctx.moveTo(axisX, 0); ctx.lineTo(axisX, H); ctx.stroke(); }
 
+  if(referencePoint){
+    ctx.strokeStyle=color('graph-point');
+    ctx.lineWidth=1.5;
+    ctx.setLineDash?.([6,4]);
+    ctx.beginPath();
+    if(referenceLine.axis==='x'){
+      const y=toY(referenceLine.value);
+      ctx.moveTo(0,y);ctx.lineTo(W,y);
+    }else{
+      const x=toX(referenceLine.value);
+      ctx.moveTo(x,0);ctx.lineTo(x,H);
+    }
+    ctx.stroke();
+    ctx.setLineDash?.([]);
+  }
+
   // Etiquetas numéricas
   ctx.fillStyle = color('graph-text');
   ctx.font = '10px Space Mono, monospace';
@@ -114,21 +138,50 @@ export function renderPreview(cv, points, opts = {}) {
     }
   }
 
-  // Curva
-  ctx.strokeStyle = color('graph-curve');
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  let penDown = false;
-  let prevPy = null;
-  for (const p of points) {
-    const px = toX(p.x), py = toY(p.y);
-    if (prevPy !== null && Math.abs(py - prevPy) > H * 1.2) penDown = false;
-    if (!penDown) { ctx.moveTo(px, py); penDown = true; }
-    else ctx.lineTo(px, py);
-    prevPy = py;
+  if(secondPoints.length){
+    ctx.fillStyle = color('ca2');
+    ctx.globalAlpha = 0.16;
+    for(let i=1;i<Math.min(points.length,secondPoints.length);i++){
+      const f0=points[i-1], f1=points[i], g0=secondPoints[i-1], g1=secondPoints[i];
+      if(f0.x!==g0.x||f1.x!==g1.x) continue;
+      ctx.beginPath();
+      ctx.moveTo(toX(f0.x),toY(f0.y));
+      ctx.lineTo(toX(f1.x),toY(f1.y));
+      ctx.lineTo(toX(g1.x),toY(g1.y));
+      ctx.lineTo(toX(g0.x),toY(g0.y));
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
-  ctx.stroke();
+
+  const drawCurve=(curve,stroke)=>{
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    let penDown = false;
+    let prevPy = null;
+    for (const p of curve) {
+      const px = toX(p.x), py = toY(p.y);
+      if (prevPy !== null && Math.abs(py - prevPy) > H * 1.2) penDown = false;
+      if (!penDown) { ctx.moveTo(px, py); penDown = true; }
+      else ctx.lineTo(px, py);
+      prevPy = py;
+    }
+    ctx.stroke();
+  };
+  drawCurve(points,color('graph-curve'));
+  if(secondPoints.length) drawCurve(secondPoints,color('ca2'));
+
+  if(markers.length){
+    ctx.fillStyle = color('graph-point');
+    for(const p of markers){
+      ctx.beginPath();
+      ctx.arc(toX(p.x),toY(p.y),4,0,2*Math.PI);
+      ctx.fill();
+    }
+  }
 
   ctx.restore();
 }

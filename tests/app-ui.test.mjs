@@ -300,7 +300,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   for (const id of ['al','ca','num','logic','stats','prob','exp'])
     assert.match(mathCards,new RegExp(`data-arg="${id}"`));
   actions.openSubmod('num');
-  for (const id of ['num-errors','num-roots','num-linear','num-interpolation','num-derivative','num-ode'])
+  for (const id of ['num-errors','num-precision','num-roots','num-linear','num-system2d','num-interpolation','num-derivative','num-quadrature','num-ode'])
     assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${id}"`));
   actions.launchSubmod('num-errors');
   getElementById('num-exact').value=String(Math.PI);
@@ -308,6 +308,20 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('num-digits').value='5';
   actions.numCalcErrors();
   assert.match(getElementById('num-result').innerHTML,/error relativo/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-precision');
+  for(const [id,value] of Object.entries({'num-precision-values':'10000, 3.14159, 10000','num-precision-ops':'+, -','num-precision-digits':'4','num-precision-mode':'round'}))
+    getElementById(id).value=value;
+  actions.numCalcPrecision();
+  assert.match(getElementById('num-result').innerHTML,/resultado simulado = 0/);
+  assert.match(getElementById('num-result').innerHTML,/error absoluto = 3\.14159/);
+  for(const [id,value] of Object.entries({'num-precision-values':'12.34, 0.05678','num-precision-ops':'+','num-precision-digits':'4','num-precision-mode':'chop'}))
+    getElementById(id).value=value;
+  actions.numCalcPrecision();
+  assert.match(getElementById('num-result').innerHTML,/resultado simulado = 12\.39/);
+  getElementById('num-precision-mode').value='round';
+  actions.numCalcPrecision();
+  assert.match(getElementById('num-result').innerHTML,/resultado simulado = 12\.4/);
   actions.closeModule('num');
   actions.launchSubmod('num-roots');
   for (const [id,value] of Object.entries({'num-root-method':'bisection','num-root-f':'x^3-x-2','num-root-a':'1','num-root-b':'2','num-root-stop':'steps','num-root-n':'3','num-root-tol':'0.000001'}))
@@ -327,12 +341,41 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('num-linear-method').value='lu';
   actions.numCalcLinear();
   assert.match(getElementById('num-result').innerHTML,/PA=LU/);
+  getElementById('num-linear-a').value='0.0003, 3\n1, 1';
+  getElementById('num-linear-b').value='2.0001, 1';
+  getElementById('num-linear-method').value='finite-gauss';
+  getElementById('num-finite-digits').value='4';
+  getElementById('num-finite-mode').value='round';
+  actions.numCalcLinear();
+  assert.match(getElementById('num-result').innerHTML,/Gauss con precisión finita/);
+  assert.match(getElementById('num-result').innerHTML,/0\.3333/);
+  assert.match(getElementById('num-result').innerHTML,/Intercambiar filas 1 y 2/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-system2d');
+  for(const [id,value] of Object.entries({'num-system-f':'x^2+y^2-5','num-system-g':'x-y-1','num-system-x0':'2.1','num-system-y0':'0.9','num-system-n':'10','num-system-tol':'0.000000001'}))
+    getElementById(id).value=value;
+  actions.numCalcSystem2D();
+  assert.match(getElementById('num-result').innerHTML,/Convergió/);
+  assert.match(getElementById('num-result').innerHTML,/\(2, 1\)/);
+  for(const [id,value] of Object.entries({'num-system-f':'x^2+y^2-4','num-system-g':'x*y-1','num-system-x0':'2','num-system-y0':'0.5','num-system-n':'1'}))
+    getElementById(id).value=value;
+  actions.numCalcSystem2D();
+  assert.match(getElementById('num-result').innerHTML,/1\.933333/);
+  assert.match(getElementById('num-result').innerHTML,/0\.516666/);
   actions.closeModule('num');
   actions.launchSubmod('num-interpolation');
   for (const [id,value] of Object.entries({'num-points':'0, 1\n1, 3\n2, 7','num-interp-method':'newton','num-interp-x':'1.5'}))
     getElementById(id).value=value;
   actions.numCalcInterpolation();
   assert.match(getElementById('num-result').innerHTML,/4\.75/);
+  getElementById('num-interp-method').value='error';
+  getElementById('num-points').value=[1,2,3].map(x=>`${x}, ${Math.log(x)}`).join('\n');
+  getElementById('num-interp-x').value='2.5';
+  getElementById('num-interp-reference').value='ln(x)';
+  getElementById('num-interp-bound').value='2';
+  actions.numCalcInterpolation();
+  assert.match(getElementById('num-result').innerHTML,/cota teórica ≤ 0\.125/);
+  assert.match(getElementById('num-result').innerHTML,/error real/);
   getElementById('num-interp-method').value='exponential';
   getElementById('num-points').value='0, 2\n1, 5.43656365691809\n2, 14.7781121978613';
   actions.numCalcInterpolation();
@@ -344,14 +387,41 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   actions.numCalcDerivative();
   assert.match(getElementById('num-result').innerHTML,/refinamientos/);
   actions.closeModule('num');
+  actions.launchSubmod('num-quadrature');
+  for(const [id,value] of Object.entries({'num-quad-f':'sin(x)','num-quad-a':'0','num-quad-b':String(Math.PI),'num-quad-n':'10','num-quad-method':'simpson','num-quad-bound':'1'}))
+    getElementById(id).value=value;
+  actions.numCalcQuadrature();
+  assert.match(getElementById('num-result').innerHTML,/Cota teórica/);
+  assert.match(getElementById('num-result').innerHTML,/M₄/);
+  for(const [id,value] of Object.entries({'num-quad-f':'exp(x)','num-quad-a':'0','num-quad-b':'1','num-quad-mode':'target','num-quad-target':'0.000001','num-quad-method':'trapezoid','num-quad-bound':String(Math.E)}))
+    getElementById(id).value=value;
+  actions.numCalcQuadrature();
+  assert.match(getElementById('num-result').innerHTML,/n mínimo.*476/);
+  getElementById('num-quad-method').value='simpson';
+  actions.numCalcQuadrature();
+  assert.match(getElementById('num-result').innerHTML,/n mínimo.*12/);
+  for(const [id,value] of Object.entries({'num-quad-f':'ln(x)','num-quad-a':'1','num-quad-b':'3','num-quad-target':'0.00000001','num-quad-bound':'6'}))
+    getElementById(id).value=value;
+  actions.numCalcQuadrature();
+  assert.match(getElementById('num-result').innerHTML,/n mínimo.*102/);
+  actions.closeModule('num');
   actions.launchSubmod('num-ode');
-  for (const [id,value] of Object.entries({'num-ode-f':'x+y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'2','num-ode-method':'euler'}))
+  for (const [id,value] of Object.entries({'num-ode-f':'x+y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'2','num-ode-method':'euler','num-ode-reference':'','num-ode-lambda':''}))
     getElementById(id).value=value;
   actions.numCalcODE();
   assert.match(getElementById('num-result').innerHTML,/1\.22/);
   getElementById('num-ode-lambda').value='-1';
   actions.numCalcODE();
   assert.match(getElementById('num-result').innerHTML,/Prueba separada/);
+  for(const [id,value] of Object.entries({'num-ode-f':'y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.25','num-ode-n':'4','num-ode-method':'compare','num-ode-reference':'exp(x)','num-ode-lambda':''}))
+    getElementById(id).value=value;
+  actions.numCalcODE();
+  assert.match(getElementById('num-result').innerHTML,/Comparación de PVI/);
+  assert.match(getElementById('num-result').innerHTML,/2\.44140625/);
+  assert.match(getElementById('num-result').innerHTML,/Adams–Bashforth 2/);
+  getElementById('num-ode-reference').value='2*exp(x)';
+  actions.numCalcODE();
+  assert.match(getElementById('num-result').textContent,/no satisface el valor inicial/);
   actions.closeModule('num');
   actions.closeSubmod();
   actions.openSubmod('logic');
@@ -548,6 +618,30 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     assert.match(getElementById('study-result').innerHTML,expected);
     actions.closeModule('study');
   }
+  actions.launchSubmod('study-multivariable');
+  for(const [mode,inputs,expected] of [
+    ['triplecart',{integrand3:'z',outerStart:'0',outerEnd:'1',middleLower:'0',middleUpper:'1-x',innerLower:'0',innerUpper:'1-x-y',n3:'20'},/0\.04166666667/],
+    ['triplecyl',{integrand3:'1',outerStart:'0',outerEnd:'2',middleLower:'0',middleUpper:'2*π',innerLower:'0',innerUpper:'r^2',n3:'20'},/25\.13274/],
+    ['triplesph',{integrand3:'1',outerStart:'0',outerEnd:'3',middleLower:'0',middleUpper:'π',innerLower:'0',innerUpper:'2*π',n3:'20'},/113\.09/],
+  ]) {
+    getElementById('study-mode').value=mode;
+    actions.studySelect();
+    for(const [key,value] of Object.entries(inputs)) getElementById(`study-${key}`).value=value;
+    actions.studyCalculate();
+    assert.match(getElementById('study-result').innerHTML,expected);
+  }
+  getElementById('study-mode').value='paramsurface';
+  actions.studySelect();
+  for(const [key,value] of Object.entries({xexpr:'u*cos(v)',yexpr:'u*sin(v)',zexpr:'u^2',integrand3:'1',uStart:'0',uEnd:'2',vStart:'0',vEnd:'2*π',n2:'40'}))
+    getElementById(`study-${key}`).value=value;
+  actions.studyCalculate();
+  assert.equal(getElementById('study-result').classList.contains('tool-error'),false,getElementById('study-result').textContent);
+  assert.match(getElementById('study-result').innerHTML,/36\.1769/);
+  for(const [key,value] of Object.entries({xexpr:'2*sin(u)*cos(v)',yexpr:'2*sin(u)*sin(v)',zexpr:'2*cos(u)',integrand3:'z',uEnd:'1.5707963267948966'}))
+    getElementById(`study-${key}`).value=value;
+  actions.studyCalculate();
+  assert.match(getElementById('study-result').innerHTML,/25\.13274/);
+  actions.closeModule('study');
   for(const [id,panel] of [
     ['calc-dif','Dif'],['calc-int','Int'],['calc-cur','Cur'],
     ['calc-mul','Mul'],['calc-edo','Edo'],['calc-graf','Graf'],
@@ -565,6 +659,9 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('submod-cards').innerHTML, /data-action="openSubmod" data-arg="waves"/);
   actions.openSubmod('em');
   for (const [card,mode,input,expected] of [
+    ['emplus-electrostatics','ring',{charge:'1e-8',radius:'0.1',position:'0.2'},/Anillo cargado/],
+    ['emplus-electrostatics','layered',{area:'0.01',layers:'0.001, 2\n0.002, 4',voltage:'100'},/Campos por capa/],
+    ['emplus-magnetism','cable',{current:'8',radius:'0.002',position:'0.001'},/Cable con corriente uniforme/],
     ['emplus-electrostatics','charges',{charges:'0.000001, -1, 0, 0\n0.000001, 1, 0, 0',point:'0, 0, 1'},/Potencial/],
     ['emplus-circuits','nodal',{nodes:'3',resistors:'1, 2, 1000\n2, 0, 1000',fixed:'0, 0\n1, 10',injections:''},/Potenciales de nodos/],
     ['emplus-magnetism','magnetic',{shape:'loop',current:'2',turns:'100',size:'0.2',position:'0.1'},/Campo E/],
@@ -617,7 +714,14 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('waves-result').innerHTML,/Presión absorbente/);
   getElementById('waves-mode').value='grating';
   actions.wavesSelect();
+  assert.match(getElementById('waves-fields').innerHTML,/waves-lambda-unit/);
   for (const [id,value] of Object.entries({separation:'0.000002',lambda:'0.00000055',minimum:'0.00000038',maximum:'0.00000075'})) getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/m=5/);
+  for (const [id,value,unit] of [['separation','2','µm'],['lambda','550','nm'],['minimum','380','nm'],['maximum','750','nm']]) {
+    getElementById(`waves-${id}`).value=value;
+    getElementById(`waves-${id}-unit`).value=unit;
+  }
   actions.wavesCalculate();
   assert.match(getElementById('waves-result').innerHTML,/m=5/);
   actions.closeModule('waves');
@@ -631,6 +735,10 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     ['mechplus-motion','loop',{height:'5',radius:'2'},/Contacto en cima/],
     ['mechplus-collisions','collision',{m1:'2',v1:'3',m2:'1',v2:'0',e:'1'},/Velocidad final 1/],
     ['mechplus-rotation','orbit',{mass:'5.972e24',radius:'6771000',satellite:'1000'},/Período/],
+    ['mechplus-rotation','rolling',{shape:'solidCylinder',mass:'10',radius:'0.2',angle:'30',distance:'3',friction:''},/μ estática mínima/],
+    ['mechplus-rotation','skater',{initialInertia:'3',initialOmega:'2',finalInertia:'1.2'},/Cambio de energía/],
+    ['mechplus-rotation','hingedrod',{mass:'2',length:'1'},/α inicial/],
+    ['mechplus-rotation','apsides',{periapsisRadius:'10000000',periapsisSpeed:'9000',apoapsisRadius:'20000000'},/4500/],
   ]) {
     assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${card}"`));
     actions.launchSubmod(card);
@@ -880,6 +988,10 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('res-def').innerHTML, /0\.333 → 1\/3/);
 
   getElementById('int-rev-fx').value='x';
+  getElementById('int-rev-mode').value='direct';
+  actions.calcRevolutionModeChanged();
+  assert.equal(getElementById('rev-add-fields').hidden,true);
+  getElementById('int-rev-gx').value='';
   getElementById('int-rev-a').value='0';
   getElementById('int-rev-b').value='1';
   getElementById('int-rev-axis').value='x';
@@ -891,6 +1003,62 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('int-rev-a').value='-1';
   actions.calcRevolutionVolume();
   assert.match(getElementById('res-rev').innerHTML,/no puede cruzar x = 0/);
+
+  getElementById('int-rev-fx').value='x^2';
+  getElementById('int-rev-mode').value='add';
+  actions.calcRevolutionModeChanged();
+  assert.equal(getElementById('rev-add-fields').hidden,false);
+  getElementById('int-rev-gx').value='sqrt(x)';
+  getElementById('int-rev-a').value='0';
+  getElementById('int-rev-axis').value='x';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/0\.9424778 u³/);
+  assert.match(getElementById('res-rev').innerHTML,/Intersecciones/);
+  assert.match(getElementById('res-rev').innerHTML,/\(0, 0\).*\(1, 1\)/);
+  getElementById('int-rev-gx').value='sqrt(';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/Segunda función inválida/);
+  getElementById('int-rev-fx').value='y=-mx+b';
+  getElementById('int-rev-gx').value='y=1';
+  getElementById('int-rev-m').value='1';
+  getElementById('int-rev-offset').value='2';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/4\.1887902 u³/);
+  assert.match(getElementById('res-rev').innerHTML,/\(1, 1\)/);
+  getElementById('int-rev-gx').value='';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/Ingresa la segunda función/);
+  getElementById('int-rev-fx').value='x';
+  getElementById('int-rev-gx').value='x^2';
+  getElementById('int-rev-axis').value='x-shift';
+  getElementById('int-rev-shift').value='2';
+  actions.calcRevolutionAxisChanged();
+  assert.equal(getElementById('rev-shift-fields').hidden,false);
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/1\.67551608 u³/);
+  assert.match(getElementById('res-rev').innerHTML,/y = 2/);
+  getElementById('int-rev-gx').value='0';
+  getElementById('int-rev-axis').value='y-shift';
+  getElementById('int-rev-shift').value='-1';
+  actions.calcRevolutionAxisChanged();
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/5\.23598776 u³/);
+  getElementById('int-rev-shift').value='0.5';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/no puede cruzar el eje de giro/);
+  getElementById('int-rev-axis').value='x';
+  actions.calcRevolutionAxisChanged();
+  assert.equal(getElementById('rev-shift-fields').hidden,true);
+  getElementById('int-rev-mode').value='direct';
+  actions.calcRevolutionModeChanged();
+  getElementById('int-rev-fx').value='x';
+  getElementById('int-rev-gx').value='sqrt(';
+  getElementById('int-rev-m').value='invalid';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/1\.04719755 u³/);
+  getElementById('int-rev-fx').value='y=-mx+b';
+  actions.calcRevolutionVolume();
+  assert.match(getElementById('res-rev').innerHTML,/selecciona Agregar función/);
 
   getElementById('mul-grad-fxy').value = 'x+y';
   getElementById('mul-grad-x0').value = '1';

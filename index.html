@@ -1346,35 +1346,62 @@
         <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-revolution"></use></svg></div>
         <div class="calc-card-info">
           <div class="calc-card-name">Volumen de revolución</div>
-          <div class="calc-card-desc">Región entre y = f(x) y el eje X, de a a b</div>
+          <div class="calc-card-desc">Región entre dos curvas, o entre f(x) y el eje X</div>
         </div>
         <div class="calc-card-arrow" id="arr-rev"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
       </div>
       <div class="calc-card-body" id="body-rev">
         <div class="calc-card-inner">
           <div class="calc-field-row">
-            <label for="int-rev-fx">f(x) =</label>
-            <input class="calc-inp" id="int-rev-fx" placeholder="ej: x, sqrt(x), sin(x)"/>
+            <label for="int-rev-mode">Modo:</label>
+            <select class="mat-sel" id="int-rev-mode" data-action="calcRevolutionModeChanged" data-event="change">
+              <option value="direct">Directo · una función</option>
+              <option value="add">Agregar función · dos curvas</option>
+            </select>
           </div>
           <div class="calc-field-row">
-            <label for="int-rev-a">a =</label>
+            <label for="int-rev-fx">f(x) =</label>
+            <input class="calc-inp" id="int-rev-fx" placeholder="ej: x², sqrt(x), y=-2x+1"/>
+          </div>
+          <div id="rev-add-fields" hidden>
+            <div class="calc-field-row">
+              <label for="int-rev-gx">g(x) =</label>
+              <input class="calc-inp" id="int-rev-gx" placeholder="ej: y=sqrt(x), y=-mx+b"/>
+            </div>
+            <div class="calc-field-row">
+              <label for="int-rev-m">m =</label>
+              <input class="calc-inp calc-inp-sm" id="int-rev-m" type="number" step="any" value="1"/>
+              <label for="int-rev-offset">b (coeficiente) =</label>
+              <input class="calc-inp calc-inp-sm" id="int-rev-offset" type="number" step="any" value="0"/>
+            </div>
+            <div class="calc-res-hint">Puedes usar m y b en cualquiera de las dos funciones. Por ejemplo: y=-mx+b.</div>
+          </div>
+          <div class="calc-field-row">
+            <label for="int-rev-a">x₀ =</label>
             <input class="calc-inp calc-inp-sm" id="int-rev-a" type="number" step="any" value="0"/>
-            <label for="int-rev-b">b =</label>
+            <label for="int-rev-b">x₁ =</label>
             <input class="calc-inp calc-inp-sm" id="int-rev-b" type="number" step="any" value="1"/>
           </div>
           <div class="calc-field-row">
             <label for="int-rev-axis">Girar alrededor del</label>
-            <select class="mat-sel" id="int-rev-axis">
-              <option value="x">Eje X · discos</option>
+            <select class="mat-sel" id="int-rev-axis" data-action="calcRevolutionAxisChanged" data-event="change">
+              <option value="x">Eje X · discos/arandelas</option>
               <option value="y">Eje Y · cascarones</option>
+              <option value="x-shift">Recta horizontal y = c</option>
+              <option value="y-shift">Recta vertical x = c</option>
             </select>
           </div>
-          <div class="calc-res-hint">Al girar alrededor del eje Y, el intervalo debe quedar a un solo lado de x = 0.</div>
+          <div class="calc-field-row" id="rev-shift-fields" hidden>
+            <label for="int-rev-shift">c =</label>
+            <input class="calc-inp calc-inp-sm" id="int-rev-shift" type="number" step="any" value="2"/>
+          </div>
+          <div class="calc-res-hint" id="rev-axis-hint">Para el eje X, se usan discos o arandelas según dónde queden las curvas.</div>
           <div class="calc-btn-row">
             <button class="calc-btn" data-action="calcRevolutionVolume">Calcular volumen</button>
             <button class="calc-btn sec" data-action="clearCard" data-arg="rev">Limpiar</button>
           </div>
-          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-rev-fx" data-a="int-rev-a" data-b="int-rev-b"></canvas></div>
+          <div class="calc-rev-legend"><span><i class="calc-rev-f"></i>f(x)</span><span id="rev-legend-g" hidden><i class="calc-rev-g"></i>g(x)</span><span id="rev-legend-cross" hidden><i class="calc-rev-cross"></i>intersección</span></div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-rev-fx" data-secondary="int-rev-gx" data-a="int-rev-a" data-b="int-rev-b"></canvas></div>
           <div id="rev-canvas-wrap" style="display:none"><canvas id="rev-solid"></canvas></div>
           <div id="res-rev" class="calc-res" aria-live="polite"></div>
         </div>

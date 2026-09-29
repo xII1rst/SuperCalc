@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  genRevolutionSolid, computeSolidExtent, recenterSolid,
+  genRevolutionSolid, genRevolutionSolidBetween, computeSolidExtent, recenterSolid,
 } from '../js/graphics/revolution.mjs';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≈ ${b}`);
@@ -51,4 +51,34 @@ test('una función degenerada f(x)=0 no lanza y devuelve una malla finita', () =
   assert.equal(polys.length, 4 * 6); // sin tapas (radio 0)
   const ext = computeSolidExtent(polys);
   assert.ok(Number.isFinite(ext.maxR));
+});
+
+test('el sólido entre dos curvas tiene superficie exterior, interior y tapas', () => {
+  const S=12, R=8;
+  const polys=genRevolutionSolidBetween(()=>3,()=>1,0,1,'x',{segments:S,rings:R});
+  assert.equal(polys.length,2*R*S+2*S);
+  for(const poly of polys) for(const p of poly){
+    assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.z));
+  }
+  near(Math.hypot(polys[0][0].y,polys[0][0].z),3);
+  near(Math.hypot(polys[1][0].y,polys[1][0].z),1);
+});
+
+test('el sólido entre curvas que cruzan el eje X no deja un hueco interior', () => {
+  const polys=genRevolutionSolidBetween(()=>2,()=>-1,0,1,'x',{segments:8,rings:4});
+  assert.equal(polys.length,4*8+2*8);
+});
+
+test('el sólido respeta una recta de giro desplazada', () => {
+  const horizontal=genRevolutionSolidBetween(()=>3,()=>1,0,1,'x',{
+    segments:8,rings:4,offset:5,
+  });
+  near(Math.hypot(horizontal[0][0].y,horizontal[0][0].z),4);
+  near(Math.hypot(horizontal[1][0].y,horizontal[1][0].z),2);
+
+  const vertical=genRevolutionSolidBetween(x=>x,()=>0,0,1,'y',{
+    segments:8,rings:4,offset:-1,
+  });
+  near(Math.hypot(vertical[0][0].x,vertical[0][0].z),1);
+  near(Math.hypot(vertical[0][1].x,vertical[0][1].z),1.25);
 });

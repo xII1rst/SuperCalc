@@ -4,6 +4,8 @@ import {
   pointChargeSystem, equivalentComponents, capacitorState, resistiveWire, dielectricPlate,
   nodalCircuit, magneticGeometries, magneticForceWire, hallEffect, motionalEmf,
   rlTransient, seriesRlcAc, displacementCurrent, poissonOneDimensional,
+  chargedRingAxis, infiniteChargedPlane, conductingSphere, uniformSolidSphere,
+  longCurrentCable, coaxialCapacitor, layeredPlateCapacitor,
 } from '../js/math/electromagnetism-advanced.mjs';
 import { EM_EPS0, EM_MU0, EM_K } from '../js/math/electromagnetism.mjs';
 const near=(actual,expected,tolerance=1e-9)=>assert.ok(Math.abs(actual-expected)<=tolerance*Math.max(1e-12,Math.abs(expected)),`${actual} ≠ ${expected}`);
@@ -49,4 +51,34 @@ test('Electromagnetismo 38–44 y 50: RL, RLC AC, desplazamiento y Poisson 1D',(
   const p=poissonOneDimensional(1,0,10,2*EM_EPS0,0.5);
   near(p.potential,5.25);near(p.field,-10);
   near(poissonOneDimensional(1,0,10,2*EM_EPS0,1).potential,10);
+});
+
+test('Electromagnetismo 18–20 y 37: campo y potencial en geometrías cargadas',()=>{
+  const ring=chargedRingAxis(10e-9,0.1,0.2);
+  near(ring.field,EM_K*10e-9*0.2/(0.05**1.5));
+  near(chargedRingAxis(10e-9,0.1,0).field,0);
+  near(infiniteChargedPlane(3e-6).field,3e-6/(2*EM_EPS0));
+  near(infiniteChargedPlane(3e-6,true).field,3e-6/EM_EPS0);
+  near(conductingSphere(5e-9,0.2,0.1).field,0);
+  near(conductingSphere(5e-9,0.2,0.1).potential,EM_K*5e-9/0.2);
+  near(conductingSphere(5e-9,0.2,0.3).field,EM_K*5e-9/0.3**2);
+  const sphere=uniformSolidSphere(2e-6,0.1,0.05);
+  near(sphere.field,2e-6*0.05/(3*EM_EPS0));
+  near(uniformSolidSphere(2e-6,0.1,0).potential,3*EM_K*sphere.charge/(2*0.1));
+  near(uniformSolidSphere(2e-6,0.1,0.2).field,EM_K*sphere.charge/0.2**2);
+  assert.throws(()=>uniformSolidSphere(2e-6,0.1,-0.01),/no negativa/);
+});
+
+test('Electromagnetismo 27 y 40–41: cable y capacitores coaxiales o por capas',()=>{
+  near(longCurrentCable(8,0.002,0.001).field,EM_MU0*8*0.001/(2*Math.PI*0.002**2));
+  near(longCurrentCable(8,0.002,0.004).field,EM_MU0*8/(2*Math.PI*0.004));
+  const coax=coaxialCapacitor(0.001,0.004,0.5,1,100);
+  near(coax.capacitance,2*Math.PI*EM_EPS0*0.5/Math.log(4));
+  near(coax.energy,0.5*coax.capacitance*10000);
+  near(coaxialCapacitor(0.001,0.004,0.5,2.5).capacitance,2.5*coax.capacitance);
+  const layered=layeredPlateCapacitor(0.01,[{thickness:0.001,relativePermittivity:2},{thickness:0.002,relativePermittivity:4}],100);
+  near(layered.capacitance,EM_EPS0*0.01/(0.001/2+0.002/4));
+  near(layered.layerFields[0]*0.001+layered.layerFields[1]*0.002,100);
+  assert.throws(()=>coaxialCapacitor(0.004,0.001,0.5),/radio exterior/);
+  assert.throws(()=>layeredPlateCapacitor(0.01,[]),/capas/);
 });

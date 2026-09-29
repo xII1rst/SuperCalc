@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {luSolve,bairstow,exponentialFit,sinusoidalFit,linearTestStability,finitePrecisionTrace,newtonSystem2D,quadratureWithBound} from '../js/math/numerical-advanced.mjs';
+import {luSolve,finitePrecisionElimination,bairstow,exponentialFit,sinusoidalFit,linearTestStability,finitePrecisionTrace,newtonSystem2D,quadratureWithBound,minimumSubintervalsForBound} from '../js/math/numerical-advanced.mjs';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8*Math.max(1,Math.abs(b)),`${a} != ${b}`);
 
 test('Análisis 21–22 y 38–39: LU con pivoteo, factores y residuo',()=>{
@@ -25,6 +25,45 @@ test('Análisis 3, 17–18 y 42: precisión por operación, Newton 2D y cotas de
   assert.ok(Math.abs(area.value-2)<=area.bound);
   const simpson=quadratureWithBound(Math.sin,0,Math.PI,10,'simpson',1);
   assert.ok(Math.abs(simpson.value-2)<=simpson.bound);
+});
+
+test('Análisis 3 y 26: casos de la guía con una operación y un paso de Newton',()=>{
+  const operands=[12.34,0.05678];
+  near(finitePrecisionTrace(operands,['+'],4,'chop').approximate,12.39);
+  near(finitePrecisionTrace(operands,['+'],4,'round').approximate,12.4);
+  const result=newtonSystem2D((x,y)=>x*x+y*y-4,(x,y)=>x*y-1,2,0.5,{iterations:1});
+  assert.equal(result.status,'max_iterations');
+  near(result.x,29/15);
+  near(result.y,31/60);
+  near(result.history[0].jacobian[0][0],4);
+  near(result.history[0].jacobian[1][1],2);
+});
+
+test('Análisis 23: el pivoteo reduce el error con cuatro cifras',()=>{
+  const matrix=[[0.0003,3],[1,1]],rhs=[2.0001,1];
+  const plain=finitePrecisionElimination(matrix,rhs,{digits:4,mode:'round',pivoting:false});
+  const pivoted=finitePrecisionElimination(matrix,rhs,{digits:4,mode:'round',pivoting:true});
+  assert.equal(plain.status,'completed');
+  assert.equal(pivoted.status,'completed');
+  assert.deepEqual(pivoted.permutation,[1,0]);
+  assert.ok(plain.residualInfinity>0.3);
+  assert.ok(pivoted.residualInfinity<0.001);
+  assert.ok(Math.abs(pivoted.solution[0]-1/3)<1e-4);
+  assert.ok(Math.abs(pivoted.solution[1]-2/3)<1e-4);
+  const chopped=finitePrecisionElimination(matrix,rhs,{digits:4,mode:'chop',pivoting:true});
+  assert.equal(chopped.matrix[1][1],2.999);
+  assert.equal(finitePrecisionElimination([[0,1],[0,2]],[1,2],{pivoting:true}).status,'zero_pivot');
+});
+
+test('Análisis 35–36: n mínimo satisface la cota estricta',()=>{
+  const trap=minimumSubintervalsForBound(0,1,'trapezoid',Math.E,1e-6);
+  const simpson=minimumSubintervalsForBound(0,1,'simpson',Math.E,1e-6);
+  const logarithm=minimumSubintervalsForBound(1,3,'simpson',6,1e-8);
+  assert.equal(trap.subintervals,476);
+  assert.equal(simpson.subintervals,12);
+  assert.equal(logarithm.subintervals,102);
+  for(const result of [trap,simpson,logarithm]) assert.ok(result.bound<result.targetError);
+  assert.throws(()=>minimumSubintervalsForBound(0,1,'trapezoid',Math.E,1e-12),/más de 1000/);
 });
 
 test('Análisis 23 y 39: Bairstow con raíces reales y conjugadas',()=>{

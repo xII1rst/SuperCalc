@@ -6,6 +6,7 @@ import {
   simpsonIntegral, taylorCoefficients, partialDerivative,
   gradient2D, midpointIntegral2D, implicitDerivative,
   groupPolynomialQuotient, calculateLimitOperation, revolutionVolume,
+  revolutionVolumeBetween, revolutionVolumeAboutLine, parseRevolutionFunction, curveIntersections,
 } from '../js/math/calculus.mjs';
 import { parseGraphCoefficient } from '../js/math/graph-types.mjs';
 
@@ -92,6 +93,43 @@ test('volúmenes de revolución por discos y cascarones', () => {
   assert.throws(()=>revolutionVolume(x=>x,1,0,'x'),/a < b/);
   assert.throws(()=>revolutionVolume(x=>x,0,1,'z'),/eje/);
   assert.throws(()=>revolutionVolume(x=>x,0,1,'x',3),/par/);
+});
+
+test('volumen entre dos curvas con arandelas, discos y cascarones', () => {
+  const square=x=>x*x, root=Math.sqrt;
+  assert.ok(Math.abs(revolutionVolumeBetween(square,root,0,1,'x')-3*Math.PI/10)<1e-8);
+  assert.ok(Math.abs(revolutionVolumeBetween(square,root,0,1,'y')-3*Math.PI/10)<1e-7);
+  assert.ok(Math.abs(revolutionVolumeBetween(()=>3,()=>1,0,1,'x')-8*Math.PI)<1e-9);
+  assert.ok(Math.abs(revolutionVolumeBetween(()=>2,()=>-1,0,1,'x')-4*Math.PI)<1e-9);
+  assert.ok(Math.abs(revolutionVolumeBetween(x=>x,x=>1-x,0,1,'x')-Math.PI/2)<1e-7);
+  assert.throws(()=>revolutionVolumeBetween(square,root,-1,1,'x'),/finitas/);
+  assert.throws(()=>revolutionVolumeBetween(square,root,-1,1,'y'),/no puede cruzar/);
+});
+
+test('volumen admite y=-mx+b con coeficientes numéricos', () => {
+  const line=parseRevolutionFunction('y=-mx+b',{m:1,b:2});
+  assert.equal(line(0),2);
+  assert.equal(line(1),1);
+  assert.equal(parseRevolutionFunction('f(x)=x^2')(3),9);
+  assert.equal(parseRevolutionFunction('y=-m*x+b',{m:2,b:1})(3),-5);
+  assert.equal(parseRevolutionFunction('y=-mx+z',{m:1,b:2}),null);
+  assert.ok(Math.abs(revolutionVolumeBetween(line,()=>1,0,1,'x')-4*Math.PI/3)<1e-8);
+});
+
+test('volumen alrededor de rectas desplazadas', () => {
+  assert.ok(Math.abs(revolutionVolumeAboutLine(x=>x,x=>x*x,0,1,'x',2)-8*Math.PI/15)<1e-8);
+  assert.ok(Math.abs(revolutionVolumeAboutLine(x=>x,null,0,1,'x',2)-5*Math.PI/3)<1e-8);
+  assert.ok(Math.abs(revolutionVolumeAboutLine(x=>x,()=>0,0,1,'y',-1)-5*Math.PI/3)<1e-8);
+  assert.throws(()=>revolutionVolumeAboutLine(x=>x,()=>0,0,2,'y',1),/no puede cruzar/);
+  assert.throws(()=>revolutionVolumeAboutLine(x=>x,()=>0,0,1,'x',NaN),/finito/);
+});
+
+test('las intersecciones de x² y √x incluyen ambos extremos del intervalo', () => {
+  const crossings=curveIntersections(x=>x*x,Math.sqrt,0,1);
+  assert.deepEqual(crossings,[{x:0,y:0},{x:1,y:1}]);
+  const middle=curveIntersections(x=>x,x=>1-x,0,1);
+  assert.equal(middle.length,1);
+  assert.ok(Math.abs(middle[0].x-0.5)<1e-10);
 });
 
 test('coeficientes del graficador sin estado del canvas', () => {
