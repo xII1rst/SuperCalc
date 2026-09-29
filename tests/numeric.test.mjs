@@ -17,6 +17,7 @@ test('suma de Riemann rechaza entradas inválidas', () => {
   assert.throws(() => riemannSum((x) => x, 1, 0, 10), RangeError);
   assert.throws(() => riemannSum('nope', 0, 1, 10), TypeError);
   assert.throws(() => riemannSum((x) => x, 0, 1, 0), RangeError);
+  assert.throws(() => riemannSum((x) => x, 0, 1, 4, 'unknown'), RangeError);
 });
 
 test('regla del trapecio', () => {

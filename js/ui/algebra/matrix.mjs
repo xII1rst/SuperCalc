@@ -8,9 +8,9 @@ let matCurrentTab = 'ops';
 
 function matTab(id) {
   document.querySelectorAll('.mat-tab').forEach((t,i) => {
-    t.classList.toggle('on', ['ops','det','sis','eig'][i] === id);
+    t.classList.toggle('on', ['ops','det','sis','eig','space'][i] === id);
   });
-  ['Ops','Det','Sis','Eig'].forEach(p => {
+  ['Ops','Det','Sis','Eig','Space'].forEach(p => {
     const el = document.getElementById('mat-p'+p);
     if(el) el.classList.toggle('on', p.toLowerCase() === id);
   });
@@ -23,6 +23,7 @@ function matInit() {
   matBuildDet();
   matBuildSis();
   matBuildEig();
+  matBuildSpace();
 }
 
 // ── Helpers ──
@@ -236,47 +237,57 @@ function matClearDet() { document.querySelectorAll('#mat-det-grid .mat-cell').fo
 
 // ── Sistemas panel ──
 function matBuildSis() {
-  const n=parseInt(document.getElementById('mat-sn')?.value)||2;
+  const m=Math.min(6,Math.max(1,parseInt(document.getElementById('mat-sm')?.value)||2));
+  const n=Math.min(6,Math.max(1,parseInt(document.getElementById('mat-sn')?.value)||2));
+  document.getElementById('mat-sm').value=m;
+  document.getElementById('mat-sn').value=n;
   let html=`<div class="mat-grid-wrap"><div class="mat-grid" style="grid-template-columns:repeat(${n+1},58px)">`;
-  for(let r=0;r<n;r++){
+  for(let r=0;r<m;r++){
     for(let c=0;c<n;c++) html+=`<input class="mat-cell" id="ms-${r}-${c}" value="0" type="number" step="any">`;
     html+=`<input class="mat-cell rhs" id="ms-${r}-${n}" value="0" type="number" step="any">`;
   }
   html+='</div></div>';
-  html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:8px">Las últimas columnas (doradas) son el vector b</div>`;
+  html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:8px">La última columna (dorada) es el vector b</div>`;
   document.getElementById('mat-sis-grid').innerHTML=html;
   document.getElementById('mat-res-sis').innerHTML='';
 }
 function matCalcSis() {
+  const m=parseInt(document.getElementById('mat-sm').value)||2;
   const n=parseInt(document.getElementById('mat-sn').value)||2;
   const A=[],b=[];
-  for(let r=0;r<n;r++){
+  for(let r=0;r<m;r++){
     A.push(Array.from({length:n},(_,c)=>parseFloat(document.getElementById(`ms-${r}-${c}`)?.value||0)));
     b.push(parseFloat(document.getElementById(`ms-${r}-${n}`)?.value||0));
   }
   const met=document.getElementById('mat-smet').value;
   let html='<div class="mat-res">';
   if(met==='gauss'){
-    const {sol,steps,inconsistent}=matrixMath.matGauss(A.map(r=>[...r]),b.map(v=>v));
+    const {sol,steps,status,rankA,rankAug,particular,nullspace,free,rref}=matrixMath.matGauss(A,b);
     html+=`<div class="mat-res-lbl">Gauss-Jordan — pasos:</div>`;
     steps.forEach(s=>{
-      // steps already contain fraction strings; reformat dec parts if not fracMode
-      let display=s;
-      if(!sisFracMode){
-        // replace any a/b fraction tokens with decimals
-        display=s.replace(/(-?\d+)\/(\d+)/g,(_,n,d)=>matFmtNum(parseInt(n)/parseInt(d)));
-      }
-      html+=`<div class="mat-step">${display}</div>`;
+      html+=`<div class="mat-step">${s}</div>`;
     });
-    if(inconsistent||!sol){ html+=`<div class="mat-err">Sistema sin solución o infinitas soluciones.</div>`; }
-    else {
+    html+=matFmtMatrix(rref,'Forma escalonada reducida [A | b]');
+    html+=`<div class="mat-res-lbl">rango(A) = ${rankA}; rango([A|b]) = ${rankAug}</div>`;
+    const display=value=>sisFracMode?fStr(matrixMath.toFrac2(value),true):formatResult(value,4);
+    if(status==='inconsistent'){
+      html+=`<div class="mat-err">Sin solución: rango(A) &lt; rango([A|b]).</div>`;
+    } else if(status==='infinite'){
+      html+=`<div class="mat-res-lbl" style="margin-top:8px">Infinitas soluciones (${free.length} variable${free.length===1?'':'s'} libre${free.length===1?'':'s'}):</div>`;
+      html+=`<div class="mat-res-val">x = [${particular.map(display).join(', ')}]`;
+      nullspace.forEach((vector,i)=>{
+        html+=` + t${i+1}[${vector.map(display).join(', ')}]`;
+      });
+      html+='</div>';
+      html+=`<div class="mat-res-lbl">${free.map((col,i)=>`t${i+1} = x${col+1}`).join('; ')}</div>`;
+    } else {
       html+=`<div class="mat-res-lbl" style="margin-top:8px">Solución:</div><div class="mat-res-val">`;
       sol.forEach((v,i)=>{ html+=`x<sub>${i+1}</sub> = ${fStr(v,sisFracMode)}<br>`; });
       html+='</div>';
     }
   } else {
-    const sol=matrixMath.matCramer(A,b);
-    if(!sol){ html+=`<div class="mat-err">det(A) = 0 — Cramer no aplicable.</div>`; }
+    const sol=m===n?matrixMath.matCramer(A,b):null;
+    if(!sol){ html+=`<div class="mat-err">Cramer requiere una matriz cuadrada con det(A) ≠ 0.</div>`; }
     else {
       html+=`<div class="mat-res-lbl">Cramer — det(A) = ${matFmtNum(matrixMath.matDet(A))}</div>`;
       html+=`<div class="mat-res-val">`;
@@ -299,19 +310,58 @@ function matCalcEig() {
   const n=parseInt(document.getElementById('mat-en').value)||2;
   const M=matGetGrid('me',n,n);
   const pairs=matrixMath.matEigenAll(M);
-  let html='<div class="mat-res"><div class="mat-res-lbl">Valores &amp; Vectores Propios (iteración potencia)</div>';
-  pairs.forEach(({lam,vec},i)=>{
+  let html='<div class="mat-res"><div class="mat-res-lbl">Valores y vectores propios reales</div>';
+  pairs.forEach(({lam,vec,residual,iterations,converged,method},i)=>{
     html+=`<div class="mat-eigen-pair">
       <div class="mat-eigen-lbl">&lambda;<sub>${i+1}</sub></div>
-      <div class="mat-eigen-val">${matFmtNum(lam,5)}</div>
+      <div class="mat-eigen-val">${matFmtNum(lam,5)} ${converged?'':'(sin convergencia)'}</div>
       <div class="mat-eigen-vec">v = [ ${vec.map(v=>matFmtNum(v,4)).join(',  ')} ]</div>
+      <div class="mat-eigen-vec">||Av − λv|| = ${formatResult(residual,7)}; ${method||'iteración potencia'}; ${iterations} iteraciones</div>
     </div>`;
   });
-  html+=`<div style="font-size:9px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-top:4px">* Método de iteración potencia — preciso para matrices diagonalizables</div>`;
+  if(pairs.message) html+=`<div class="mat-err">${pairs.message}</div>`;
   html+='</div>';
   document.getElementById('mat-res-eig').innerHTML=html;
 }
 function matClearEig() { document.querySelectorAll('#mat-eig-grid .mat-cell').forEach(el=>el.value=0); document.getElementById('mat-res-eig').innerHTML=''; }
+
+function matBuildSpace() {
+  const rows=Math.min(6,Math.max(1,parseInt(document.getElementById('mat-space-m').value)||2));
+  const cols=Math.min(6,Math.max(1,parseInt(document.getElementById('mat-space-n').value)||3));
+  document.getElementById('mat-space-m').value=rows;
+  document.getElementById('mat-space-n').value=cols;
+  document.getElementById('mat-space-grid').innerHTML=matMakeGrid('sp',rows,cols);
+  document.getElementById('mat-res-space').innerHTML='';
+}
+
+function matCalcSpace() {
+  const target=document.getElementById('mat-res-space');
+  try {
+    const rows=Number(document.getElementById('mat-space-m').value);
+    const cols=Number(document.getElementById('mat-space-n').value);
+    const A=Array.from({length:rows},(_,r)=>Array.from({length:cols},(_,c)=>{
+      const raw=document.getElementById(`sp-${r}-${c}`)?.value.trim();
+      if(!raw || !Number.isFinite(Number(raw))) throw new RangeError(`Entrada inválida en fila ${r+1}, columna ${c+1}`);
+      return Number(raw);
+    }));
+    const result=matrixMath.matSpace(A);
+    const vector=v=>`[${v.map(value=>formatResult(value,4)).join(', ')}]`;
+    let html='<div class="mat-res">';
+    html+=`<div class="mat-res-lbl">Transformación A: ℝ<sup>${cols}</sup> → ℝ<sup>${rows}</sup></div>`;
+    html+=`<div class="mat-res-lbl">Gauss-Jordan — pasos:</div>`;
+    result.steps.forEach(step=>{html+=`<div class="mat-step">${step}</div>`;});
+    html+=matFmtMatrix(result.rref,'RREF de A');
+    html+=`<div class="mat-step">rango(A) = ${result.rank}; nulidad(A) = ${result.nullity}; ${result.rank} + ${result.nullity} = ${cols} columnas.</div>`;
+    html+=`<div class="mat-res-lbl">Columnas pivote originales: ${result.pivots.length?result.pivots.map(i=>i+1).join(', '):'ninguna'}</div>`;
+    html+=`<div class="mat-res-val">Base de la imagen: ${result.columnBasis.length?result.columnBasis.map(vector).join(', '):'{0}'}</div>`;
+    html+=`<div class="mat-res-val">Base del núcleo: ${result.kernelBasis.length?result.kernelBasis.map(vector).join(', '):'{0}'}</div>`;
+    html+=`<div class="mat-res-val">Base del espacio fila: ${result.rowBasis.length?result.rowBasis.map(vector).join(', '):'{0}'}</div>`;
+    html+='<div class="mat-res-lbl">Una base de {0} es el conjunto vacío. Las bases de la imagen se toman de A original.</div></div>';
+    target.innerHTML=html;
+  } catch(error) {
+    target.innerHTML=`<div class="mat-res"><div class="mat-err">${error.message}</div></div>`;
+  }
+}
 
 function matOpsSetScalar(value) {
   matOpsState.scalar = parseFloat(value) || 1;
@@ -322,5 +372,5 @@ export {
   matOpsRemoveMatrix, matOpsSizeChange, matOpsSetScalar, matCalcOps,
   matBuildDet, matCalcDet, matCalcInv, matClearDet,
   matBuildSis, matCalcSis, matClearSis, matBuildEig, matCalcEig,
-  matClearEig, matSisToggleFrac, matBuildGrids, matClearOps,
+  matClearEig, matBuildSpace, matCalcSpace, matSisToggleFrac, matBuildGrids, matClearOps,
 };

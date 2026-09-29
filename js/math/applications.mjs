@@ -49,6 +49,29 @@ export function characteristicRoots(a,b,c){
   return {disc,type:'complex',alpha:-b/(2*a),beta:Math.sqrt(-disc)/(2*a)};
 }
 
+export function solveSecondOrderHomogeneous(a, b, c, y0, dy0) {
+  if (![a, b, c, y0, dy0].every(Number.isFinite) || a === 0) {
+    throw new RangeError('Se requiere a ≠ 0 y datos iniciales finitos');
+  }
+  const roots = characteristicRoots(a, b, c);
+  let c1, c2, evaluate;
+  if (roots.type === 'distinct') {
+    c1 = (dy0 - roots.r2 * y0) / (roots.r1 - roots.r2);
+    c2 = y0 - c1;
+    evaluate = x => c1 * Math.exp(roots.r1 * x) + c2 * Math.exp(roots.r2 * x);
+  } else if (roots.type === 'repeated') {
+    c1 = y0;
+    c2 = dy0 - roots.r * y0;
+    evaluate = x => (c1 + c2 * x) * Math.exp(roots.r * x);
+  } else {
+    c1 = y0;
+    c2 = (dy0 - roots.alpha * y0) / roots.beta;
+    evaluate = x => Math.exp(roots.alpha * x)
+      * (c1 * Math.cos(roots.beta * x) + c2 * Math.sin(roots.beta * x));
+  }
+  return { roots, c1, c2, evaluate };
+}
+
 // ---- Métodos numéricos, teoremas y funciones del Cálculo 1 ----
 
 function derivNum(fn, x, h = 1e-6) {

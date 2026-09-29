@@ -1,16 +1,17 @@
 import {
-  calcParse, symbolicDeriv, computeLimit, calculateLimitOperation, fmtA, fmtNum,
-  fmtResult, visSubstitute, basicAntideriv, rk4,
+  calcParse, normalizeExpression, symbolicDeriv, computeLimit, calculateLimitOperation, fmtA, fmtNum,
+  fmtResult, visSubstitute, basicAntideriv, rk4Refinement,
   simpsonIntegral, revolutionVolume, taylorCoefficients, partialDerivative,
   gradient2D, midpointIntegral2D, implicitDerivative,
 } from '../math/calculus.mjs';
 import { fN, formatResult } from '../utils/format.mjs';
 import {
-  optimizeFunction, populationGrowth, motionAt, tangentAt, relatedRates, characteristicRoots,
+  optimizeFunction, populationGrowth, motionAt, tangentAt, relatedRates, solveSecondOrderHomogeneous,
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
   hyperbolicValues, inverseHyperbolic,
 } from '../math/applications.mjs';
 import { integrate, definiteIntegral } from '../math/integration.mjs';
+import { riemannSum, trapezoidalRule } from '../math/numeric.mjs';
 import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries } from '../math/series.mjs';
 import {
   areaBetweenCurves, arcLength, surfaceAreaOfRevolution, workVariable, fluidForce, centroidRegion,
@@ -48,6 +49,14 @@ let revRotX = 22, revRotY = -38, revScl = 1, revFit = 1;
 let revSolidPolys = null, revDrag = null, revCanvasInit = false;
 let showRevSolid = false;
 let previewInitDone = false, previewTimer = null;
+
+function previewCalcExpression(input){
+  const destination=document.getElementById(input.dataset.preview);
+  if(!destination) return;
+  const normalized=normalizeExpression(input.value);
+  destination.textContent=normalized?`Entrada interpretada: ${normalized}`
+    :'Puedes escribir sen(x²), sin(x^2), π y 2·x.';
+}
 
 // Registrar todos los inputs calc-inp con onfocus
 function initInputTracking(){
@@ -180,6 +189,7 @@ function clearCard(id){
   body.querySelectorAll('.calc-inp').forEach(el=>el.value='');
   // Limpiar res dentro de body-id
   body.querySelectorAll('[id^="res-"]').forEach(el=>el.innerHTML='');
+  body.querySelectorAll('[id^="preview-"]').forEach(el=>el.textContent='');
   // También buscar res específico por convención
   const resMap = {lim:'res-lim',der:'res-der',imp:'res-imp',ana:'res-ana',
     indef:'res-indef',def:'res-def',rev:'res-rev',taylor:'res-taylor',
@@ -874,6 +884,34 @@ function calcIntegralDef(){
   res.innerHTML=html;
 }
 
+function calcIntegralNumeric(){
+  const res=document.getElementById('res-def-num');
+  const fxStr=v('int-def-fx'), fn=calcParse(fxStr);
+  const a=pf('int-def-a'), b=pf('int-def-b');
+  const n=v('int-num-n')===''?4:pf('int-num-n');
+  const method=document.getElementById('int-num-method').value;
+  if(!fn||![a,b].every(Number.isFinite)||a>=b){
+    res.innerHTML=errBox('Ingresa f(x) válida y límites finitos con a < b');return;
+  }
+  if(!Number.isInteger(n)||n<1||n>1000||(method==='simpson'&&n%2!==0)){
+    res.innerHTML=errBox('Usa 1–1000 subintervalos; Simpson requiere n par');return;
+  }
+  try{
+    const value=method==='trapezoid'?trapezoidalRule(fn,a,b,n)
+      :method==='simpson'?simpsonIntegral(fn,a,b,n)
+      :riemannSum(fn,a,b,n,method);
+    if(!Number.isFinite(value)) throw new RangeError('La función no es finita en la malla');
+    const h=(b-a)/n;
+    const formula=method==='right'?'h·Σ f(a+i·h), i=1…n'
+      :method==='left'?'h·Σ f(a+i·h), i=0…n−1'
+      :method==='midpoint'?'h·Σ f(a+(i+½)·h), i=0…n−1'
+      :method==='trapezoid'?'h·[f(a)/2 + Σf(a+i·h) + f(b)/2]'
+      :'h/3·[f(a) + 4Σf(x impar) + 2Σf(x par) + f(b)]';
+    res.innerHTML=resBox('Aproximación numérica',formatResult(value,8),
+      `${formula}; h=(${fN(b,5)}−${fN(a,5)})/${n}=${fN(h,6)}`,true);
+  }catch(e){res.innerHTML=errBox(e.message);}
+}
+
 function calcRevolutionVolume(){
   const res=document.getElementById('res-rev');
   const fn=calcParse(v('int-rev-fx'));
@@ -1114,9 +1152,13 @@ function calcMvLimit(){
   if(isNaN(x0)||isNaN(y0)){res.innerHTML=errBox('Ingresa el punto (x₀, y₀)');return;}
   try{
     const r=multivariableLimit(fxy,x0,y0);
-    let html=resBox('Límite', r.exists?(fmtA(String(r.value))):'No existe',
-      r.exists?'Coincide en todas las trayectorias':'Las trayectorias dan valores distintos', true);
-    html+=`<div class="calc-res-box"><div class="calc-res-label">Trayectorias</div><div class="calc-res-hint">${r.paths.map(p=>`${p.name}: ${p.value===null?'—':fN(p.value,4)}`).join('<br>')}</div></div>`;
+    const answer=r.status==='proved'?fmtA(String(r.value))
+      :r.status==='disproved'?'No existe':'Indeterminado con este método';
+    const hint=r.status==='proved'?'Sustitución directa en una expresión continua en el punto'
+      :r.status==='disproved'?'Dos trayectorias tienen límites distintos'
+      :'Un número finito de trayectorias coincidentes no demuestra el límite';
+    let html=resBox('Límite',answer,hint,true);
+    html+=`<div class="calc-res-box"><div class="calc-res-label">Trayectorias</div><div class="calc-res-hint">${r.paths.map(p=>`${p.name}: ${p.formalValue!==null?fmtA(String(p.formalValue))+' (analítico)':p.value===null?'—':fN(p.value,4)+' (muestra)'}`).join('<br>')}</div></div>`;
     res.innerHTML=html;
   }catch(e){ res.innerHTML=errBox(e.message); }
 }
@@ -1189,56 +1231,81 @@ function calcMvIntegral(){
 // ═══════════════════════════════════════════════════════
 // EDO
 // ═══════════════════════════════════════════════════════
+function edoNumericResult(fn,prefix,title,description){
+  const read=(suffix,defaultValue)=>v(`${prefix}-${suffix}`)===''?defaultValue:pf(`${prefix}-${suffix}`);
+  const x0=read('x0',0), y0=read('y0',1);
+  const xFinal=read('xfinal',x0+5), steps=read('steps',50);
+  if(![x0,y0,xFinal].every(Number.isFinite)||!Number.isInteger(steps)||steps<1||steps>1000){
+    throw new RangeError('Ingresa condiciones finitas y entre 1 y 1000 pasos');
+  }
+  const result=rk4Refinement(fn,x0,y0,xFinal,steps);
+  const interval=Math.max(1,Math.ceil(steps/5));
+  const sample=result.coarse.filter((_,i)=>i%interval===0||i===steps)
+    .map(p=>`y(${fN(p[0],4)}) ≈ ${fN(p[1],6)}`).join('<br>');
+  return resBox(title,sample,description)+
+    resBox(`y(${fN(xFinal,4)}) ≈`,formatResult(result.fineValue,8),
+      `h=${fN(result.h,6)}, ${steps} pasos; refinado con ${2*steps} pasos`,true)+
+    resBox('Comparación de mallas',`|y₂ₙ − yₙ| = ${formatResult(Math.abs(result.fineValue-result.coarseValue),8)}`,
+      `Estimación de error RK4 ≈ ${formatResult(result.errorEstimate,8)} (si rige el orden 4)`);
+}
+
 function calcEDOSep(){
   const rhsStr=v('edo-sep-rhs');
-  const x0=pf('edo-sep-x0')||0, y0=pf('edo-sep-y0')||1;
   const res=document.getElementById('res-sep');
   const fn=calcParse(rhsStr);
   if(!fn){res.innerHTML=errBox('Función inválida. Usa x e y');return;}
-  const pts=rk4((x,y)=>fn(x,y), x0, y0, 0.1, 50);
-  const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
-  res.innerHTML=
-    resBox('RK4 — Solución numérica',sample,'dy/dx = '+rhsStr+'  con  y('+x0+')='+y0)+
-    resBox('y final  x='+(x0+5).toFixed(2), formatResult(pts[pts.length-1][1],6),'',true);
+  try{
+    res.innerHTML=edoNumericResult((x,y)=>fn(x,y),'edo-sep','RK4 — Solución numérica',`dy/dx = ${rhsStr}`);
+  }catch(e){res.innerHTML=errBox(e.message);}
 }
 
 function calcEDOLinear(){
   const px=calcParse(v('edo-lin-px')), qx=calcParse(v('edo-lin-qx'));
-  const x0=pf('edo-lin-x0')||0, y0=pf('edo-lin-y0')||1;
   const res=document.getElementById('res-edolin');
   if(!px||!qx){res.innerHTML=errBox('P(x) o Q(x) inválidos');return;}
-  const pts=rk4((x,y)=>qx(x,0)-px(x,0)*y, x0, y0, 0.1, 50);
-  const sample=pts.filter((_,i)=>i%10===0).map(p=>`y(${p[0]}) ≈ ${fN(p[1],4)}`).join('<br>');
-  res.innerHTML=
-    resBox('RK4 — y\' + P(x)y = Q(x)',sample,'y('+x0+')='+y0)+
-    resBox('y final  x='+(x0+5).toFixed(2), formatResult(pts[pts.length-1][1],6),'',true);
+  try{
+    res.innerHTML=edoNumericResult((x,y)=>qx(x,0)-px(x,0)*y,'edo-lin',
+      'RK4 — y\' + P(x)y = Q(x)',`P(x)=${v('edo-lin-px')}, Q(x)=${v('edo-lin-qx')}`);
+  }catch(e){res.innerHTML=errBox(e.message);}
 }
 
 function calcEDO2nd(){
-  const a=pf('edo-2do-a')||1, b=pf('edo-2do-b')||0, c=pf('edo-2do-c')||0;
-  const y0=pf('edo-2do-y0')||1, dy0=pf('edo-2do-dy0')||0;
+  const read=(id,defaultValue)=>v(id)===''?defaultValue:pf(id);
+  const a=read('edo-2do-a',1), b=read('edo-2do-b',0), c=read('edo-2do-c',0);
+  const y0=read('edo-2do-y0',1), dy0=read('edo-2do-dy0',0);
   const res=document.getElementById('res-edo2');
-  const roots=characteristicRoots(a,b,c);
+  let solution;
+  try{ solution=solveSecondOrderHomogeneous(a,b,c,y0,dy0); }
+  catch(e){ res.innerHTML=errBox(e.message); return; }
+  const {roots,c1,c2}=solution;
   const {disc}=roots;
-  let solType,sol;
+  let solType,sol,particular,constants;
   if(roots.type==='distinct'){
     const {r1,r2}=roots;
     solType='Raíces reales distintas';
     sol=`y = C₁·e^(${fN(r1,4)}x) + C₂·e^(${fN(r2,4)}x)`;
+    particular=`y = ${fN(c1,6)}·e^(${fN(r1,4)}x) + ${fN(c2,6)}·e^(${fN(r2,4)}x)`;
+    constants=`C₁ = [y'(0) − r₂y(0)]/(r₁ − r₂) = ${fN(c1,6)}<br>C₂ = y(0) − C₁ = ${fN(c2,6)}`;
   } else if(roots.type==='repeated'){
     const {r}=roots;
     solType='Raíz real doble';
     sol=`y = (C₁ + C₂x)·e^(${fN(r,4)}x)`;
+    particular=`y = (${fN(c1,6)} + ${fN(c2,6)}x)·e^(${fN(r,4)}x)`;
+    constants=`C₁ = y(0) = ${fN(c1,6)}<br>C₂ = y'(0) − r·y(0) = ${fN(c2,6)}`;
   } else {
     const {alpha,beta}=roots;
     solType='Raíces complejas conjugadas';
     sol=`y = e^(${fN(alpha,4)}x)[C₁cos(${fN(beta,4)}x) + C₂sin(${fN(beta,4)}x)]`;
+    particular=`y = e^(${fN(alpha,4)}x)[${fN(c1,6)}cos(${fN(beta,4)}x) + ${fN(c2,6)}sin(${fN(beta,4)}x)]`;
+    constants=`C₁ = y(0) = ${fN(c1,6)}<br>C₂ = [y'(0) − α·y(0)]/β = ${fN(c2,6)}`;
   }
   res.innerHTML=
     resBox('Ecuación característica', `${a}r² + ${b}r + ${c} = 0`)+
     resBox('Discriminante Δ', formatResult(disc))+
     resBox('Tipo de solución', solType)+
-    resBox('Solución general', sol,'C₁,C₂ por condiciones iniciales y(0)='+y0+', y\'(0)='+dy0,true);
+    resBox('Solución general', sol)+
+    resBox('Condiciones iniciales', constants,`y(0)=${y0}; y'(0)=${dy0}`)+
+    resBox('Solución del ejercicio',particular,'Constantes sustituidas',true);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1623,9 +1690,10 @@ function calcInit(tab='dif'){
 }
 
 export {
+  previewCalcExpression,
   calcInit, calcTab, toggleCard, clearCard, kbInsert,
   calcLimit, calcLimitOp, calcDerivative, calcImplicit, calcAnalysis,
-  calcIntegralIndef, calcIntegralDef, calcRevolutionVolume, calcTaylor, calcPartial,
+  calcIntegralIndef, calcIntegralDef, calcIntegralNumeric, calcRevolutionVolume, calcTaylor, calcPartial,
   calcGradient, calcDoubleIntegral, calcEDOSep, calcEDOLinear,
   calcEDO2nd, toggleLimOp, toggleApps, setApp,
   appOptimize, appGrowth, appMotion, appTangent, appRelated, clearAppResult,

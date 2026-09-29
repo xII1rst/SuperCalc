@@ -73,15 +73,17 @@ export function faraday(B, A, th, dBdt, N) {
 }
 
 export function maxwell(E0, f) {
+  if (!Number.isFinite(E0) || E0 < 0 || !Number.isFinite(f) || f <= 0) return null;
   const c = 1 / Math.sqrt(EM_MU0 * EM_EPS0);
   const B0 = E0 / c;
   const lambda = c / f;
   const omega = 2 * Math.PI * f;
   const k = omega / c;
   const S = E0 * B0 / EM_MU0;
+  const Smean = S / 2;
   const uE = 0.5 * EM_EPS0 * E0 * E0;
   const uB = 0.5 * B0 * B0 / EM_MU0;
-  return { c, B0, lambda, omega, k, S, uE, uB };
+  return { c, B0, lambda, omega, k, S, Smean, uE, uB };
 }
 
 export function potentialEnergy(q1,q2,r){

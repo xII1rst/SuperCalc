@@ -6,6 +6,20 @@ import vm from 'node:vm';
 const appUrl = new URL('../app.js', import.meta.url);
 const modules = new Map([
   ['./js/math/algebra/matrix.mjs', new URL('../js/math/algebra/matrix.mjs', import.meta.url)],
+  ['./js/math/algebra/geometry.mjs', new URL('../js/math/algebra/geometry.mjs', import.meta.url)],
+  ['./js/math/algebra/linear-spaces.mjs', new URL('../js/math/algebra/linear-spaces.mjs', import.meta.url)],
+  ['./js/math/algebra/parameter-systems.mjs', new URL('../js/math/algebra/parameter-systems.mjs', import.meta.url)],
+  ['./js/math/numerical-analysis.mjs', new URL('../js/math/numerical-analysis.mjs', import.meta.url)],
+  ['./js/math/logic.mjs', new URL('../js/math/logic.mjs', import.meta.url)],
+  ['./js/math/logic-advanced.mjs', new URL('../js/math/logic-advanced.mjs', import.meta.url)],
+  ['./js/math/graphs.mjs', new URL('../js/math/graphs.mjs', import.meta.url)],
+  ['./js/math/waves.mjs', new URL('../js/math/waves.mjs', import.meta.url)],
+  ['./js/graphics/wave-plot.mjs', new URL('../js/graphics/wave-plot.mjs', import.meta.url)],
+  ['./js/math/mechanics-advanced.mjs', new URL('../js/math/mechanics-advanced.mjs', import.meta.url)],
+  ['./js/math/electromagnetism-advanced.mjs', new URL('../js/math/electromagnetism-advanced.mjs', import.meta.url)],
+  ['./js/math/numerical-advanced.mjs', new URL('../js/math/numerical-advanced.mjs', import.meta.url)],
+  ['./js/math/study-calculus.mjs', new URL('../js/math/study-calculus.mjs', import.meta.url)],
+  ['./js/math/study-ode.mjs', new URL('../js/math/study-ode.mjs', import.meta.url)],
   ['./js/math/statistics.mjs', new URL('../js/math/statistics.mjs', import.meta.url)],
   ['./js/graphics/statistics-charts.mjs', new URL('../js/graphics/statistics-charts.mjs', import.meta.url)],
   ['./js/math/probability.mjs', new URL('../js/math/probability.mjs', import.meta.url)],
@@ -27,6 +41,14 @@ const modules = new Map([
   ['./js/graphics/formula-background.mjs', new URL('../js/graphics/formula-background.mjs', import.meta.url)],
   ['./js/utils/format.mjs', new URL('../js/utils/format.mjs', import.meta.url)],
   ['./js/ui/algebra/matrix.mjs', new URL('../js/ui/algebra/matrix.mjs', import.meta.url)],
+  ['./js/ui/algebra/geometry.mjs', new URL('../js/ui/algebra/geometry.mjs', import.meta.url)],
+  ['./js/ui/algebra/linear-spaces.mjs', new URL('../js/ui/algebra/linear-spaces.mjs', import.meta.url)],
+  ['./js/ui/numerical-analysis.mjs', new URL('../js/ui/numerical-analysis.mjs', import.meta.url)],
+  ['./js/ui/logic.mjs', new URL('../js/ui/logic.mjs', import.meta.url)],
+  ['./js/ui/waves.mjs', new URL('../js/ui/waves.mjs', import.meta.url)],
+  ['./js/ui/mechanics-advanced.mjs', new URL('../js/ui/mechanics-advanced.mjs', import.meta.url)],
+  ['./js/ui/electromagnetism-advanced.mjs', new URL('../js/ui/electromagnetism-advanced.mjs', import.meta.url)],
+  ['./js/ui/study-calculus.mjs', new URL('../js/ui/study-calculus.mjs', import.meta.url)],
   ['./js/ui/algebra/inequalities.mjs', new URL('../js/ui/algebra/inequalities.mjs', import.meta.url)],
   ['./js/ui/branding.mjs', new URL('../js/ui/branding.mjs', import.meta.url)],
   ['./js/offline.mjs', new URL('../js/offline.mjs', import.meta.url)],
@@ -36,6 +58,7 @@ const modules = new Map([
   ['./js/ui/theme.mjs', new URL('../js/ui/theme.mjs', import.meta.url)],
   ['./js/ui/toast.mjs', new URL('../js/ui/toast.mjs', import.meta.url)],
   ['./js/math/calculus.mjs', new URL('../js/math/calculus.mjs', import.meta.url)],
+  ['./js/math/numeric.mjs', new URL('../js/math/numeric.mjs', import.meta.url)],
   ['./js/math/expression.mjs', new URL('../js/math/expression.mjs', import.meta.url)],
   ['./js/math/graph-types.mjs', new URL('../js/math/graph-types.mjs', import.meta.url)],
   ['./js/math/applications.mjs', new URL('../js/math/applications.mjs', import.meta.url)],
@@ -225,17 +248,284 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.equal(actions.matOpsState, undefined);
   assert.equal(typeof actions.matOpsSetScalar, 'function');
 
+  getElementById('mat-sm').value='2';
+  getElementById('mat-sn').value='3';
+  getElementById('mat-smet').value='gauss';
+  actions.matBuildSis();
+  for(const [id,value] of Object.entries({
+    'ms-0-0':'1','ms-0-1':'1','ms-0-2':'1','ms-0-3':'2',
+    'ms-1-0':'2','ms-1-1':'2','ms-1-2':'2','ms-1-3':'4',
+  })) getElementById(id).value=value;
+  actions.matCalcSis();
+  assert.match(getElementById('mat-res-sis').innerHTML,/Infinitas soluciones/);
+  getElementById('mat-space-m').value='3';
+  getElementById('mat-space-n').value='4';
+  actions.matBuildSpace();
+  const spaceRows=[[1,2,0,1],[0,1,1,2],[1,3,1,3]];
+  spaceRows.forEach((row,r)=>row.forEach((value,c)=>{getElementById(`sp-${r}-${c}`).value=String(value);}));
+  actions.matCalcSpace();
+  assert.match(getElementById('mat-res-space').innerHTML,/rango\(A\) = 2; nulidad\(A\) = 2/);
+  assert.match(getElementById('mat-res-space').innerHTML,/Base del núcleo/);
+  getElementById('sp-0-0').value='';
+  actions.matCalcSpace();
+  assert.match(getElementById('mat-res-space').innerHTML,/Entrada inválida en fila 1/);
+
+  getElementById('int-def-fx').value='x²';
+  getElementById('int-def-a').value='0';
+  getElementById('int-def-b').value='4';
+  getElementById('int-num-n').value='4';
+  getElementById('int-num-method').value='right';
+  actions.calcIntegralNumeric();
+  assert.match(getElementById('res-def-num').innerHTML,/30/);
+  actions.previewCalcExpression({value:'sen(x²)',dataset:{preview:'preview-dif-der'}});
+  assert.match(getElementById('preview-dif-der').textContent,/sin\(x\^2\)/);
+
+  for(const [id,value] of Object.entries({
+    'edo-2do-a':'1','edo-2do-b':'0','edo-2do-c':'1',
+    'edo-2do-y0':'0','edo-2do-dy0':'1',
+  })) getElementById(id).value=value;
+  actions.calcEDO2nd();
+  assert.match(getElementById('res-edo2').innerHTML,/C₂ = .*1/);
+  assert.match(getElementById('res-edo2').innerHTML,/Solución del ejercicio/);
+  for(const [id,value] of Object.entries({
+    'edo-sep-rhs':'y','edo-sep-x0':'0','edo-sep-y0':'1',
+    'edo-sep-xfinal':'1','edo-sep-steps':'4',
+  })) getElementById(id).value=value;
+  actions.calcEDOSep();
+  assert.match(getElementById('res-sep').innerHTML,/refinado con 8 pasos/);
+  assert.match(getElementById('res-sep').innerHTML,/y\(1\)/);
+
   actions.openSubmod('math');
   const mathCards=getElementById('submod-cards').innerHTML;
-  for (const id of ['al','ca','stats','prob','exp'])
+  for (const id of ['al','ca','num','logic','stats','prob','exp'])
     assert.match(mathCards,new RegExp(`data-arg="${id}"`));
+  actions.openSubmod('num');
+  for (const id of ['num-errors','num-roots','num-linear','num-interpolation','num-derivative','num-ode'])
+    assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('num-errors');
+  getElementById('num-exact').value=String(Math.PI);
+  getElementById('num-approx').value=String(22/7);
+  getElementById('num-digits').value='5';
+  actions.numCalcErrors();
+  assert.match(getElementById('num-result').innerHTML,/error relativo/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-roots');
+  for (const [id,value] of Object.entries({'num-root-method':'bisection','num-root-f':'x^3-x-2','num-root-a':'1','num-root-b':'2','num-root-stop':'steps','num-root-n':'3','num-root-tol':'0.000001'}))
+    getElementById(id).value=value;
+  actions.numCalcRoots();
+  assert.match(getElementById('num-result').innerHTML,/1\.625/);
+  getElementById('num-root-method').value='bairstow';
+  for (const [id,value] of Object.entries({'num-root-coefficients':'4, 0, -5, 0, 1','num-root-r':'0','num-root-s':'1','num-root-n':'20'})) getElementById(id).value=value;
+  actions.numCalcRoots();
+  assert.match(getElementById('num-result').innerHTML,/Bairstow/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-linear');
+  for (const [id,value] of Object.entries({'num-linear-a':'4, -1\n-1, 4','num-linear-b':'3, 6','num-linear-x0':'0, 0','num-linear-method':'jacobi','num-linear-stop':'steps','num-linear-n':'2'}))
+    getElementById(id).value=value;
+  actions.numCalcLinear();
+  assert.match(getElementById('num-result').innerHTML,/1\.6875/);
+  getElementById('num-linear-method').value='lu';
+  actions.numCalcLinear();
+  assert.match(getElementById('num-result').innerHTML,/PA=LU/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-interpolation');
+  for (const [id,value] of Object.entries({'num-points':'0, 1\n1, 3\n2, 7','num-interp-method':'newton','num-interp-x':'1.5'}))
+    getElementById(id).value=value;
+  actions.numCalcInterpolation();
+  assert.match(getElementById('num-result').innerHTML,/4\.75/);
+  getElementById('num-interp-method').value='exponential';
+  getElementById('num-points').value='0, 2\n1, 5.43656365691809\n2, 14.7781121978613';
+  actions.numCalcInterpolation();
+  assert.match(getElementById('num-result').innerHTML,/Ajuste exponencial/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-derivative');
+  for (const [id,value] of Object.entries({'num-diff-f':'ln(x)','num-diff-x':'2','num-diff-h':'0.1','num-diff-method':'five'}))
+    getElementById(id).value=value;
+  actions.numCalcDerivative();
+  assert.match(getElementById('num-result').innerHTML,/refinamientos/);
+  actions.closeModule('num');
+  actions.launchSubmod('num-ode');
+  for (const [id,value] of Object.entries({'num-ode-f':'x+y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'2','num-ode-method':'euler'}))
+    getElementById(id).value=value;
+  actions.numCalcODE();
+  assert.match(getElementById('num-result').innerHTML,/1\.22/);
+  getElementById('num-ode-lambda').value='-1';
+  actions.numCalcODE();
+  assert.match(getElementById('num-result').innerHTML,/Prueba separada/);
+  actions.closeModule('num');
+  actions.closeSubmod();
+  actions.openSubmod('logic');
+  for (const id of ['logic-bases','logic-sets','logic-propositions','logic-boolean','logic-graphs'])
+    assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('logic-bases');
+  for (const [id,value] of Object.entries({'logic-base-mode':'convert','logic-base-a':'156','logic-base-b':'0','logic-base-from':'10','logic-base-to':'2','logic-base-width':'8'}))
+    getElementById(id).value=value;
+  actions.logicCalculateBases();
+  assert.match(getElementById('logic-result').innerHTML,/10011100/);
+  getElementById('logic-base-mode').value='arithmetic';
+  getElementById('logic-base-op').value='multiply';
+  getElementById('logic-base-a').value='1010';
+  getElementById('logic-base-b').value='101';
+  getElementById('logic-base-from').value='2';
+  actions.logicCalculateBases();
+  assert.match(getElementById('logic-result').innerHTML,/110010/);
+  actions.closeModule('logic');
+  actions.launchSubmod('logic-sets');
+  for (const [id,value] of Object.entries({'logic-set-mode':'sets','logic-set-a':'1, 2, 3','logic-set-b':'3, 4'}))
+    getElementById(id).value=value;
+  actions.logicCalculateSets();
+  assert.match(getElementById('logic-result').innerHTML,/A∩B = \{3\}/);
+  getElementById('logic-set-mode').value='quantified';
+  getElementById('logic-set-a').value='a, b';
+  getElementById('logic-set-pairs').value='a,a\nb,b';
+  getElementById('logic-set-outer').value='forall';
+  getElementById('logic-set-inner').value='exists';
+  actions.logicCalculateSets();
+  assert.match(getElementById('logic-result').innerHTML,/∀x ∃y/);
+  actions.closeModule('logic');
+  actions.launchSubmod('logic-propositions');
+  getElementById('logic-prop-mode').value='table';
+  getElementById('logic-prop-expression').value='(p→q)↔(¬p∨q)';
+  actions.logicCalculateProposition();
+  assert.match(getElementById('logic-result').innerHTML,/tautology/);
+  getElementById('logic-prop-mode').value='forms';
+  getElementById('logic-prop-expression').value='p→q';
+  actions.logicCalculateProposition();
+  assert.match(getElementById('logic-result').innerHTML,/FNC/);
+  actions.closeModule('logic');
+  actions.launchSubmod('logic-boolean');
+  getElementById('logic-bool-names').value='A, B, C';
+  getElementById('logic-bool-minterms').value='1, 3, 5, 7';
+  getElementById('logic-bool-dontcare').value='';
+  actions.logicCalculateBoolean();
+  assert.match(getElementById('logic-result').innerHTML,/F = C/);
+  getElementById('logic-bool-mode').value='karnaugh';
+  actions.logicCalculateBoolean();
+  assert.match(getElementById('logic-result').innerHTML,/código Gray/);
+  actions.closeModule('logic');
+  actions.launchSubmod('logic-graphs');
+  for (const [id,value] of Object.entries({'logic-graph-mode':'dijkstra','logic-graph-edges':'A B 4\nA C 2\nB C 1\nB D 5\nC D 8\nC E 10\nD E 2','logic-graph-start':'A','logic-graph-target':'E','logic-graph-directed':'undirected'}))
+    getElementById(id).value=value;
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Distancia mínima = 10/);
+  getElementById('logic-graph-mode').value='matching';
+  getElementById('logic-graph-left').value='A, B';
+  getElementById('logic-graph-right').value='X, Y';
+  getElementById('logic-graph-edges').value='A X\nB X\nB Y';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Tamaño máximo = 2/);
+  actions.closeModule('logic');
+  actions.closeSubmod();
   actions.openSubmod('al');
   assert.match(getElementById('submod-back').innerHTML, /Matemáticas/);
   const algebraCards=getElementById('submod-cards').innerHTML;
   assert.match(algebraCards,/Vectores y matrices/);
   assert.match(algebraCards,/Funciones y relaciones/);
-  for(const id of ['vectors','mat','ineq','fn','seq'])
+  for(const id of ['vectors','geom','mat','linear','ineq','fn','seq'])
     assert.match(algebraCards,new RegExp(`data-arg="${id}"`));
+  getElementById('geom-mode').value = 'linePoints';
+  actions.launchSubmod('geom');
+  assert.equal(getElementById('geom-app').classList.contains('visible'), true);
+  assert.match(getElementById('geom-fields').innerHTML, /Primer punto P/);
+  getElementById('geom-p').value='1, 2, 3';
+  getElementById('geom-q').value='4, 0, 5';
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /y = 2 − 2t/);
+  getElementById('geom-mode').value='planePoint';
+  actions.geomSelect();
+  getElementById('geom-p').value='1, 2, 3';
+  getElementById('geom-n').value='2, -1, 4';
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /2x − y \+ 4z = 12/);
+  getElementById('geom-mode').value = 'linePlane';
+  actions.geomSelect();
+  for (const [id, value] of Object.entries({p:'1, 0, 2',d:'1, 1, -1',n:'1, 2, 1',c:'7'}))
+    getElementById(`geom-${id}`).value = value;
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /\(3, 2, 0\)/);
+  getElementById('geom-d').value = '0, 0, 0';
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').textContent, /dirección.*cero/);
+  getElementById('geom-mode').value='distance';
+  actions.geomSelect();
+  for (const [id, value] of Object.entries({p:'1, 2, 3',n:'2, -1, 2',c:'4'}))
+    getElementById(`geom-${id}`).value=value;
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /2\/3/);
+  getElementById('geom-mode').value='angle';
+  actions.geomSelect();
+  for (const [id, value] of Object.entries({n1:'1, 1, 1',c1:'3',n2:'2, -1, 1',c2:'5'}))
+    getElementById(`geom-${id}`).value=value;
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /Ángulo entre planos/);
+  getElementById('geom-mode').value='planes';
+  actions.geomSelect();
+  for (const [id, value] of Object.entries({n1:'1, 1, 1',c1:'3',n2:'2, -1, 1',c2:'0'}))
+    getElementById(`geom-${id}`).value=value;
+  actions.geomCalculate();
+  assert.match(getElementById('geom-result').innerHTML, /Recta de intersección/);
+  actions.closeModule('geom');
+  assert.equal(getElementById('geom-app').classList.contains('visible'), false);
+  getElementById('linear-mode').value='gram';
+  actions.launchSubmod('linear');
+  assert.equal(getElementById('linear-app').classList.contains('visible'),true);
+  assert.match(getElementById('linear-fields').innerHTML,/Vectores, uno por línea/);
+  getElementById('linear-vectors').value='1, 1, 0\n1, 0, 1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/base ortonormal/);
+  getElementById('linear-mode').value='coordinates';
+  actions.linearSelect();
+  getElementById('linear-basis').value='1, 1\n1, -1';
+  getElementById('linear-target').value='3, 1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/\[2, 1\]/);
+  getElementById('linear-mode').value='change';
+  actions.linearSelect();
+  getElementById('linear-from').value='1, 2\n0, 1';
+  getElementById('linear-to').value='1, 1\n2, 3';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/Matriz de transición/);
+  getElementById('linear-mode').value='projection';
+  actions.linearSelect();
+  getElementById('linear-target').value='1, 2, 3';
+  getElementById('linear-vectors').value='1, 0, 1\n0, 1, 1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/Proyección = \[1, 2, 3\]/);
+  getElementById('linear-mode').value='transform';
+  actions.linearSelect();
+  getElementById('linear-matrix').value='1, 0, 3\n2, 1, -1';
+  getElementById('linear-target').value='2, -1, 4';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/\[14, -1\]/);
+  getElementById('linear-mode').value='representation';
+  actions.linearSelect();
+  getElementById('linear-matrix').value='2, 1\n1, -1';
+  getElementById('linear-from').value='1, 1\n0, 1';
+  getElementById('linear-to').value='1, 0\n0, 1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/\[3, 1\]/);
+  getElementById('linear-mode').value='diagonal';
+  actions.linearSelect();
+  getElementById('linear-matrix').value='3, 1\n0, 2';
+  getElementById('linear-exponent').value='5';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/211/);
+  getElementById('linear-matrix').value='1, 1\n0, 1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/No se presenta una potencia/);
+  getElementById('linear-mode').value='affine';
+  actions.linearSelect();
+  for(const [key,value] of Object.entries({a0:'1,1,1\n1,2,3\n1,3,0',at:'0,0,0\n0,0,0\n0,0,1',b0:'1,2,0',bu:'0,0,1'})) getElementById(`linear-${key}`).value=value;
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/u = 3/);
+  getElementById('linear-mode').value='similarity';
+  actions.linearSelect();
+  getElementById('linear-first').value='1,2\n0,3';
+  getElementById('linear-second').value='3,0\n0,1';
+  actions.linearCalculate();
+  assert.match(getElementById('linear-result').innerHTML,/AP−PB/);
+  actions.closeModule('linear');
+  assert.equal(getElementById('linear-app').classList.contains('visible'),false);
   actions.closeSubmod();
   assert.match(getElementById('submod-cards').innerHTML,/Estadística/);
   assert.match(getElementById('submod-back').innerHTML, /Inicio/);
@@ -243,6 +533,21 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   const calcCards=getElementById('submod-cards').innerHTML;
   for(const id of ['calc-dif','calc-int','calc-cur','calc-mul','calc-edo','calc-graf'])
     assert.match(calcCards,new RegExp(`data-arg="${id}"`));
+  for(const [card,mode,input,expected] of [
+    ['study-differential','continuity',{segments:'x^2+k\n3*x-1',cuts:'2'},/k: 1/],
+    ['study-integral','series',{center:'2',radius:'2',power:'2'},/Extremo derecho/],
+    ['study-multivariable','plane',{expr:'x^2+y^2',x:'1',y:'1',step:'0.00001'},/Gradiente/],
+    ['study-ode','forced',{damping:'0',stiffness:'1',force:'2',omega:'1',y0:'0',v0:'0',time:'1'},/Resonancia/],
+  ]) {
+    assert.match(calcCards,new RegExp(`data-arg="${card}"`));
+    actions.launchSubmod(card);
+    getElementById('study-mode').value=mode;
+    actions.studySelect();
+    for(const [key,value] of Object.entries(input)) getElementById(`study-${key}`).value=value;
+    actions.studyCalculate();
+    assert.match(getElementById('study-result').innerHTML,expected);
+    actions.closeModule('study');
+  }
   for(const [id,panel] of [
     ['calc-dif','Dif'],['calc-int','Int'],['calc-cur','Cur'],
     ['calc-mul','Mul'],['calc-edo','Edo'],['calc-graf','Graf'],
@@ -257,10 +562,92 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   actions.closeSubmod();
   actions.openSubmod('fi');
   assert.match(getElementById('submod-cards').innerHTML, /data-action="openSubmod" data-arg="mech"/);
+  assert.match(getElementById('submod-cards').innerHTML, /data-action="openSubmod" data-arg="waves"/);
+  actions.openSubmod('em');
+  for (const [card,mode,input,expected] of [
+    ['emplus-electrostatics','charges',{charges:'0.000001, -1, 0, 0\n0.000001, 1, 0, 0',point:'0, 0, 1'},/Potencial/],
+    ['emplus-circuits','nodal',{nodes:'3',resistors:'1, 2, 1000\n2, 0, 1000',fixed:'0, 0\n1, 10',injections:''},/Potenciales de nodos/],
+    ['emplus-magnetism','magnetic',{shape:'loop',current:'2',turns:'100',size:'0.2',position:'0.1'},/Campo E/],
+  ]) {
+    assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${card}"`));
+    actions.launchSubmod(card);
+    getElementById('emplus-mode').value=mode;
+    actions.emPlusSelect();
+    for (const [key,value] of Object.entries(input)) getElementById(`emplus-${key}`).value=value;
+    actions.emPlusCalculate();
+    assert.match(getElementById('emplus-result').innerHTML,expected);
+    actions.closeModule('emplus');
+  }
+  assert.match(getElementById('submod-cards').innerHTML,/data-arg="em-basics"/);
+  actions.closeSubmod();
+  actions.openSubmod('waves');
+  for (const id of ['waves-oscillations','waves-mechanical','waves-optics'])
+    assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${id}"`));
+  actions.launchSubmod('waves-oscillations');
+  getElementById('waves-mode').value='harmonic';
+  actions.wavesSelect();
+  for (const [id,value] of Object.entries({a:'0.05',w:String(4*Math.PI),phase:String(Math.PI/3),time:'0.5',k:''}))
+    getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/f = ω\/\(2π\) = 2 Hz/);
+  getElementById('waves-mode').value='lc';
+  actions.wavesSelect();
+  for (const [id,value] of Object.entries({l:'0.1',c:'0.0001',q:'0.001',time:'0.005'})) getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/E total/);
+  actions.closeModule('waves');
+  actions.launchSubmod('waves-mechanical');
+  getElementById('waves-mode').value='traveling';
+  actions.wavesSelect();
+  for (const [id,value] of Object.entries({a:'0.02',k:'3',w:'12',x:'0',time:'0'}))
+    getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/v = ω\/k = 4 m\/s/);
+  getElementById('waves-mode').value='tube';
+  actions.wavesSelect();
+  for (const [id,value] of Object.entries({length:'1',speed:'340',boundary:'closed-open',count:'3'})) getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/85 Hz/);
+  actions.closeModule('waves');
+  actions.launchSubmod('waves-optics');
+  getElementById('waves-mode').value='em';
+  actions.wavesSelect();
+  getElementById('waves-electric').value='300';
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/Presión absorbente/);
+  getElementById('waves-mode').value='grating';
+  actions.wavesSelect();
+  for (const [id,value] of Object.entries({separation:'0.000002',lambda:'0.00000055',minimum:'0.00000038',maximum:'0.00000075'})) getElementById(`waves-${id}`).value=value;
+  actions.wavesCalculate();
+  assert.match(getElementById('waves-result').innerHTML,/m=5/);
+  actions.closeModule('waves');
+  actions.closeSubmod();
   actions.openSubmod('mech');
   assert.match(getElementById('submod-back').innerHTML, /Física/);
   for (const id of ['mech-motion','mech-projectile','mech-dynamics'])
     assert.match(getElementById('submod-cards').innerHTML, new RegExp(`data-arg="${id}"`));
+  for (const [card,mode,input,expected] of [
+    ['mechplus-forces','cables',{weight:'100',left:'30',right:'45'},/Tensión izquierda/],
+    ['mechplus-motion','loop',{height:'5',radius:'2'},/Contacto en cima/],
+    ['mechplus-collisions','collision',{m1:'2',v1:'3',m2:'1',v2:'0',e:'1'},/Velocidad final 1/],
+    ['mechplus-rotation','orbit',{mass:'5.972e24',radius:'6771000',satellite:'1000'},/Período/],
+  ]) {
+    assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${card}"`));
+    actions.launchSubmod(card);
+    assert.equal(getElementById('mechplus-app').classList.contains('visible'),true);
+    getElementById('mechplus-mode').value=mode;
+    actions.mechPlusSelect();
+    for (const [key,value] of Object.entries(input)) getElementById(`mechplus-${key}`).value=value;
+    if(mode==='cables') {
+      const unit=getElementById('mechplus-weight-force-unit');
+      unit.value='lbf';unit.dataset.previous='N';
+      actions.mechPlusUnitChanged('weight:force');
+      assert.ok(Math.abs(Number(getElementById('mechplus-weight').value)-100/4.4482216152605)<1e-8);
+    }
+    actions.mechPlusCalculate();
+    assert.match(getElementById('mechplus-result').innerHTML,expected);
+    actions.closeModule('mechplus');
+  }
   actions.launchSubmod('mech-motion');
   assert.equal(getElementById('mech-app').classList.contains('visible'), true);
   assert.equal(getElementById('mech-motion-card').hidden, false);

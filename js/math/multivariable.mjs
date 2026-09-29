@@ -4,7 +4,7 @@
 // (polares) y triples, jacobiano 2D y centro de masa.
 
 import {
-  calcParse, collectVariables, symbolicDeriv,
+  calcParse, collectVariables, normalizeExpression, symbolicDeriv, symbolicLimit,
   tokenize, parseExpr, diffAST, simplify, collectTerms, astToStr,
   gradient2D, midpointIntegral2D, simpsonIntegral,
 } from './calculus.mjs';
@@ -78,22 +78,46 @@ function pathLimit(f, path) {
 export function multivariableLimit(fxyStr, x0, y0) {
   const f = f2(fxyStr);
   requireFn(f);
-  const paths = [
-    [`y = ${y0}`, t => [x0 + t, y0]],
-    [`x = ${x0}`, t => [x0, y0 + t]],
-    ['recta y = x', t => [x0 + t, y0 + t]],
-    ['parábola y = x²', t => [x0 + t, y0 + t * t]],
-    ['recta y = 2x', t => [x0 + t, y0 + 2 * t]],
-  ].map(([name, path]) => ({ name, value: pathLimit(f, path) }));
+  if (!Number.isFinite(x0) || !Number.isFinite(y0)) throw new RangeError('Punto inválido');
 
-  const finite = paths.filter(p => p.value !== null && Number.isFinite(p.value));
-  let exists = false, value = null;
-  if (finite.length) {
-    const first = finite[0].value;
-    exists = finite.every(p => Math.abs(p.value - first) < 1e-3 * Math.max(1, Math.abs(first)));
-    if (exists) value = first;
+  const normalized=normalizeExpression(fxyStr);
+  const powers=[...normalized.matchAll(/\^/g)];
+  const rational = /^[0-9xy+\-*/^().\s]+$/.test(normalized)
+    && powers.every(match=>/^\^\s*[1-9]\d*(?![\d.])/.test(normalized.slice(match.index)));
+  const pathSpecs = [
+    [`y = ${y0}`, 't', '0', t => [x0 + t, y0]],
+    [`x = ${x0}`, '0', 't', t => [x0, y0 + t]],
+    ['recta de pendiente 1', 't', 't', t => [x0 + t, y0 + t]],
+    ['parábola desplazada', 't', 't^2', t => [x0 + t, y0 + t * t]],
+    ['recta de pendiente 2', 't', '2*t', t => [x0 + t, y0 + 2 * t]],
+  ];
+  const paths = pathSpecs.map(([name, dx, dy, path]) => {
+    const value = pathLimit(f, path);
+    let formalValue = null;
+    if (rational) {
+      const expression = normalized
+        .replace(/\bx\b/g, `(${x0}+${dx})`)
+        .replace(/\by\b/g, `(${y0}+${dy})`);
+      const limit = symbolicLimit(expression, '0', 't');
+      if (limit && Number.isFinite(limit.valueNum)) formalValue = limit.valueNum;
+    }
+    return { name, value, formalValue };
+  });
+
+  // A rational expression defined at the point is continuous there.
+  const direct = rational ? f(x0, y0) : NaN;
+  if (Number.isFinite(direct)) {
+    return { status: 'proved', exists: true, value: direct, method: 'sustitución directa', paths };
   }
-  return { exists, value, paths };
+
+  // Two different exact path limits disprove the joint limit. Agreement along
+  // finitely many paths, whether exact or sampled, never proves existence.
+  const formal = paths.filter(p => p.formalValue !== null);
+  if (formal.length > 1 && formal.some(p =>
+    Math.abs(p.formalValue - formal[0].formalValue) > 1e-8 * Math.max(1, Math.abs(formal[0].formalValue)))) {
+    return { status: 'disproved', exists: false, value: null, method: 'trayectorias con límites distintos', paths };
+  }
+  return { status: 'undetermined', exists: null, value: null, method: 'trayectorias insuficientes', paths };
 }
 
 // ── Derivada direccional ──

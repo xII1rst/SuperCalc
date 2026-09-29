@@ -17,6 +17,7 @@ export function riemannSum(fn, a, b, n = 100, method = 'midpoint') {
   if (typeof fn !== 'function') throw new TypeError('Ingresa una función válida');
   if (!Number.isFinite(a) || !Number.isFinite(b) || a >= b) throw new RangeError('Se requieren límites finitos con a < b');
   if (!Number.isInteger(n) || n < 1) throw new RangeError('n debe ser un entero positivo');
+  if (!['left', 'right', 'midpoint'].includes(method)) throw new RangeError('Método de Riemann inválido');
   const h = (b - a) / n;
   let s = 0;
   for (let i = 0; i < n; i++) {

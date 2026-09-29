@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  calcParse, symbolicDeriv, computeLimit, basicAntideriv, rk4,
+  calcParse, symbolicDeriv, normalizeExpression, computeLimit, basicAntideriv, rk4, rk4Refinement,
   simpsonIntegral, taylorCoefficients, partialDerivative,
   gradient2D, midpointIntegral2D, implicitDerivative,
   groupPolynomialQuotient, calculateLimitOperation, revolutionVolume,
@@ -16,6 +16,14 @@ test('el analizador numérico conserva expresiones habituales', () => {
   assert.equal(calcParse('t^2+2t','t')(3,0),15);
   assert.equal(calcParse('x^2+y^2')(3,4),25);
   assert.equal(calcParse('t^2','t;alert(1)'),null);
+  assert.equal(normalizeExpression('2·x²−1'),'2*x^2-1');
+  assert.ok(Math.abs(calcParse('sen(x²)')(2,0)-Math.sin(4))<1e-12);
+  assert.ok(Math.abs(calcParse('ln(x)')(2,0)-Math.log(2))<1e-12);
+  assert.ok(Math.abs(calcParse('log(x)')(2,0)-Math.log10(2))<1e-12);
+  assert.ok(Math.abs(calcParse('exp(x)')(2,0)-Math.exp(2))<1e-12);
+  assert.equal(calcParse('x;globalThis.pwned=1'),null);
+  assert.equal(calcParse("'<img src=x>'"),null);
+  assert.equal(symbolicDeriv('sen(x²)'),'cos(x^2)*2x');
 });
 
 test('el cociente polinómico se agrupa sólo en límites ambiguos',()=>{
@@ -47,6 +55,17 @@ test('antiderivada básica e integración RK4', () => {
   assert.equal(basicAntideriv('x'), '(1/2)x^2');
   assert.equal(basicAntideriv('sin(x)'), '-cos(x)');
   assert.deepEqual(rk4(() => 1, 0, 0, 0.1, 2), [[0, 0], [0.1, 0.1], [0.2, 0.2]]);
+});
+
+test('RK4 ajusta intervalo, refina la malla y detecta datos inválidos', () => {
+  const result=rk4Refinement((x,y)=>y,0,1,1,4);
+  assert.equal(result.coarse.length,5);
+  assert.equal(result.fine.length,9);
+  assert.equal(result.fine.at(-1)[0],1);
+  assert.ok(Math.abs(result.fineValue-Math.E)<Math.abs(result.coarseValue-Math.E));
+  assert.ok(result.errorEstimate>0);
+  assert.throws(()=>rk4Refinement((x,y)=>y,0,1,0,4),RangeError);
+  assert.throws(()=>rk4(()=>Infinity,0,1,0.1,2),RangeError);
 });
 
 test('integración y derivadas numéricas no requieren navegador', () => {

@@ -1,5 +1,5 @@
-import { calcParse, collectVariables } from './expression.mjs';
-export { calcParse, collectVariables } from './expression.mjs';
+import { calcParse, collectVariables, normalizeExpression } from './expression.mjs';
+export { calcParse, collectVariables, normalizeExpression } from './expression.mjs';
 
 // Sólo para límites: la notación polinómica a/b+c puede significar
 // (polinomio)/(polinomio). Fuera de ese contexto se conserva la precedencia JS.
@@ -23,7 +23,7 @@ export function groupPolynomialQuotient(expr,varName='x'){
 
 // --- Tokenizer ---
 function tokenize(expr){
-  expr = expr.trim()
+  expr = normalizeExpression(expr)
     .replace(/\*\*/g,'^')
     .replace(/π/g,'3.14159265358979')
     // Superíndices Unicode → ^n
@@ -1011,15 +1011,31 @@ export function basicAntideriv(expr){
 }
 
 export function rk4(fn,x0,y0,h,steps){
+  if(typeof fn!=='function'||![x0,y0,h].every(Number.isFinite)||h===0
+    ||!Number.isInteger(steps)||steps<1||steps>5000){
+    throw new RangeError('Datos de RK4 inválidos');
+  }
   let x=x0,y=y0,pts=[[x,y]];
   for(let i=0;i<steps;i++){
     const k1=fn(x,y),k2=fn(x+h/2,y+h/2*k1);
     const k3=fn(x+h/2,y+h/2*k2),k4=fn(x+h,y+h*k3);
-    y+=h/6*(k1+2*k2+2*k3+k4); x+=h;
-    if(!isFinite(y)) break;
-    pts.push([parseFloat(x.toFixed(4)),parseFloat(y.toFixed(6))]);
+    if(![k1,k2,k3,k4].every(Number.isFinite)) throw new RangeError('La derivada no es finita en el intervalo');
+    y+=h/6*(k1+2*k2+2*k3+k4); x=x0+(i+1)*h;
+    if(!Number.isFinite(y)) throw new RangeError('La solución dejó de ser finita');
+    pts.push([x,y]);
   }
   return pts;
+}
+
+export function rk4Refinement(fn,x0,y0,xFinal,steps){
+  if(!Number.isFinite(xFinal)||xFinal===x0||!Number.isInteger(steps)||steps<1||steps>1000){
+    throw new RangeError('Ingresa x final distinto de x₀ y entre 1 y 1000 pasos');
+  }
+  const h=(xFinal-x0)/steps;
+  const coarse=rk4(fn,x0,y0,h,steps);
+  const fine=rk4(fn,x0,y0,h/2,2*steps);
+  const coarseValue=coarse.at(-1)[1], fineValue=fine.at(-1)[1];
+  return {coarse,fine,h,coarseValue,fineValue,errorEstimate:Math.abs(fineValue-coarseValue)/15};
 }
 
 // Núcleos numéricos usados por los formularios de integrales y multivariable.

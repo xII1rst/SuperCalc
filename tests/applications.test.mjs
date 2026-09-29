@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   optimizeFunction, populationGrowth, motionAt, tangentAt, relatedRates, characteristicRoots,
+  solveSecondOrderHomogeneous,
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
   hyperbolicValues, inverseHyperbolic, inverseFunctionDerivative, logarithmicDerivative,
 } from '../js/math/applications.mjs';
@@ -36,6 +37,22 @@ test('tasas relacionadas y raíces características',()=>{
   const complex=characteristicRoots(1,0,1);
   assert.equal(complex.type,'complex');
   assert.equal(complex.beta,1);
+});
+
+test('EDO homogénea de segundo orden satisface condiciones iniciales en los tres casos',()=>{
+  const cases=[
+    [1,-3,2,2,3,'distinct',x=>Math.exp(x)+Math.exp(2*x)],
+    [1,-2,1,0,1,'repeated',x=>x*Math.exp(x)],
+    [1,0,1,0,1,'complex',x=>Math.sin(x)],
+  ];
+  for(const [a,b,c,y0,dy0,type,expected] of cases){
+    const result=solveSecondOrderHomogeneous(a,b,c,y0,dy0);
+    assert.equal(result.roots.type,type);
+    close(result.evaluate(0),y0);
+    close((result.evaluate(1e-5)-result.evaluate(-1e-5))/(2e-5),dy0);
+    close(result.evaluate(0.7),expected(0.7));
+  }
+  assert.throws(()=>solveSecondOrderHomogeneous(0,1,2,1,0),RangeError);
 });
 
 test('método de Newton-Raphson halla raíces',()=>{

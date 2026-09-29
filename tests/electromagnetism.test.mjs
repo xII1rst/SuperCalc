@@ -45,4 +45,7 @@ test('Gauss, potencial, Lorentz, Faraday y Maxwell', () => {
   const wave = maxwell(1000, 1e9);
   assert.ok(wave.c > 2.9e8 && wave.c < 3.1e8);
   assert.ok(wave.lambda > 0);
+  assert.equal(wave.Smean,wave.S/2);
+  assert.ok(Math.abs(wave.Smean-0.5*EM_EPS0*wave.c*1000**2)<1e-10);
+  assert.equal(maxwell(1000,0),null);
 });

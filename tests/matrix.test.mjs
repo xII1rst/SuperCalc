@@ -67,3 +67,39 @@ test('la matriz nula no produce eigenvectores NaN', () => {
     assert.ok(vec.every(Number.isFinite));
   }
 });
+
+test('Gauss-Jordan clasifica sistemas rectangulares y construye soluciones libres', () => {
+  const unique=matGauss([[1,1],[1,-1],[2,0]],[4,2,6]);
+  assert.equal(unique.status,'unique');
+  assert.deepEqual(unique.sol,[[3,1],[1,1]]);
+  assert.equal(unique.rankA,2);
+  const infinite=matGauss([[1,1,1],[2,2,2]],[2,4]);
+  assert.equal(infinite.status,'infinite');
+  assert.equal(infinite.rankA,1);
+  assert.equal(infinite.rankAug,1);
+  assert.equal(infinite.nullspace.length,2);
+  for(const vector of infinite.nullspace){
+    assert.ok(Math.abs(vector.reduce((s,v)=>s+v,0))<1e-10);
+  }
+  const impossible=matGauss([[1,1],[2,2]],[2,5]);
+  assert.equal(impossible.status,'inconsistent');
+  assert.equal(impossible.rankAug,2);
+  assert.equal(matGauss([[0]],[1e-12]).status,'inconsistent');
+  assert.equal(matGauss([[1e-12]],[2e-12]).status,'unique');
+  assert.equal(matCramer([[1,1,1],[2,2,2]],[2,4]),null);
+});
+
+test('autopares incluyen residuo y no inventan pares para matrices no simétricas', () => {
+  const symmetric=matEigenAll([[4,1,1],[1,4,1],[1,1,4]]);
+  assert.deepEqual(symmetric.map(pair=>Math.round(pair.lam)),[6,3,3]);
+  assert.ok(symmetric.every(pair=>pair.converged&&pair.residual<1e-10));
+  const nonsymmetric=matEigenAll([[4,1],[2,3]]);
+  assert.deepEqual(nonsymmetric.map(pair=>pair.lam),[5,2]);
+  assert.ok(nonsymmetric.every(pair=>pair.residual<1e-10));
+  const defective=matEigenAll([[1,1],[0,1]]);
+  assert.equal(defective.length,1);
+  assert.match(defective.message,/no es diagonalizable/);
+  const complex=matEigenAll([[0,-1],[1,0]]);
+  assert.equal(complex.length,0);
+  assert.match(complex.message,/complejos/);
+});

@@ -19,6 +19,7 @@ export function bindActions(root,actions){
       case 'setUnkTarget':
       case 'matOpsSetScalar': return action(element.value);
       case 'mathTogSteps': return action(data.arg,element);
+      case 'previewCalcExpression': return action(element);
       case 'toggleSection': return action(element);
       default:
         if(Object.hasOwn(data,'arg')) return action(data.argType==='number'?Number(data.arg):data.arg);

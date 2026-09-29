@@ -76,11 +76,6 @@ export function matInv(M) {
 
 function fGcd(a,b){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;}
 function fSimp([n,d]){if(d===0)return[n,d];const g=fGcd(Math.abs(n),Math.abs(d));const s=d<0?-1:1;return[s*n/g,s*d/g];}
-function fAdd([an,ad],[bn,bd]){return fSimp([an*bd+bn*ad,ad*bd]);}
-function fSub([an,ad],[bn,bd]){return fSimp([an*bd-bn*ad,ad*bd]);}
-function fMul([an,ad],[bn,bd]){return fSimp([an*bn,ad*bd]);}
-function fDiv([an,ad],[bn,bd]){return fSimp([an*bd,ad*bn]);}
-function fractionString([n,d]) { return d===0 ? '∞' : d===1 ? `${n}` : `${n}/${d}`; }
 export function toFrac2(x){
   // convert float to exact fraction via continued fractions
   if(!isFinite(x))return[x>0?1:-1,0];
@@ -99,32 +94,74 @@ export function toFrac2(x){
   return fSimp([sign*n0,d0]);
 }
 export function matGauss(A,b) {
-  const n=A.length;
-  // Convert to fractions
-  const aug=A.map((row,i)=>[...row,b[i]].map(v=>toFrac2(v)));
-  const steps=[];
-  for(let col=0;col<n;col++){
-    // Partial pivot by absolute value of numerator/denominator
-    let maxR=col;
-    for(let r=col+1;r<n;r++){
-      const [an,ad]=aug[r][col],[bn,bd]=aug[maxR][col];
-      if(Math.abs(an/ad)>Math.abs(bn/bd)) maxR=r;
-    }
-    if(maxR!==col){ [aug[col],aug[maxR]]=[aug[maxR],aug[col]]; steps.push(`Swap F${col+1} ↔ F${maxR+1}`); }
-    const piv=aug[col][col];
-    if(Math.abs(piv[0]/piv[1])<1e-12) return {sol:null,steps,inconsistent:true};
-    for(let r=0;r<n;r++) if(r!==col){
-      const f=fDiv(aug[r][col],piv);
-      if(Math.abs(f[0]/f[1])<1e-12) continue;
-      for(let j=col;j<=n;j++) aug[r][j]=fSub(aug[r][j],fMul(f,aug[col][j]));
-      steps.push(`F${r+1} ← F${r+1} − (${fractionString(f)})·F${col+1}`);
-    }
-    steps.push(`Pivote col ${col+1}: ${fractionString(piv)}`);
+  const rows=A.length, cols=A[0]?.length;
+  if(!rows||!cols||A.some(row=>row.length!==cols)||b.length!==rows
+    ||A.some(row=>row.some(v=>!Number.isFinite(v)))||b.some(v=>!Number.isFinite(v))){
+    throw new RangeError('Matriz o vector de términos inválidos');
   }
-  const sol=aug.map((row,i)=>fDiv(row[n],row[i]));
-  return {sol,steps,inconsistent:false,isFrac:true};
+  const aug=A.map((row,i)=>[...row,b[i]]);
+  const scaleA=Math.max(...A.flat().map(Math.abs));
+  const scaleB=Math.max(...b.map(Math.abs));
+  const tolA=1e-10*scaleA, tolB=1e-10*scaleB;
+  const steps=[], pivots=[];
+  const display=v=>String(Number(v.toPrecision(8)));
+  let rank=0;
+  for(let col=0;col<cols&&rank<rows;col++){
+    let maxRow=rank;
+    for(let r=rank+1;r<rows;r++) if(Math.abs(aug[r][col])>Math.abs(aug[maxRow][col])) maxRow=r;
+    if(Math.abs(aug[maxRow][col])<=tolA) continue;
+    if(maxRow!==rank){
+      [aug[rank],aug[maxRow]]=[aug[maxRow],aug[rank]];
+      steps.push(`F${rank+1} ↔ F${maxRow+1}`);
+    }
+    const pivot=aug[rank][col];
+    for(let j=col;j<=cols;j++) aug[rank][j]/=pivot;
+    steps.push(`F${rank+1} ← F${rank+1} / ${display(pivot)}`);
+    for(let r=0;r<rows;r++){
+      if(r===rank||Math.abs(aug[r][col])<=tolA) continue;
+      const factor=aug[r][col];
+      for(let j=col;j<=cols;j++) aug[r][j]-=factor*aug[rank][j];
+      steps.push(`F${r+1} ← F${r+1} − (${display(factor)})·F${rank+1}`);
+    }
+    pivots.push(col);
+    rank++;
+  }
+  for(const row of aug) for(let j=0;j<=cols;j++) if(Math.abs(row[j])<=(j===cols?tolB:tolA)) row[j]=0;
+  const inconsistent=aug.some(row=>row.slice(0,cols).every(v=>v===0)&&row[cols]!==0);
+  const status=inconsistent?'inconsistent':rank===cols?'unique':'infinite';
+  const free=Array.from({length:cols},(_,i)=>i).filter(i=>!pivots.includes(i));
+  const particular=status==='inconsistent'?null:Array(cols).fill(0);
+  if(particular) pivots.forEach((col,i)=>{particular[col]=aug[i][cols];});
+  const nullspace=free.map(freeCol=>{
+    const vector=Array(cols).fill(0);
+    vector[freeCol]=1;
+    pivots.forEach((col,i)=>{vector[col]=-aug[i][freeCol];});
+    return vector;
+  });
+  return {
+    sol:status==='unique'?particular.map(toFrac2):null,
+    status, inconsistent, rankA:rank, rankAug:rank+(inconsistent?1:0),
+    pivots, free, particular, nullspace, rref:aug, steps, isFrac:true,
+  };
+}
+export function matSpace(A) {
+  const rows = A.length;
+  const cols = A[0]?.length;
+  const reduced = matGauss(A, Array(rows).fill(0));
+  const rank = reduced.rankA;
+  return {
+    rows, cols, rank, nullity:cols-rank,
+    pivots:reduced.pivots,
+    free:reduced.free,
+    rowBasis:reduced.rref.slice(0,rank).map(row=>row.slice(0,cols)),
+    columnBasis:reduced.pivots.map(col=>A.map(row=>row[col])),
+    kernelBasis:reduced.nullspace,
+    rref:reduced.rref.map(row=>row.slice(0,cols)),
+    steps:reduced.steps,
+  };
 }
 export function matCramer(A,b) {
+  if(!A.length||A.some(row=>row.length!==A.length)||b.length!==A.length) return null;
   const n=A.length,detA=matDet(A);
   if(Math.abs(detA)<1e-12) return null;
   return b.map((_,i)=>{
@@ -133,36 +170,107 @@ export function matCramer(A,b) {
   });
 }
 
-// Power iteration for dominant eigenvalue
+function eigenResidual(M, lam, vec) {
+  return Math.hypot(...M.map((row,i)=>row.reduce((sum,v,j)=>sum+v*vec[j],0)-lam*vec[i]));
+}
+
+function normalizeEigenvector(vec) {
+  const norm=Math.hypot(...vec);
+  return norm===0?null:vec.map(v=>v/norm);
+}
+
+// Power iteration returns only a dominant candidate. The residual tells the UI
+// whether the iteration actually found an eigenpair.
 export function matPowerIter(M,maxIter=200) {
   const n=M.length;
-  let v=Array(n).fill(0).map(()=>Math.random()*2-1);
-  let norm=Math.sqrt(v.reduce((s,x)=>s+x*x,0));
-  if(norm===0){ v[0]=1; norm=1; }
-  v=v.map(x=>x/norm);
-  let lam=0;
-  for(let iter=0;iter<maxIter;iter++){
-    const Mv=M.map(row=>row.reduce((s,val,j)=>s+val*v[j],0));
-    const newNorm=Math.sqrt(Mv.reduce((s,x)=>s+x*x,0));
-    if(newNorm===0) return {lam:0,vec:v};
-    lam=Mv.reduce((s,x,i)=>s+x*v[i],0);
-    v=Mv.map(x=>x/newNorm);
+  if(!n||M.some(row=>row.length!==n||row.some(v=>!Number.isFinite(v)))) throw new RangeError('Matriz cuadrada inválida');
+  let v=normalizeEigenvector(Array.from({length:n},(_,i)=>i+1));
+  const scale=Math.max(1,...M.flat().map(Math.abs));
+  for(let iter=1;iter<=maxIter;iter++){
+    const mv=M.map(row=>row.reduce((sum,value,j)=>sum+value*v[j],0));
+    const next=normalizeEigenvector(mv);
+    if(!next){
+      const residual=eigenResidual(M,0,v);
+      return {lam:0,vec:v,residual,iterations:iter,converged:residual<=1e-9*scale};
+    }
+    v=next;
+    const product=M.map(row=>row.reduce((sum,value,j)=>sum+value*v[j],0));
+    const lam=product.reduce((sum,value,i)=>sum+value*v[i],0);
+    const residual=eigenResidual(M,lam,v);
+    if(residual<=1e-9*scale) return {lam,vec:v,residual,iterations:iter,converged:true};
+    if(iter===maxIter) return {lam,vec:v,residual,iterations:iter,converged:false};
   }
-  return {lam,vec:v};
+  throw new RangeError('Se requiere al menos una iteración');
 }
-function matDeflate(M,lam,vec) {
+
+function symmetricEigenpairs(M) {
   const n=M.length;
-  const norm2=vec.reduce((s,x)=>s+x*x,0);
-  return M.map((row,i)=>row.map((v,j)=>v-lam*vec[i]*vec[j]/norm2));
+  const a=M.map(row=>[...row]);
+  const vectors=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  const scale=Math.max(1,...M.flat().map(Math.abs));
+  let iterations=0, maxOff=Infinity;
+  while(iterations<50*n*n){
+    let p=0,q=1;
+    maxOff=0;
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      if(Math.abs(a[i][j])>maxOff){maxOff=Math.abs(a[i][j]);p=i;q=j;}
+    }
+    if(maxOff<=1e-12*scale) break;
+    const tau=(a[q][q]-a[p][p])/(2*a[p][q]);
+    const t=(tau>=0?1:-1)/(Math.abs(tau)+Math.sqrt(1+tau*tau));
+    const cosine=1/Math.sqrt(1+t*t), sine=t*cosine;
+    const app=a[p][p], aqq=a[q][q], apq=a[p][q];
+    a[p][p]=app-t*apq;
+    a[q][q]=aqq+t*apq;
+    a[p][q]=a[q][p]=0;
+    for(let k=0;k<n;k++){
+      if(k!==p&&k!==q){
+        const akp=a[k][p], akq=a[k][q];
+        a[k][p]=a[p][k]=cosine*akp-sine*akq;
+        a[k][q]=a[q][k]=sine*akp+cosine*akq;
+      }
+      const vkp=vectors[k][p], vkq=vectors[k][q];
+      vectors[k][p]=cosine*vkp-sine*vkq;
+      vectors[k][q]=sine*vkp+cosine*vkq;
+    }
+    iterations++;
+  }
+  return Array.from({length:n},(_,col)=>{
+    const lam=a[col][col], vec=vectors.map(row=>row[col]);
+    const residual=eigenResidual(M,lam,vec);
+    return {lam,vec,residual,iterations,converged:residual<=1e-9*scale,method:'Jacobi'};
+  }).sort((a,b)=>b.lam-a.lam);
 }
+
+function twoByTwoEigenpairs(M) {
+  const [[a,b],[c,d]]=M;
+  const disc=(a-d)**2+4*b*c;
+  const pairs=[];
+  if(disc<0) return pairs;
+  const roots=disc===0?[(a+d)/2]:[(a+d+Math.sqrt(disc))/2,(a+d-Math.sqrt(disc))/2];
+  for(const lam of roots){
+    const vector=Math.abs(b)>=Math.abs(c)?[b,lam-a]:[lam-d,c];
+    const vec=normalizeEigenvector(vector)||[1,0];
+    const residual=eigenResidual(M,lam,vec);
+    pairs.push({lam,vec,residual,iterations:0,converged:residual<=1e-9,method:'fórmula 2×2'});
+  }
+  return pairs;
+}
+
 export function matEigenAll(M) {
   const n=M.length;
-  const pairs=[];
-  let Mcur=M.map(r=>[...r]);
-  for(let k=0;k<n;k++){
-    const {lam,vec}=matPowerIter(Mcur);
-    pairs.push({lam,vec});
-    Mcur=matDeflate(Mcur,lam,vec);
+  if(!n||M.some(row=>row.length!==n||row.some(v=>!Number.isFinite(v)))) throw new RangeError('Matriz cuadrada inválida');
+  if(n===1) return [{lam:M[0][0],vec:[1],residual:0,iterations:0,converged:true,method:'directo'}];
+  const symmetric=M.every((row,i)=>row.every((value,j)=>Math.abs(value-M[j][i])<=1e-12));
+  if(symmetric) return symmetricEigenpairs(M);
+  if(n===2){
+    const pairs=twoByTwoEigenpairs(M);
+    if(!pairs.length) pairs.message='Autovalores complejos: esta vista solo muestra pares reales.';
+    else if(pairs.length===1) pairs.message='Valor propio doble con un solo vector propio independiente; no es diagonalizable.';
+    return pairs;
   }
+  const pair=matPowerIter(M);
+  const pairs=[pair];
+  pairs.message='Matriz no simétrica: solo se calcula el par dominante; no se infieren los demás por deflación.';
   return pairs;
 }

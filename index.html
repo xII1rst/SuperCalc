@@ -496,7 +496,7 @@
 
 <div id="em-app">
   <div class="em-header">
-    <button class="em-back" data-action="closeModule" data-arg="em"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Física</button>
+    <button class="em-back" data-action="closeModule" data-arg="em"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Electromagnetismo</button>
     <div class="em-logo">
       <div class="em-logo-text">Electro<span>Mag</span></div>
       <div class="em-logo-ver">v 1.0</div>
@@ -564,6 +564,193 @@
   </div>
 </div>
 
+<!-- RECTAS Y PLANOS EN R³ -->
+<section id="geom-app" class="tool-app" aria-label="Rectas y planos 3D" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="geom"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="mod-logo-text"><span class="al-c">Rectas y planos 3D</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <span class="tool-eyebrow">GEOMETRÍA ANALÍTICA</span>
+      <h1>Rectas y planos en R³</h1>
+      <p>Construye ecuaciones y resuelve posiciones relativas. Introduce coordenadas como x, y, z; usa punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="geom-mode">Operación</label>
+      <select id="geom-mode" class="tool-input geom-mode" data-action="geomSelect" data-event="change">
+        <option value="linePoints">Recta por dos puntos</option>
+        <option value="planePoint">Plano por punto y normal</option>
+        <option value="planePoints">Plano por tres puntos</option>
+        <option value="linePlane">Intersección recta–plano</option>
+        <option value="planes">Intersección de dos planos</option>
+        <option value="lines">Intersección de dos rectas</option>
+        <option value="distance">Distancia punto–plano</option>
+        <option value="angle">Ángulo entre dos planos</option>
+      </select>
+      <div id="geom-fields" class="geom-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="geomCalculate">Calcular</button></div>
+      <div id="geom-result" class="tool-result" aria-live="polite"></div>
+      <p class="tool-note">Las intersecciones usan tolerancia numérica. Para planos se emplea n·X = c; el ángulo es el menor entre ambos planos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ONDAS -->
+<section id="study-app" class="tool-app focused" aria-label="Aplicaciones de cálculo" inert>
+  <div class="mod-header">
+    <button class="mod-back ca" data-action="closeModule" data-arg="study"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Cálculo</button>
+    <div class="mod-logo-text"><span class="ca-c" id="study-title">Aplicaciones de cálculo</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="study-heading">Aplicaciones de cálculo</h1>
+      <p>Introduce expresiones con x, y o t según el problema. Usa * en productos y revisa el dominio y las hipótesis del resultado.</p>
+    </div>
+    <div class="tool-card">
+      <label for="study-mode">Problema</label>
+      <select id="study-mode" class="tool-input geom-mode" data-action="studySelect" data-event="change"></select>
+      <div id="study-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="studyCalculate">Calcular</button></div>
+      <div id="study-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="emplus-app" class="tool-app physics-tool focused" aria-label="Electromagnetismo avanzado" inert>
+  <div class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="emplus"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Electromagnetismo</button>
+    <div class="mod-logo-text"><span class="fi-c" id="emplus-title">Electromagnetismo</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="emplus-heading">Electromagnetismo</h1>
+      <p>Selecciona un problema y usa unidades SI. En circuitos indica nodos, conexiones, tierra y potenciales conocidos.</p>
+    </div>
+    <div class="tool-card">
+      <label for="emplus-mode">Problema</label>
+      <select id="emplus-mode" class="tool-input geom-mode" data-action="emPlusSelect" data-event="change"></select>
+      <div id="emplus-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="emPlusCalculate">Calcular</button></div>
+      <div id="emplus-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="mechplus-app" class="tool-app physics-tool focused" aria-label="Mecánica avanzada" inert>
+  <header class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="mechplus"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Mecánica</button>
+    <div class="mod-logo-text"><span class="fi-c" id="mechplus-title">Mecánica</span></div>
+  </header>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="mechplus-heading">Mecánica</h1>
+      <p>Elige un problema, escribe sus datos en unidades SI y revisa las ecuaciones y resultados. Los modelos indican sus supuestos cuando aplica.</p>
+    </div>
+    <div class="tool-card">
+      <label for="mechplus-mode">Problema</label>
+      <select id="mechplus-mode" class="tool-input geom-mode" data-action="mechPlusSelect" data-event="change"></select>
+      <div id="mechplus-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="mechPlusCalculate">Calcular</button></div>
+      <div id="mechplus-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="waves-app" class="tool-app physics-tool focused" aria-label="Ondas" inert>
+  <div class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="waves"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Ondas</button>
+    <div class="mod-logo-text"><span class="fi-c" id="waves-title">Ondas</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <span class="tool-eyebrow">FÍSICA DE ONDAS</span>
+      <h1 id="waves-heading">Ondas</h1>
+      <p>Selecciona una familia de problemas. Las entradas usan unidades SI y punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="waves-mode">Problema</label>
+      <select id="waves-mode" class="tool-input geom-mode" data-action="wavesSelect" data-event="change"></select>
+      <div id="waves-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="wavesCalculate">Calcular</button></div>
+      <div id="waves-result" class="tool-result" aria-live="polite"></div>
+      <div id="waves-visual" class="waves-visual" hidden>
+        <canvas id="waves-canvas" aria-label="Gráfica de la onda o trayectoria de Lissajous"></canvas>
+        <label for="waves-time">Tiempo de la gráfica (s)</label>
+        <input id="waves-time" type="range" min="0" max="2" step="0.005" value="0" data-action="wavesTimeChanged" data-event="input">
+        <div class="tool-actions"><button type="button" class="tool-button" id="waves-play" data-action="wavesToggleAnimation">Reproducir</button></div>
+        <p id="waves-visual-description" class="tool-note">Vista estática de la onda.</p>
+      </div>
+      <p class="tool-note">Modelos ideales indicados en cada resultado. En óptica usa metros: 550 nm = 0.00000055 m.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LÓGICA MATEMÁTICA -->
+<section id="logic-app" class="tool-app focused" aria-label="Lógica matemática" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="logic"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Lógica matemática</button>
+    <div class="mod-logo-text"><span class="al-c" id="logic-title">Lógica matemática</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <span class="tool-eyebrow">SISTEMAS DISCRETOS</span>
+      <h1 id="logic-heading">Lógica matemática</h1>
+      <p id="logic-description">Selecciona una herramienta.</p>
+    </div>
+    <div class="tool-card" id="logic-content"></div>
+  </div>
+</section>
+
+<!-- ANÁLISIS NUMÉRICO -->
+<section id="num-app" class="tool-app focused" aria-label="Análisis numérico" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="num"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Análisis numérico</button>
+    <div class="mod-logo-text"><span class="al-c" id="num-title">Análisis numérico</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <span class="tool-eyebrow">MÉTODOS NUMÉRICOS</span>
+      <h1 id="num-heading">Análisis numérico</h1>
+      <p id="num-description">Selecciona un método.</p>
+    </div>
+    <div class="tool-card" id="num-content"></div>
+  </div>
+</section>
+
+<!-- BASES Y TRANSFORMACIONES -->
+<section id="linear-app" class="tool-app" aria-label="Bases y transformaciones" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="linear"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="mod-logo-text"><span class="al-c">Bases y transformaciones</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <span class="tool-eyebrow">ÁLGEBRA LINEAL</span>
+      <h1>Espacios y transformaciones</h1>
+      <p>Trabaja con vectores y matrices de hasta 8 componentes. Escribe un vector o fila por línea; separa coordenadas con comas y usa punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="linear-mode">Operación</label>
+      <select id="linear-mode" class="tool-input geom-mode" data-action="linearSelect" data-event="change">
+        <option value="gram">Gram-Schmidt y base ortonormal</option>
+        <option value="coordinates">Coordenadas en una base</option>
+        <option value="change">Cambio de base</option>
+        <option value="projection">Proyección sobre un subespacio</option>
+        <option value="transform">Imagen, núcleo y transformación</option>
+        <option value="representation">Matriz entre bases</option>
+        <option value="diagonal">Diagonalización y potencia</option>
+        <option value="affine">Sistema con parámetros t y u</option>
+        <option value="similarity">Semejanza de matrices</option>
+      </select>
+      <div id="linear-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="linearCalculate">Calcular</button></div>
+      <div id="linear-result" class="tool-result" aria-live="polite"></div>
+      <p class="tool-note">Los cálculos usan tolerancia numérica. La diagonalización se ofrece solo cuando se verifican suficientes autovectores reales; matrices no simétricas mayores que 2×2 quedan fuera de esta herramienta.</p>
+    </div>
+  </div>
+</section>
+
 <!-- MATRICES & ECUACIONES LINEALES -->
 <div id="mat-app">
   <div class="mod-header">
@@ -578,6 +765,7 @@
     <button class="mat-tab"     data-action="matTab" data-arg="det">Det &amp; Inv</button>
     <button class="mat-tab"     data-action="matTab" data-arg="sis">Sistemas</button>
     <button class="mat-tab"     data-action="matTab" data-arg="eig">Eigenvalores</button>
+    <button class="mat-tab"     data-action="matTab" data-arg="space">Espacios</button>
   </div>
   <div class="mat-body">
     <!-- OPERACIONES -->
@@ -617,7 +805,9 @@
       <div class="mat-sec">Sistemas de Ecuaciones — Ax = b</div>
       <div class="mat-row">
         <label>Ecuaciones:</label>
-        <input class="mat-inp" id="mat-sn" value="2" min="2" max="6" type="number" data-action="matBuildSis" data-event="change">
+        <input class="mat-inp" id="mat-sm" value="2" min="1" max="6" type="number" data-action="matBuildSis" data-event="change">
+        <label>Incógnitas:</label>
+        <input class="mat-inp" id="mat-sn" value="2" min="1" max="6" type="number" data-action="matBuildSis" data-event="change">
         <label>Método:</label>
         <select class="mat-sel" id="mat-smet">
           <option value="gauss">Gauss-Jordan</option>
@@ -646,6 +836,20 @@
       <button class="mat-btn" data-action="matCalcEig">Calcular</button>
       <button class="mat-btn sec" data-action="matClearEig">Limpiar</button>
       <div id="mat-res-eig"></div>
+    </div>
+    <!-- ESPACIOS VECTORIALES -->
+    <div id="mat-pSpace" class="mat-panel">
+      <div class="mat-sec">Imagen, núcleo y rango–nulidad</div>
+      <p class="tool-note">Introduce la matriz de una transformación lineal A: ℝⁿ → ℝᵐ. Las columnas son las imágenes de los vectores canónicos.</p>
+      <div class="mat-row">
+        <label for="mat-space-m">Filas m:</label>
+        <input class="mat-inp" id="mat-space-m" value="3" min="1" max="6" type="number" data-action="matBuildSpace" data-event="change">
+        <label for="mat-space-n">Columnas n:</label>
+        <input class="mat-inp" id="mat-space-n" value="4" min="1" max="6" type="number" data-action="matBuildSpace" data-event="change">
+      </div>
+      <div id="mat-space-grid"></div>
+      <button class="mat-btn" data-action="matCalcSpace">Analizar</button>
+      <div id="mat-res-space"></div>
     </div>
   </div>
 </div>
@@ -820,8 +1024,9 @@
           <!-- Límite simple -->
           <div class="calc-field-row">
             <label>f(x) =</label>
-            <input class="calc-inp" id="dif-lim-fx" placeholder="ej: sin(x)/x, (x^2-4)/(x-2)"/>
+            <input class="calc-inp" id="dif-lim-fx" placeholder="ej: sin(x)/x, (x^2-4)/(x-2)" data-action="previewCalcExpression" data-event="input" data-preview="preview-dif-lim"/>
           </div>
+          <div class="calc-res-hint" id="preview-dif-lim"></div>
           <div class="calc-field-row">
             <label>Variable</label><input class="calc-inp calc-inp-sm" id="dif-lim-var" value="x" aria-label="Variable del límite"/>
           </div>
@@ -914,8 +1119,9 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>f(x) =</label>
-            <input class="calc-inp" id="dif-der-fx" placeholder="ej: 2*x^25"/>
+            <input class="calc-inp" id="dif-der-fx" placeholder="ej: 2*x^25" data-action="previewCalcExpression" data-event="input" data-preview="preview-dif-der"/>
           </div>
+          <div class="calc-res-hint" id="preview-dif-der"></div>
           <div class="calc-field-row"><label>Variable</label><input class="calc-inp calc-inp-sm" id="dif-der-var" value="x" aria-label="Variable de derivación"/></div>
           <div class="calc-field-row">
             <label>Orden:</label>
@@ -1077,8 +1283,9 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>f(x) =</label>
-            <input class="calc-inp" id="int-indef-fx" placeholder="ej: 3*x^2 + cos(x)"/>
+            <input class="calc-inp" id="int-indef-fx" placeholder="ej: 3*x^2 + cos(x)" data-action="previewCalcExpression" data-event="input" data-preview="preview-int-indef"/>
           </div>
+          <div class="calc-res-hint" id="preview-int-indef"></div>
           <div class="calc-btn-row">
             <button class="calc-btn" data-action="calcIntegralIndef">∫ f(x) dx</button>
             <button class="calc-btn sec" data-action="clearCard" data-arg="indef">Limpiar</button>
@@ -1094,7 +1301,7 @@
         <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-area"></use></svg></div>
         <div class="calc-card-info">
           <div class="calc-card-name">Integral Definida</div>
-          <div class="calc-card-desc">∫ₐᵇ f(x) dx — Simpson con n=1000</div>
+          <div class="calc-card-desc">Resultado exacto cuando procede y aproximaciones con malla ajustable</div>
         </div>
         <div class="calc-card-arrow" id="arr-def"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
       </div>
@@ -1102,8 +1309,9 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>f(x) =</label>
-            <input class="calc-inp" id="int-def-fx" placeholder="ej: x^2"/>
+            <input class="calc-inp" id="int-def-fx" placeholder="ej: x^2" data-action="previewCalcExpression" data-event="input" data-preview="preview-int-def"/>
           </div>
+          <div class="calc-res-hint" id="preview-int-def"></div>
           <div class="calc-field-row">
             <label>a =</label>
             <input class="calc-inp calc-inp-sm" id="int-def-a" placeholder="0"/>
@@ -1114,8 +1322,21 @@
             <button class="calc-btn" data-action="calcIntegralDef">∫ₐᵇ f(x) dx</button>
             <button class="calc-btn sec" data-action="clearCard" data-arg="def">Limpiar</button>
           </div>
+          <div class="calc-field-row">
+            <label>Método numérico:</label>
+            <select class="mat-sel" id="int-num-method">
+              <option value="right">Riemann derecha</option>
+              <option value="left">Riemann izquierda</option>
+              <option value="midpoint">Riemann punto medio</option>
+              <option value="trapezoid">Trapecio</option>
+              <option value="simpson">Simpson</option>
+            </select>
+            <label>n:</label><input class="calc-inp calc-inp-sm" id="int-num-n" type="number" min="1" max="1000" value="4"/>
+          </div>
+          <div class="calc-btn-row"><button class="calc-btn sec" data-action="calcIntegralNumeric">Calcular aproximación</button></div>
           <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-def-fx" data-a="int-def-a" data-b="int-def-b"></canvas></div>
           <div id="res-def" class="calc-res"></div>
+          <div id="res-def-num" class="calc-res"></div>
         </div>
       </div>
     </div>
@@ -1649,8 +1870,9 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>f(x,y) =</label>
-            <input class="calc-inp" id="mvlim-fxy" placeholder="ej: (x^2-y^2)/(x^2+y^2)"/>
+            <input class="calc-inp" id="mvlim-fxy" placeholder="ej: (x^2-y^2)/(x^2+y^2)" data-action="previewCalcExpression" data-event="input" data-preview="preview-mvlim"/>
           </div>
+          <div class="calc-res-hint" id="preview-mvlim"></div>
           <div class="calc-field-row">
             <label>(x,y) → (</label>
             <input class="calc-inp calc-inp-sm" id="mvlim-x0" placeholder="0"/>
@@ -1786,8 +2008,8 @@
       <div class="calc-card-header" data-action="toggleCard" data-arg="sep">
         <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-ode"></use></svg></div>
         <div class="calc-card-info">
-          <div class="calc-card-name">1er Orden — Variables Separables</div>
-          <div class="calc-card-desc">dy/dx = f(x)·g(y) con condición inicial</div>
+          <div class="calc-card-name">1er Orden — PVI numérico</div>
+          <div class="calc-card-desc">dy/dx = f(x,y) con condición inicial; RK4</div>
         </div>
         <div class="calc-card-arrow" id="arr-sep"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
       </div>
@@ -1795,13 +2017,18 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>dy/dx =</label>
-            <input class="calc-inp" id="edo-sep-rhs" placeholder="ej: x*y"/>
+            <input class="calc-inp" id="edo-sep-rhs" placeholder="ej: x*y" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-sep"/>
           </div>
+          <div class="calc-res-hint" id="preview-edo-sep"></div>
           <div class="calc-field-row">
             <label>y(</label>
             <input class="calc-inp calc-inp-sm" id="edo-sep-x0" placeholder="x₀"/>
             <label>) =</label>
             <input class="calc-inp calc-inp-sm" id="edo-sep-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x final:</label><input class="calc-inp calc-inp-sm" id="edo-sep-xfinal" placeholder="x₀ + 5"/>
+            <label>Pasos:</label><input class="calc-inp calc-inp-sm" id="edo-sep-steps" type="number" min="1" max="1000" value="50"/>
           </div>
           <div class="calc-btn-row">
             <button class="calc-btn" data-action="calcEDOSep">Resolver (RK4)</button>
@@ -1817,7 +2044,7 @@
         <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-ode"></use></svg></div>
         <div class="calc-card-info">
           <div class="calc-card-name">1er Orden — ED Lineal</div>
-          <div class="calc-card-desc">y' + P(x)y = Q(x) — factor integrante</div>
+          <div class="calc-card-desc">y' + P(x)y = Q(x) — solución numérica RK4</div>
         </div>
         <div class="calc-card-arrow" id="arr-edolin"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
       </div>
@@ -1825,17 +2052,23 @@
         <div class="calc-card-inner">
           <div class="calc-field-row">
             <label>P(x) =</label>
-            <input class="calc-inp" id="edo-lin-px" placeholder="ej: 2, 1/x"/>
+            <input class="calc-inp" id="edo-lin-px" placeholder="ej: 2, 1/x" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-lin-p"/>
           </div>
+          <div class="calc-res-hint" id="preview-edo-lin-p"></div>
           <div class="calc-field-row">
             <label>Q(x) =</label>
-            <input class="calc-inp" id="edo-lin-qx" placeholder="ej: x^2, e^x"/>
+            <input class="calc-inp" id="edo-lin-qx" placeholder="ej: x^2, e^x" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-lin-q"/>
           </div>
+          <div class="calc-res-hint" id="preview-edo-lin-q"></div>
           <div class="calc-field-row">
             <label>y(</label>
             <input class="calc-inp calc-inp-sm" id="edo-lin-x0" placeholder="x₀"/>
             <label>) =</label>
             <input class="calc-inp calc-inp-sm" id="edo-lin-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x final:</label><input class="calc-inp calc-inp-sm" id="edo-lin-xfinal" placeholder="x₀ + 5"/>
+            <label>Pasos:</label><input class="calc-inp calc-inp-sm" id="edo-lin-steps" type="number" min="1" max="1000" value="50"/>
           </div>
           <div class="calc-btn-row">
             <button class="calc-btn" data-action="calcEDOLinear">Resolver (RK4)</button>

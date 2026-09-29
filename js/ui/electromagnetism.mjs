@@ -554,7 +554,7 @@ function emRenderMaxwell(){
     &nabla;&times;B = &mu;<sub>0</sub>J + &mu;<sub>0</sub>&epsilon;<sub>0</sub>&part;E/&part;t &nbsp;(Amp&egrave;re-Maxwell)
   </div>
   <div class="em-section-title" style="margin-top:8px">Onda electromagnética en el vacío</div>
-  <div class="em-formula">c = 1/&radic;(&mu;<sub>0</sub>&epsilon;<sub>0</sub>) &nbsp;|&nbsp; E = c&middot;B &nbsp;|&nbsp; <b>S</b> = (1/&mu;<sub>0</sub>) <b>E</b>&times;<b>B</b></div>
+  <div class="em-formula">c = 1/&radic;(&mu;<sub>0</sub>&epsilon;<sub>0</sub>) &nbsp;|&nbsp; E = c&middot;B &nbsp;|&nbsp; S₀ = E₀B₀/&mu;<sub>0</sub> &nbsp;|&nbsp; &lang;S&rang; = S₀/2</div>
   <div class="em-input-row">
     <div class="em-input-group"><label>E₀ (N/C)</label><input id="em-mE0" value="1000"></div>
     <div class="em-input-group"><label>f (Hz)</label><input id="em-mf" value="1e9"></div>
@@ -564,10 +564,14 @@ function emRenderMaxwell(){
 }
 
 function emCalcMaxwell(){
-  const E0=parseFloat(document.getElementById('em-mE0').value)||1000;
-  const f=parseFloat(document.getElementById('em-mf').value)||1e9;
-
-  const {c,B0,lambda,k,S,uE,uB}=emMath.maxwell(E0,f);
+  const E0=parseFloat(document.getElementById('em-mE0').value);
+  const f=parseFloat(document.getElementById('em-mf').value);
+  const wave=emMath.maxwell(E0,f);
+  if(!wave){
+    document.getElementById('em-res-maxwell').innerHTML='<div class="em-math-card">Ingresa E₀ ≥ 0 y f &gt; 0 con valores finitos.</div>';
+    return;
+  }
+  const {c,B0,lambda,k,S,Smean,uE,uB}=wave;
 
   // Draw E and B vectors orthogonal
   emObjects=[
@@ -592,15 +596,19 @@ function emCalcMaxwell(){
       <div class="em-math-value">${emFmt(lambda)} m</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">Poynting |S|</div>
+      <div class="em-math-label">Poynting máximo S₀</div>
       <div class="em-math-value">${emFmt(S)} W/m&sup2;</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">u_E (densidad)</div>
+      <div class="em-math-label">Intensidad media ⟨S⟩ = S₀/2</div>
+      <div class="em-math-value">${emFmt(Smean)} W/m&sup2;</div>
+    </div>
+    <div class="em-math-card">
+      <div class="em-math-label">u_E máxima (densidad)</div>
       <div class="em-math-value">${emFmt(uE)} J/m&sup3;</div>
     </div>
     <div class="em-math-card">
-      <div class="em-math-label">u_B (densidad)</div>
+      <div class="em-math-label">u_B máxima (densidad)</div>
       <div class="em-math-value">${emFmt(uB)} J/m&sup3;</div>
     </div>
     <div class="em-math-card full">
