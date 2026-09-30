@@ -619,7 +619,7 @@ body:has(#update-banner) .sc-toast-stack { bottom:calc(84px + env(safe-area-inse
   padding:6px 11px;cursor:pointer;transition:all .2s;
 }
 .submod-back:hover { border-color:var(--al);color:var(--al); }
-.submod-back .sc-icon,.mod-back .sc-icon,.em-back .sc-icon,.mod-back-btn .sc-icon,.ineq-btn .sc-icon{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:3px}
+.submod-back .sc-icon,.mod-back .sc-icon,.em-back .sc-icon,.ineq-btn .sc-icon{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:3px}
 .submod-arrow .sc-icon{width:16px;height:16px}
 .submod-title { font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:var(--text-strong); }
 .submod-title span.al-c { color:var(--al); }
