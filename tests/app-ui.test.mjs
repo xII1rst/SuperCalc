@@ -1122,6 +1122,56 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   actions.seqAnalyzePG();
   assert.match(getElementById('seq-result').innerHTML, /S<sub>4<\/sub>/);
 
+  getElementById('seq-expr').value='(3n+1)/(n+5)';
+  getElementById('seq-n').value='5';
+  actions.seqPreviewExpression();
+  assert.match(getElementById('seq-preview').textContent,/n es entero positivo/);
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/Límite demostrado/);
+  assert.match(getElementById('seq-result').innerHTML,/coeficientes principales/);
+  getElementById('seq-expr').value='(2n²−n)/(n²+4)';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/coeficientes principales, 2\/1 = 2/);
+  getElementById('seq-expr').value='(1+2/n)^n';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/e\^\(2\)/);
+  getElementById('seq-expr').value='(1+1/(2n))^(3n)';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/e\^\(1.5\)/);
+  getElementById('seq-expr').value='(2n+cos(n))/(n+1)';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/teorema del encaje/);
+  assert.match(getElementById('seq-result').innerHTML,/Límite demostrado/);
+  getElementById('seq-expr').value='sin(n)/n';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/No demostrado/);
+  getElementById('seq-expr').value='globalThis.pwned=1';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/Expresión no admitida/);
+  getElementById('seq-expr').value='(n-1)/(n-1)';
+  actions.seqAnalyzeTerminos();
+  assert.match(getElementById('seq-result').innerHTML,/no definido/);
+  assert.match(getElementById('seq-result').innerHTML,/Límite demostrado/);
+
+  actions.seqSetMode('rec');
+  getElementById('seq-rec-c').value='2';
+  getElementById('seq-rec-a1').value='1';
+  getElementById('seq-rec-n').value='6';
+  actions.seqAnalyzeRadical();
+  assert.match(getElementById('seq-result').innerHTML,/Límite demostrado/);
+  assert.match(getElementById('seq-result').innerHTML,/convergencia monótona/);
+  assert.match(getElementById('seq-result').innerHTML,/≈ 2/);
+  getElementById('seq-rec-c').value='0';
+  actions.seqAnalyzeRadical();
+  assert.match(getElementById('seq-result').innerHTML,/Usa c en/);
+  actions.seqSetMode('terminos');
+
+  getElementById('pg-a1').value='2';
+  getElementById('pg-r').value='-1';
+  actions.seqAnalyzePG();
+  assert.match(getElementById('seq-result').innerHTML,/Alternante acotada/);
+  assert.match(getElementById('seq-result').innerHTML,/Acotamiento de aₙ<\/span><span class="seq-prop-val">Acotada/);
+
   actions.grafSetType('lin');
   getElementById('gm').value = '2';
   getElementById('gb').value = '1';
@@ -1145,12 +1195,100 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('dif-der-fx').value='t^2';
   actions.calcDerivative();
   assert.match(getElementById('res-der').innerHTML, /en t = 3/);
+  getElementById('dif-der-var').value='x';
+  for(const [expression,order,point,expected] of [
+    ['4x^3-5x^2+7x-2','1','0',/>7<\/div>/],
+    ['x^2*sen(x)','1','0',/>0<\/div>/],
+    ['ln(3x^2+1)','1','1',/>1\.5/],
+    ['(x+1)/(x-1)','1','2',/>-2<\/div>/],
+    ['x^4-3x^2+2','2','0',/>-6<\/div>/],
+    ['exp(5x)*cos(x)','1','0',/>5<\/div>/],
+    ['x^x','1','1',/>1<\/div>/],
+    ['arctan(x^2)','1','1',/>1<\/div>/],
+    ['x^(sen(x))','1','1',/>0\.84147098<\/div>/],
+    ['x*exp(2x)','4','0',/>32<\/div>/],
+  ]){
+    getElementById('dif-der-fx').value=expression;
+    getElementById('dif-der-ord').value=order;
+    getElementById('dif-der-pt').value=point;
+    actions.calcDerivative();
+    const html=getElementById('res-der').innerHTML;
+    assert.match(html,expected,expression);
+    assert.match(html,/Reglas utilizadas/);
+    assert.match(html,/Condiciones de la fórmula/);
+  }
+  assert.match(getElementById('res-der').innerHTML,/Orden 4:/);
+  getElementById('dif-der-fx').value='sin(x)';
+  getElementById('dif-der-ord').value='1';
+  getElementById('dif-der-pt').value='π/6';
+  actions.calcDerivative();
+  assert.match(getElementById('res-der').innerHTML,/>0\.8660254<\/div>/);
+  getElementById('dif-der-fx').value='x^x';
+  getElementById('dif-der-pt').value='-1';
+  actions.calcDerivative();
+  assert.match(getElementById('res-der').innerHTML,/condición x > 0/);
+  getElementById('dif-der-fx').value='x^';
+  actions.calcDerivative();
+  assert.match(getElementById('res-der').innerHTML,/Expresión o variable inválida/);
   getElementById('dif-lim-var').value='t';
   getElementById('dif-lim-fx').value='t^2';
   getElementById('dif-lim-a').value='3';
   getElementById('dif-lim-side').value='both';
   actions.calcLimit();
   assert.match(getElementById('res-lim').innerHTML, /lim<sub>t→3<\/sub>/);
+  getElementById('dif-lim-var').value='x';
+  getElementById('dif-lim-fx').value='(5x^2+3x)/(2x^2-1)';
+  getElementById('dif-lim-a').value='Infinity';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/coeficientes principales/);
+  assert.match(getElementById('res-lim').innerHTML,/5\/2/);
+  getElementById('dif-lim-fx').value='sqrt(x^2+3x)-x';
+  getElementById('dif-lim-a').value='Infinity';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/Racionalizar/);
+  assert.match(getElementById('res-lim').innerHTML,/3\/2/);
+  getElementById('dif-lim-fx').value='cos(x)^(1/x^2)';
+  getElementById('dif-lim-a').value='0';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/e\^\(-1\/2\)/);
+  assert.match(getElementById('res-lim').innerHTML,/continuidad de exp/);
+  for(const [expression,point,expected] of [
+    ['(x^2-9)/(x-3)','3',/lim = <strong class="lim-ok">6/],
+    ['sin(4x)/(2x)','0',/lim = <strong class="lim-ok">2/],
+    ['(1-cos(x))/x^2','0',/lim = <strong class="lim-ok">1\/2/],
+    ['(exp(x)-1-x)/x^2','0',/lim = <strong class="lim-ok">1\/2/],
+  ]){
+    getElementById('dif-lim-fx').value=expression;
+    getElementById('dif-lim-a').value=point;
+    actions.calcLimit();
+    assert.match(getElementById('res-lim').innerHTML,expected);
+  }
+  assert.match(getElementById('res-lim').innerHTML,/Orden 1:/);
+  assert.match(getElementById('res-lim').innerHTML,/Orden 2:/);
+  getElementById('dif-lim-fx').value='1/sin(x)-1/x';
+  getElementById('dif-lim-a').value='0';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/Unificar/);
+  assert.match(getElementById('res-lim').innerHTML,/el cociente tiende a 0/);
+  getElementById('dif-lim-fx').value='sin(1/x)';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/No demostrado/);
+  assert.match(getElementById('res-lim').innerHTML,/no demuestran el límite/);
+  getElementById('dif-lim-fx').value='sqrt(x)';
+  getElementById('dif-lim-a').value='0';
+  getElementById('dif-lim-side').value='both';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/Dominio real del lado solicitado/);
+  assert.match(getElementById('res-lim').innerHTML,/la izquierda/);
+  getElementById('dif-lim-side').value='right';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/Sustitución directa/);
+  getElementById('dif-lim-side').value='both';
+  getElementById('dif-lim-fx').value='tan(x)';
+  getElementById('dif-lim-a').value='π/2';
+  actions.calcLimit();
+  assert.match(getElementById('res-lim').innerHTML,/posible polo/);
+  assert.match(getElementById('res-lim').innerHTML,/No demostrado/);
 
   getElementById('int-def-fx').value = 'x^2';
   getElementById('int-def-a').value = '0';
@@ -1243,6 +1381,32 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   actions.calcImplicit();
   assert.doesNotMatch(getElementById('res-imp').innerHTML, /Función inválida/);
   assert.match(getElementById('res-imp').innerHTML, /dy\/dx en \(3,4\)/);
+  getElementById('dif-imp-dxdt').value='2';
+  actions.calcImplicit();
+  assert.match(getElementById('res-imp').innerHTML,/Tasa relacionada dy\/dt/);
+  assert.match(getElementById('res-imp').innerHTML,/>-1\.5/);
+  getElementById('dif-imp-dxdt').value='';
+  getElementById('dif-imp-fxy').value='x^3+y^3-6*x*y';
+  getElementById('dif-imp-x0').value='3';
+  getElementById('dif-imp-y0').value='3';
+  actions.calcImplicit();
+  assert.match(getElementById('res-imp').innerHTML,/>-1<\/div>/);
+  getElementById('dif-imp-fxy').value='x^2+x*y+y^2-7';
+  getElementById('dif-imp-x0').value='2';
+  getElementById('dif-imp-y0').value='1';
+  actions.calcImplicit();
+  assert.match(getElementById('res-imp').innerHTML,/y = \(-1\.25\)x \+ 3\.5/);
+  getElementById('dif-imp-fxy').value='x^2+y^2-25';
+  getElementById('dif-imp-x0').value='3';
+  getElementById('dif-imp-y0').value='3';
+  actions.calcImplicit();
+  assert.match(getElementById('res-imp').innerHTML,/no satisface/);
+  assert.doesNotMatch(getElementById('res-imp').innerHTML,/Recta tangente/);
+  getElementById('dif-imp-x0').value='5';
+  getElementById('dif-imp-y0').value='0';
+  actions.calcImplicit();
+  assert.match(getElementById('res-imp').innerHTML,/Tangente vertical/);
+  assert.match(getElementById('res-imp').innerHTML,/x = 5/);
 
   for (const [id, value] of Object.entries({
     'em-q1': '0.000001', 'em-q2': '0.000001',

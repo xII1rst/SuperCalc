@@ -13,7 +13,7 @@ export function normalizeExpression(expr){
 // Extrae los identificadores libres (no funciones ni constantes) de una expresión.
 export function collectVariables(expr){
   if(!expr) return [];
-  expr=normalizeExpression(expr);
+  expr=normalizeExpression(expr).replace(/(?:\d+(?:\.\d*)?|\.\d+)[eE][+-]?\d+/g,'0');
   const reserved=new Set(RESERVED);
   const vars=[], seen=new Set();
   const re=/[a-zA-Z][a-zA-Z0-9_]*/g;
@@ -59,7 +59,8 @@ export function calcParse(expr,varName='x'){
   s=s.replace(/\bexp\b/g,'Math.exp');
   s=s.replace(/\bsqrt\b/g,'Math.sqrt');
   s=s.replace(/\babs\b/g,'Math.abs');
-  s=s.replace(/(?<![a-zA-Z])e(?![a-zA-Z0-9_])/g,'Math.E');
+  s=s.replace(/(\d)e(?=\*\*|[*/()]|$)/g,'$1*e');
+  s=s.replace(/(?<![a-zA-Z0-9_.])e(?![a-zA-Z0-9_])/g,'Math.E');
   try{
     const vars=[varName, ...variables];
     const fn=new Function(...vars,'const sec=_=>1/Math.cos(_),csc=_=>1/Math.sin(_),cot=_=>1/Math.tan(_);return ('+s+');');

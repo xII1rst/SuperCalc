@@ -1,10 +1,10 @@
 import {
-  calcParse, normalizeExpression, symbolicDeriv, computeLimit, calculateLimitOperation, fmtA, fmtNum,
+  calcParse, collectVariables, normalizeExpression, symbolicDeriv, derivativeDetails, computeLimit, calculateLimitOperation, fmtA, fmtNum,
   fmtResult, visSubstitute, basicAntideriv, rk4Refinement,
   simpsonIntegral, revolutionVolume, revolutionVolumeBetween, revolutionVolumeAboutLine, parseRevolutionFunction,
   curveIntersections,
   taylorCoefficients, partialDerivative,
-  gradient2D, midpointIntegral2D, implicitDerivative,
+  gradient2D, midpointIntegral2D, implicitDerivative, implicitCurveAt,
 } from '../math/calculus.mjs';
 import { fN, formatResult } from '../utils/format.mjs';
 import {
@@ -252,7 +252,7 @@ function limitStepsHTML(r){
   const symStep=S.find(s=>s.tipo==='simbolico');
   if(symStep){
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
-      <div class="lim-step-title">Sustitución simbólica ${variable} = ${a}</div>
+      <div class="lim-step-title">${symStep.detail?'Desarrollo analítico':`Sustitución simbólica ${variable} = ${a}`}</div>
       ${symStep.detail?`<div class="lim-step-hint">${symStep.detail}</div>`:''}
       <div class="lim-step-expr lim-ok">= ${r.value}</div>
     </div></div>`;
@@ -270,13 +270,14 @@ function limitStepsHTML(r){
       </div></div>`;
     } else {
       const i00=S.find(s=>s.tipo==='indet_00');
+      const iII=S.find(s=>s.tipo==='indet_inf');
       const numV=i00?fmtNum(i00.faNum,4):'0';
       const denV=i00?fmtNum(i00.faDen,4):'0';
       html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
         <div class="lim-step-title">Sustitución ${variable} = ${a}</div>
         <div class="lim-step-expr">${visSub}</div>
         ${i00?`<div class="lim-step-expr">= ${numV} / ${denV}</div>`:''}
-        <div class="lim-step-expr"><span class="lim-warn">→ 0/0 Forma indeterminada</span></div>
+        <div class="lim-step-expr"><span class="lim-warn">${i00?'→ 0/0 Forma indeterminada':iII?'→ ∞/∞ Forma indeterminada':'La sustitución no da un valor finito.'}</span></div>
       </div></div>`;
     }
   }
@@ -308,10 +309,18 @@ function limitStepsHTML(r){
   S.filter(s=>s.tipo==='lhopital_simbolico').forEach(lh=>{
     html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
       <div class="lim-step-title">L'Hôpital — simbólico</div>
-      <div class="lim-step-hint">Se derivan num. y den. por separado</div>
+      ${(lh.derivatives||[]).map(row=>`<div class="lim-step-expr">Orden ${row.order}: N<sup>(${row.order})</sup> = ${row.numerator}, D<sup>(${row.order})</sup> = ${row.denominator}; en ${variable}=${a}: ${fmtNum(row.numeratorAt)}/${fmtNum(row.denominatorAt)}</div>`).join('')}
       <div class="lim-step-expr">lim = <strong class="lim-ok">${lh.result}</strong></div>
     </div></div>`;
   });
+
+  const domain=S.find(s=>s.tipo==='dominio');
+  if(domain){
+    html+=`<div class="lim-step"><div class="lim-step-num">${n++}</div><div class="lim-step-body">
+      <div class="lim-step-title">Dominio real del lado solicitado</div>
+      <div class="lim-step-hint">${domain.detail}</div>
+    </div></div>`;
+  }
 
   // Cancelación
   const canc=S.find(s=>s.tipo==='cancelacion');
@@ -328,7 +337,7 @@ function limitStepsHTML(r){
     const lat=S.find(s=>s.tipo==='laterales');
     if(lat){
       html+=`<div class="lim-step"><div class="lim-step-num"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-check"></use></svg></div><div class="lim-step-body">
-        <div class="lim-step-title">Verificación numérica</div>
+        <div class="lim-step-title">${r.inconclusive?'Muestreo numérico (no es prueba)':'Verificación numérica'}</div>
         <div class="lim-step-expr">${variable}→${a}⁺ ≈ ${fmtNum(lat.vr)} , ${variable}→${a}⁻ ≈ ${fmtNum(lat.vl)}</div>
       </div></div>`;
     }
@@ -341,8 +350,11 @@ function limitStepsHTML(r){
     <div class="calc-res-label">lim<sub>${variable}→${a}</sub> [ ${fx} ]</div>
     <div class="calc-res-val big">${resultWithFraction(r.value||'No existe')}</div>
     ${showApprox?`<div class="calc-res-hint">≈ ${fN(r.valueNum,8)}</div>`:''}
+    ${r.inconclusive&&r.estimate!==null?`<div class="calc-res-hint">Estimación de la muestra: ${fN(r.estimate,8)}</div>`:''}
     <div class="calc-res-hint">${
-      r.exists
+      r.domainError?r.domainError
+      :r.inconclusive?'Los valores muestreados no demuestran el límite.'
+      :r.exists
         ?(r.tipo==='directo'?'Sustitución directa'
           :(r.tipo==='simbolico')?'Evaluación simbólica'
           :(r.tipo==='indet_00'||r.tipo==='indet_inf')?'Resuelto por L\u2019H\u00f4pital'
@@ -403,53 +415,29 @@ function calcLimitOp(){
 
 function calcDerivative(){
   const fxStr = document.getElementById('dif-der-fx').value.trim();
-  const ord   = parseInt(document.getElementById('dif-der-ord').value);
+  const ord   = Number(document.getElementById('dif-der-ord').value);
   const ptStr = document.getElementById('dif-der-pt').value.trim();
   const variable=document.getElementById('dif-der-var')?.value.trim()||'x';
   const res   = document.getElementById('res-der');
   if(!fxStr){res.innerHTML=errBox('Ingresa una función');return;}
 
-  const labels = ["Primera","Segunda","Tercera"];
-  const primes = [`f'(${variable})`,`f''(${variable})`,`f'''(${variable})`];
-  const sym = symbolicDeriv(fxStr, ord,variable);
-  let html = '';
-
-  if(sym){
-    html += resBox(primes[ord-1]+' — derivada simbólica', sym, labels[ord-1]+' derivada', true);
-    if(ptStr!==''&&ptStr!=='opcional'){
-      const x0 = parseFloat(ptStr);
-      if(!isNaN(x0)){
-        const symFn = calcParse(sym,variable);
-        if(symFn){
-          const val = symFn(x0,0);
-          if(isFinite(val))
-          html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, fmtResult(val)||fN(val,8),
-              `Sustituyendo en ${sym}`);
-        } else {
-          const fn = calcParse(fxStr,variable);
-          if(fn){
-            const h=1e-6; let v;
-            if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
-            else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
-            else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
-            html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, formatResult(v,8));
-          }
-        }
-      }
-    }
-  } else {
-    const fn = calcParse(fxStr,variable);
-    if(!fn){res.innerHTML=errBox('Función inválida');return;}
-    html+=resBox('Resultado numérico (no simbólico)','','',false);
-    if(ptStr.trim()!==''&&ptStr.trim()!=='opcional'){
-      const x0=parseFloat(ptStr);
-      if(!isNaN(x0)){
-        const h=1e-6; let v;
-        if(ord===1) v=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
-        else if(ord===2) v=(fn(x0+h,0)-2*fn(x0,0)+fn(x0-h,0))/(h*h);
-        else v=(fn(x0+2*h,0)-2*fn(x0+h,0)+2*fn(x0-h,0)-fn(x0-2*h,0))/(2*h**3);
-        html+=resBox(`${primes[ord-1]} en ${variable} = ${x0}`, formatResult(v,8));
-      }
+  const labels = ['Primera','Segunda','Tercera','Cuarta'];
+  const primes = [`f'(${variable})`,`f''(${variable})`,`f'''(${variable})`,`f⁽⁴⁾(${variable})`];
+  const details=derivativeDetails(fxStr,ord,variable);
+  if(!details){res.innerHTML=errBox('Expresión o variable inválida. Usa funciones con paréntesis y un orden de 1 a 4 (máximo 500 caracteres).');return;}
+  let html=resBox(primes[ord-1]+' — derivada simbólica',details.derivative,labels[ord-1]+' derivada',true);
+  html+=`<div class="calc-res-box"><div class="calc-res-label">Reglas utilizadas</div><ol>${details.rules.map(rule=>`<li>${rule}</li>`).join('')}</ol>`;
+  if(ord>1) html+=`<div class="calc-res-label">Derivaciones sucesivas</div><ol>${details.derivatives.map(row=>`<li>Orden ${row.order}: ${row.expression}</li>`).join('')}</ol>`;
+  html+=`<div class="calc-res-label">Condiciones de la fórmula</div>${details.conditions.length?`<ul>${details.conditions.map(condition=>`<li>${condition}</li>`).join('')}</ul>`:'<p>Conserva el dominio real de la función original.</p>'}<div class="calc-res-hint">Son condiciones suficientes de esta fórmula; los puntos de frontera requieren análisis aparte.</div></div>`;
+  if(ptStr!==''&&ptStr!=='opcional'){
+    const pointFn=collectVariables(ptStr).length===0?calcParse(ptStr):null;
+    const x0=pointFn?.(0);
+    if(!Number.isFinite(x0)) html+=errBox('El punto debe ser una expresión real constante, como π/6 o sqrt(2).');
+    else{
+      const evaluation=details.evaluate(x0);
+      html+=evaluation.status==='evaluated'
+        ? resBox(`${primes[ord-1]} en ${variable} = ${x0}`,formatResult(evaluation.value,8),`Sustituyendo en ${details.derivative}`)
+        : errBox(evaluation.reason);
     }
   }
   res.innerHTML=html;
@@ -457,29 +445,38 @@ function calcDerivative(){
 
 function calcImplicit(){
   const fxyStr = document.getElementById('dif-imp-fxy').value.trim();
-  const x0 = parseFloat(document.getElementById('dif-imp-x0').value);
-  const y0 = parseFloat(document.getElementById('dif-imp-y0').value);
+  const constant=text=>{const s=text.trim();return s&&collectVariables(s).length===0?calcParse(s)?.(0):NaN;};
+  const x0 = constant(document.getElementById('dif-imp-x0').value);
+  const y0 = constant(document.getElementById('dif-imp-y0').value);
+  const rateText=document.getElementById('dif-imp-dxdt')?.value.trim()||'';
+  const dxdt=rateText?constant(rateText):null;
   const res = document.getElementById('res-imp');
   if(!fxyStr){res.innerHTML=errBox('Ingresa F(x,y)');return;}
-
-  const Fxy = calcParse(fxyStr);
-  if(!Fxy){res.innerHTML=errBox('Función inválida. Usa x e y como variables');return;}
-
-  let html='';
-  html+=resBox('dy/dx = −∂F/∂x ÷ ∂F/∂y','— fórmula implícita —','F(x,y)=0',true);
-
-  if(!isNaN(x0)&&!isNaN(y0)){
-    const {fval,fx:fx0,fy:fy0,slope}=implicitDerivative(Fxy,x0,y0);
-    if(Math.abs(fval)>0.1)
-      html+=resBox('Verificación',`F(${x0},${y0}) ≈ ${fN(fval,4)}`,'El punto puede no estar en la curva');
-    html+=resBox(`∂F/∂x en (${x0},${y0})`, formatResult(fx0,6));
-    html+=resBox(`∂F/∂y en (${x0},${y0})`, formatResult(fy0,6));
-    html+=resBox(`dy/dx en (${x0},${y0})`, isFinite(slope)?fmtResult(slope)||fN(slope,6):'indefinido',
-      isFinite(slope)?'':'∂F/∂y ≈ 0 en este punto',true);
-  } else {
-    html+=resBox('Necesito un punto','Ingresa x₀ e y₀ para evaluar dy/dx');
-  }
-  res.innerHTML=html;
+  try{
+    const result=implicitCurveAt(fxyStr,x0,y0,{dxdt});
+    let html=resBox('Diferenciar F(x,y)=0',`Fₓ = ${result.symbolicFx}; Fᵧ = ${result.symbolicFy}`,
+      'Fₓ + Fᵧ·dy/dx = 0; por tanto dy/dx = −Fₓ/Fᵧ cuando Fᵧ≠0.');
+    html+=resBox('Verificación del punto',`F(${fN(x0)},${fN(y0)}) = ${fN(result.fval,10)}`,
+      `Residuo relativo ${result.residual.toExponential(2)}; tolerancia ${result.tolerance}.`);
+    if(['off-curve','singular'].includes(result.status)){
+      res.innerHTML=html+errBox(result.reason); return;
+    }
+    html+=resBox(`∂F/∂x en (${x0},${y0})`,formatResult(result.fx,8));
+    html+=resBox(`∂F/∂y en (${x0},${y0})`,formatResult(result.fy,8));
+    if(result.status==='vertical') html+=resBox('Tangente vertical',`x = ${fN(x0)}`,'Fᵧ≈0 y Fₓ≠0; dy/dx no es finito.',true);
+    else{
+      html+=resBox(`dy/dx en (${x0},${y0})`,formatResult(result.slope,8),`−(${fN(result.fx)})/(${fN(result.fy)})`,true);
+      html+=resBox('Recta tangente',`y = (${fN(result.slope,8)})x ${result.intercept>=0?'+':'−'} ${fN(Math.abs(result.intercept),8)}`,
+        `${fN(result.fx)}·(x−${fN(x0)}) + ${fN(result.fy)}·(y−${fN(y0)}) = 0.`);
+    }
+    if(result.rates){
+      html+=result.rates.status==='evaluated'
+        ? resBox('Tasa relacionada dy/dt',formatResult(result.rates.dydt,8),
+          `Fₓ·dx/dt + Fᵧ·dy/dt=0: dy/dt = (${fN(result.slope)})·(${fN(dxdt)}). Conserva unidades coherentes de coordenada y tiempo.`)
+        : errBox(result.rates.reason);
+    }
+    res.innerHTML=html+`<div class="calc-res-hint">Hipótesis: ${result.hypotheses}</div>`;
+  }catch(error){res.innerHTML=errBox(error.message);}
 }
 
 function calcAnalysis(){

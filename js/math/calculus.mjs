@@ -1,4 +1,5 @@
 import { calcParse, collectVariables, normalizeExpression } from './expression.mjs';
+import { polynomialQuotientLimit } from './algebra/sequences.mjs';
 export { calcParse, collectVariables, normalizeExpression } from './expression.mjs';
 
 // Sólo para límites: la notación polinómica a/b+c puede significar
@@ -30,9 +31,6 @@ function tokenize(expr){
     .replace(/⁰/g,'^0').replace(/¹/g,'^1').replace(/²/g,'^2').replace(/³/g,'^3')
     .replace(/⁴/g,'^4').replace(/⁵/g,'^5').replace(/⁶/g,'^6').replace(/⁷/g,'^7')
     .replace(/⁸/g,'^8').replace(/⁹/g,'^9')
-    // e^x  →  exp(x)
-    .replace(/\be\^(\()/g,'exp(')
-    .replace(/\be\^([a-zA-Z0-9_.]+)/g,'exp($1)')
     ;
 
   const raw = [];
@@ -41,9 +39,11 @@ function tokenize(expr){
     const c = expr[i];
     if(/\s/.test(c)){i++;continue;}
     if(/\d/.test(c)||c==='.'){
-      let num='';
-      while(i<expr.length&&(/\d/.test(expr[i])||expr[i]==='.')) num+=expr[i++];
-      raw.push({type:'num',val:parseFloat(num)});
+      const number=/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/.exec(expr.slice(i));
+      if(!number || !Number.isFinite(Number(number[0]))) throw new SyntaxError('Número inválido');
+      i+=number[0].length;
+      if(expr[i]==='.') throw new SyntaxError('Número inválido');
+      raw.push({type:'num',val:Number(number[0])});
       continue;
     }
     if(/[a-zA-Z]/.test(c)){
@@ -55,7 +55,8 @@ function tokenize(expr){
       else raw.push({type:'var',val:word});
       continue;
     }
-    if('+-*/^()'.includes(c)) raw.push({type:'op',val:c});
+    if(!'+-*/^()'.includes(c)) throw new SyntaxError('Carácter no admitido');
+    raw.push({type:'op',val:c});
     i++;
   }
   // Insertar '*' implícito: num/var/) seguido de num/var/fn/(
@@ -87,20 +88,22 @@ function parseExpr(tokens){
     return left;
   }
   function parseMulDiv(){
-    let left = parsePow();
+    let left = parseUnary();
     while(pos<tokens.length&&peek().type==='op'&&(peek().val==='*'||peek().val==='/')){
       const op = consume().val;
-      const right = parsePow();
+      const right = parseUnary();
       left = {type:op, left, right};
     }
     return left;
   }
   function parsePow(){
-    let base = parseUnary();
+    let base = parsePrimary();
     if(pos<tokens.length&&peek().type==='op'&&peek().val==='^'){
       consume();
       const exp = parseUnary();
-      base = {type:'^', left:base, right:exp};
+      base = base.type==='num'&&base.val===Math.E
+        ? {type:'fn',fn:'exp',arg:exp}
+        : {type:'^', left:base, right:exp};
     }
     return base;
   }
@@ -109,30 +112,38 @@ function parseExpr(tokens){
       consume();
       return {type:'neg', arg:parseUnary()};
     }
-    return parsePrimary();
+    if(pos<tokens.length&&peek().type==='op'&&peek().val==='+'){
+      consume();
+      return parseUnary();
+    }
+    return parsePow();
   }
   function parsePrimary(){
     const t = peek();
-    if(!t) return {type:'num',val:0};
+    if(!t) throw new SyntaxError('Falta un operando');
     if(t.type==='num'){ consume(); return {type:'num',val:t.val}; }
     if(t.type==='var'){ consume(); return {type:'var',val:t.val}; }
     if(t.type==='fn'){
       const fn = consume().val;
-      // expect '('
-      if(pos<tokens.length&&peek().val==='(') consume();
+      if(peek()?.val!=='(') throw new SyntaxError('La función necesita paréntesis');
+      consume();
       const arg = parseAddSub();
-      if(pos<tokens.length&&peek().val===')') consume();
+      if(peek()?.val!==')') throw new SyntaxError('Falta cerrar paréntesis');
+      consume();
       return {type:'fn', fn, arg};
     }
     if(t.type==='op'&&t.val==='('){
       consume();
       const inner = parseAddSub();
-      if(pos<tokens.length&&peek().val===')') consume();
+      if(peek()?.val!==')') throw new SyntaxError('Falta cerrar paréntesis');
+      consume();
       return inner;
     }
-    return {type:'num',val:0};
+    throw new SyntaxError('Operando inválido');
   }
-  return parseAddSub();
+  const result=parseAddSub();
+  if(pos!==tokens.length) throw new SyntaxError('Expresión incompleta');
+  return result;
 }
 
 // --- Diferenciación simbólica del AST ---
@@ -159,16 +170,17 @@ function diffAST(node, varName='x'){
         return simplify({type:'*', left:node, right:diffAST(exp,varName)});
       }
       // Si el exponente es constante → n*base^(n-1) * base'
-      if(isConst(exp)){
-        const n = evalAST(exp);
-        if(n===0) return {type:'num',val:0};
+      if(isConst(exp,varName)){
+        const numericExponent=!hasVar(exp);
+        const n = numericExponent?evalAST(exp):null;
+        if(numericExponent&&n===0) return {type:'num',val:0};
         return simplify({type:'*',
-          left:{type:'*',left:{type:'num',val:n},
-            right:{type:'^',left:base,right:{type:'num',val:n-1}}},
+          left:{type:'*',left:numericExponent?{type:'num',val:n}:exp,
+            right:{type:'^',left:base,right:numericExponent?{type:'num',val:n-1}:{type:'-',left:exp,right:{type:'num',val:1}}}},
           right:diffAST(base,varName)});
       }
       // Si la base es constante a^u → a^u * ln(a) * u'
-      if(isConst(base)){
+      if(isConst(base,varName)){
         return simplify({type:'*',
           left:{type:'*',
             left:node,
@@ -348,12 +360,11 @@ function astToStr(node, parentPrec=0){
   switch(node.type){
     case 'num': {
       const v = node.val;
-      if(Math.abs(v-Math.PI)<1e-6) return 'π';
-      if(Math.abs(v-Math.E)<1e-6) return 'e';
+      if(v===Math.PI) return 'π';
+      if(v===Math.E) return 'e';
       if(Number.isInteger(v)) return String(v);
       // Mostrar como fracción si es racional simple
-      const rounded = parseFloat(v.toFixed(6));
-      return String(rounded);
+      return String(v);
     }
     case 'var': return node.val;
     case 'neg': {
@@ -378,8 +389,9 @@ function astToStr(node, parentPrec=0){
       const l=astToStr(node.left,2), r=astToStr(node.right,2);
       const lStr = node.left.type==='+'||node.left.type==='-' ? `(${l})` : l;
       const rStr = node.right.type==='+'||node.right.type==='-' ? `(${r})` : r;
-      // Omitir * antes de letra: 2*x → 2x, 2*sin → 2sin
-      if(rStr[0]&&/[a-zA-Z(]/.test(rStr[0])&&!lStr.includes('/'))
+      // Conservar 2x para monomios; separar los demás factores explícitamente.
+      if(node.left.type==='num' && (node.right.type==='var'||
+        (node.right.type==='^'&&node.right.left.type==='var'&&node.right.right.type==='num')))
         return `${lStr}${rStr}`;
       return `${lStr}*${rStr}`;
     }
@@ -391,8 +403,10 @@ function astToStr(node, parentPrec=0){
     }
     case '^': {
       const l=astToStr(node.left,3), r=astToStr(node.right,3);
-      const lStr = (node.left.type!=='num'&&node.left.type!=='var') ? `(${l})` : l;
-      return `${lStr}^${r}`;
+      const lStr = (node.left.type!=='num'&&node.left.type!=='var')||
+        (node.left.type==='num'&&node.left.val<0) ? `(${l})` : l;
+      const rStr=node.right.type==='num'||node.right.type==='var'?r:`(${r})`;
+      return `${lStr}^${rStr}`;
     }
     default: return '?';
   }
@@ -462,6 +476,8 @@ function collectTerms(ast){
 
 export function symbolicDeriv(exprStr, order=1, varName='x'){
   try{
+    if(!String(exprStr||'').trim()||String(exprStr).length>500||!Number.isInteger(order)||order<1||order>6||
+      !calcParse('1',varName)) return null;
     const tokens = tokenize(exprStr);
     let ast = parseExpr(tokens);
     for(let i=0;i<order;i++){
@@ -473,6 +489,85 @@ export function symbolicDeriv(exprStr, order=1, varName='x'){
   } catch(e){
     return null;
   }
+}
+
+// Procedimiento y condiciones suficientes de la fórmula, sin afirmar un
+// dominio completo en puntos de frontera o parámetros sin valores.
+export function derivativeDetails(exprStr,order=1,varName='x'){
+  if(!String(exprStr||'').trim()||String(exprStr).length>500||!Number.isInteger(order)||order<1||order>4||
+    !calcParse('1',varName)) return null;
+  try{
+    const source=parseExpr(tokenize(exprStr));
+    const rules=new Set(), constraints=new Map(), derivatives=[];
+    const condition=(node,kind)=>{
+      const expression=astToStr(node);
+      const suffix={positive:' > 0',nonzero:' ≠ 0',nonnegative:' ≥ 0',unit:' ∈ [−1,1]',trigNonzero:' ≠ 0'}[kind];
+      if(!hasVar(node)){
+        const value=evalAST(node);
+        if(check(value,kind)) return;
+      }
+      constraints.set(kind+expression,{node,kind,label:expression+suffix});
+    };
+    const inspect=(node,recordRules=false)=>{
+      if(!node) return;
+      if(recordRules){
+        const basic={'+':'Suma: (u+v)′ = u′+v′.','-':'Resta: (u−v)′ = u′−v′.',
+          '*':'Producto: (uv)′ = u′v+uv′.','/':'Cociente: (u/v)′ = (u′v−uv′)/v².'};
+        if(basic[node.type]) rules.add(basic[node.type]);
+        if(node.type==='^') rules.add(isConst(node.right,varName)
+          ? 'Potencia y cadena: (uᵐ)′ = m·uᵐ⁻¹·u′.'
+          : 'Potencia variable: (uᵛ)′ = uᵛ·(v′·ln(u)+v·u′/u), con u>0.');
+        if(node.type==='fn'){
+          const formulas={sin:'(sen u)′ = cos(u)·u′',cos:'(cos u)′ = −sen(u)·u′',
+            exp:'(eᵘ)′ = eᵘ·u′',ln:'(ln u)′ = u′/u',log:'(log₁₀ u)′ = u′/(u·ln 10)',
+            atan:'(arctan u)′ = u′/(1+u²)',sqrt:'(√u)′ = u′/(2√u)'};
+          rules.add(formulas[node.fn]||`Cadena para ${node.fn}: (g(u))′ = g′(u)·u′.`);
+        }
+      }
+      if(node.type==='/') condition(node.right,'nonzero');
+      if(node.type==='^'){
+        if(hasVar(node.right)||!Number.isInteger(evalAST(node.right))) condition(node.left,'positive');
+        else if(evalAST(node.right)<0) condition(node.left,'nonzero');
+      }
+      if(node.type==='fn'){
+        if(['ln','log'].includes(node.fn)) condition(node.arg,'positive');
+        if(node.fn==='sqrt') condition(node.arg,'nonnegative');
+        if(['asin','acos'].includes(node.fn)) condition(node.arg,'unit');
+        if(node.fn==='abs'&&recordRules) condition(node.arg,'nonzero');
+        if(['tan','sec','cot','csc'].includes(node.fn)) condition({type:'fn',fn:['tan','sec'].includes(node.fn)?'cos':'sin',arg:node.arg},'trigNonzero');
+      }
+      inspect(node.left,recordRules); inspect(node.right,recordRules); inspect(node.arg,recordRules);
+    };
+    const check=(value,kind)=>Number.isFinite(value)&&
+      (kind==='positive'?value>0:kind==='nonzero'?value!==0:kind==='nonnegative'?value>=0:
+        kind==='trigNonzero'?Math.abs(value)>1e-12:Math.abs(value)<=1);
+    inspect(source,true);
+    let current=source;
+    for(let k=1;k<=order;k++){
+      current=simplify(collectTerms(simplify(diffAST(current,varName))));
+      inspect(current);
+      derivatives.push({order:k,expression:astToStr(current)});
+    }
+    const evaluateAST=(node,point)=>{
+      const substituted=substAST(node,varName,{type:'num',val:point});
+      return hasVar(substituted)?null:evalAST(substituted);
+    };
+    return {status:'symbolic',expression:normalizeExpression(exprStr),derivative:derivatives.at(-1).expression,
+      derivatives,rules:rules.size?[...rules]:['Constante: C′ = 0.'],conditions:[...constraints.values()].map(item=>item.label),
+      evaluate(point){
+        if(!Number.isFinite(point)) return {status:'invalid',reason:'El punto debe ser real y finito.'};
+        const value=evaluateAST(source,point);
+        if(value===null) return {status:'invalid',reason:'Faltan valores para los parámetros de la expresión.'};
+        if(!Number.isFinite(value)) return {status:'invalid',reason:'La función original no está definida en el punto.'};
+        for(const item of constraints.values()){
+          const result=evaluateAST(item.node,point);
+          if(result===null||!check(result,item.kind)) return {status:'invalid',reason:`No se cumple la condición ${item.label} en el punto; las fronteras requieren análisis aparte.`};
+        }
+        const derivative=evaluateAST(current,point);
+        return Number.isFinite(derivative)?{status:'evaluated',value:derivative,functionValue:value}:
+          {status:'invalid',reason:'La fórmula de la derivada no tiene un valor real finito en el punto.'};
+      }};
+  }catch{return null;}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -771,18 +866,82 @@ function oneInfinity(fxStr, varName, a){
   return { value: expStr(ck), valueNum: Math.exp(ck) };
 }
 
+// Dos formas que pierden precisión por cancelación al muestrear: una raíz
+// racionalizable en +∞ y una potencia con base que tiende a 1 en cero.
+function analyticLimitForms(fxStr,a,varName){
+  const s=normalizeExpression(fxStr).replace(/\s+/g,'');
+  const v=varName;
+  const numeric=String.raw`\d+(?:\.\d+)?`;
+  if(a===Infinity){
+    const root=new RegExp(String.raw`^sqrt\(${v}\^2([+-](?:${numeric})?\*?${v})?([+-]${numeric})?\)-${v}$`).exec(s);
+    if(root){
+      const raw=root[1]?.slice(0,-v.length).replace('*','')||'';
+      const coefficient=raw==='+'?1:raw==='-'?-1:Number(raw||0);
+      const valueNum=coefficient/2;
+      const value=toExact(valueNum)||fmtNum(valueNum,8);
+      const constant=Number(root[2]||0);
+      const signed=n=>n>=0?`+${n}`:String(n);
+      const radicand=`${v}²${coefficient?signed(coefficient)+v:''}${constant?signed(constant):''}`;
+      const numerator=`${coefficient}${v}${constant?signed(constant):''}`;
+      const scaledNumerator=`${coefficient}${constant?signed(constant)+`/${v}`:''}`;
+      const scaledRoot=`1${coefficient?signed(coefficient)+`/${v}`:''}${constant?signed(constant)+`/${v}²`:''}`;
+      return {value,valueNum,detail:
+        `Racionalizar: sqrt(${radicand})−${v} = (${numerator})/(sqrt(${radicand})+${v}). `+
+        `Como ${v}→+∞, dividir por ${v}>0 da (${scaledNumerator})/(sqrt(${scaledRoot})+1) → ${coefficient}/2 = ${value}.`};
+    }
+  }
+  if(a===0){
+    if(new RegExp(String.raw`^1/sin\(${v}\)-1/${v}$`).test(s)){
+      return {value:'0',valueNum:0,detail:
+        `Unificar: 1/sin(${v})−1/${v} = (${v}−sin(${v}))/(${v}·sin(${v})). `+
+        `Como sin(${v})=${v}−${v}³/6+O(${v}⁵), el numerador es O(${v}³) y el denominador es ${v}²+O(${v}⁴); el cociente tiende a 0.`};
+    }
+    const cosine=new RegExp(String.raw`^cos\(((?:[+-]?${numeric}\*?)?)${v}\)\^\(([+-]?${numeric})\/${v}\^2\)$`).exec(s);
+    if(cosine){
+      const k=cosine[1]?Number(cosine[1].replace('*','')):1;
+      const power=-Number(cosine[2])*k*k/2;
+      const valueNum=Math.exp(power);
+      if(!Number.isFinite(valueNum)) return null;
+      const value=`e^(${toExact(power)||fmtNum(power,8)})`;
+      const argument=k===1?v:k===-1?`-${v}`:`${k}${v}`;
+      return {value,valueNum,detail:
+        `Cerca de 0, cos(${argument})>0. Como cos(u)=1−u²/2+o(u²) y ln(1+w)=w+o(w), `+
+        `ln(cos(${argument})^(${cosine[2]}/${v}²)) → ${toExact(power)||fmtNum(power,8)}. `+
+        `Por continuidad de exp, el límite es ${value}.`};
+    }
+  }
+  return null;
+}
+
+function nearTrigPole(fxStr,a,varName){
+  if(!Number.isFinite(a)) return null;
+  const calls=normalizeExpression(fxStr).matchAll(/\b(tan|sec|cot|csc)\(([^()]*)\)/g);
+  for(const match of calls){
+    const argument=calcParse(match[2],varName);
+    if(!argument) continue;
+    let angle;
+    try{angle=argument(a,0);}catch{continue;}
+    if(!Number.isFinite(angle)) continue;
+    const denominator=match[1]==='tan'||match[1]==='sec'?Math.cos(angle):Math.sin(angle);
+    if(Math.abs(denominator)<1e-10) return match[1];
+  }
+  return null;
+}
+
 // L'Hôpital simbólico para 0/0 y ∞/∞; devuelve valor numérico exacto o null.
 function lHopitalSymbolic(numAST, denAST, varName, a){
   let num=numAST, den=denAST;
+  const derivatives=[];
   for(let order=1; order<=4; order++){
     num=simplify(diffAST(num, varName));
     den=simplify(diffAST(den, varName));
     const nv=evalAt(num, varName, a);
     const dv=evalAt(den, varName, a);
     if(nv===null || dv===null) return null;
+    derivatives.push({order,numerator:astToStr(num),denominator:astToStr(den),numeratorAt:nv,denominatorAt:dv});
     if(Math.abs(dv)>1e-12 && isFinite(nv) && isFinite(dv)){
       const r=nv/dv;
-      if(isFinite(r)) return r;
+      if(isFinite(r)) return {value:r,derivatives};
     }
     if(!(Math.abs(nv)<1e-9 && Math.abs(dv)<1e-9)) return null;
   }
@@ -822,7 +981,8 @@ export function symbolicLimit(fxStr, aStr, varName='x'){
     if(isZZ || isII){
       const r=lHopitalSymbolic(numAST, denAST, varName, a);
       if(r===null) return null;
-      return { value: toExact(r)||fmtNum(r,8), valueNum: r, symbolic:false, method:'lhopital' };
+      return { value: toExact(r.value)||fmtNum(r.value,8), valueNum:r.value,
+        symbolic:false, method:'lhopital', derivatives:r.derivatives };
     }
 
     const sub=substAST(ast, varName, {type:'num',val:a});
@@ -872,6 +1032,40 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
     }
   }
 
+  if(a===Infinity && freeVars.length===0){
+    const polynomial=polynomialQuotientLimit(normalizedFx,varName);
+    if(polynomial.status==='demostrado'){
+      const valueNum=polynomial.value;
+      r.value=Number.isFinite(valueNum)?toExact(valueNum)||polynomial.exact:polynomial.exact;
+      r.valueNum=valueNum; r.exact=r.value; r.exists=Number.isFinite(valueNum);
+      r.isInfinity=!r.exists; r.tipo='simbolico'; r.vr=valueNum; r.vl=valueNum;
+      steps.push({tipo:'simbolico',aDisplay:fmtA(aStr),
+        detail:`${polynomial.steps.join(' ')} ${polynomial.assumptions}`,result:r.value});
+      return r;
+    }
+  }
+
+  if(freeVars.length===0){
+    const analytic=analyticLimitForms(normalizedFx,a,varName);
+    if(analytic){
+      r.value=analytic.value; r.valueNum=analytic.valueNum; r.exact=analytic.value;
+      r.exists=true; r.tipo='simbolico'; r.vr=analytic.valueNum; r.vl=analytic.valueNum;
+      steps.push({tipo:'simbolico',aDisplay:fmtA(aStr),detail:analytic.detail,result:analytic.value});
+      return r;
+    }
+  }
+
+  if(freeVars.length===0){
+    const pole=nearTrigPole(normalizedFx,a,varName);
+    if(pole){
+      r.value='No demostrado'; r.valueNum=NaN; r.exists=null; r.inconclusive=true;
+      r.estimate=null; r.tipo='numerico';
+      r.domainError=`${pole} tiene un posible polo en el punto indicado; la sustitución numérica no demuestra un límite.`;
+      steps.push({tipo:'dominio',detail:r.domainError});
+      return r;
+    }
+  }
+
   // Sustitución directa
   let direct=null;
   if(isFinite(a)){ try{ const v=fn(a,0); if(isFinite(v)) direct=v; }catch(e){} }
@@ -879,6 +1073,19 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
   steps.push({tipo:'sustitucion',aDisplay:fmtA(aStr),direct,visSub:_visDirect});
 
   if(direct!==null){
+    const h=Math.max(1e-6,Math.abs(a)*1e-6);
+    const defined=sign=>[h,h/10,h/100].some(delta=>{
+      try{return Number.isFinite(fn(a+sign*delta,0));}catch{return false;}
+    });
+    const leftDefined=defined(-1), rightDefined=defined(1);
+    const missing=side==='left'?!leftDefined:side==='right'?!rightDefined:!leftDefined||!rightDefined;
+    if(missing){
+      const direction=!leftDefined&&!rightDefined?'ambos lados':!leftDefined?'la izquierda':'la derecha';
+      r.exists=false; r.tipo='dominio'; r.value='Sin límite real por el lado solicitado';
+      r.domainError=`La función no tiene valores reales cercanos por ${direction}; el valor en ${varName}=${fmtA(aStr)} no prueba un límite ${side==='both'?'bilateral':'lateral'}.`;
+      steps.push({tipo:'dominio',detail:r.domainError});
+      return r;
+    }
     const ex=toExact(direct);
     r.value=ex||fmtNum(direct,8); r.valueNum=direct;
     r.exact=ex; r.exists=true; r.tipo='directo';
@@ -921,12 +1128,13 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
   steps.push({tipo:'laterales',vr,vl,aDisplay:fmtA(aStr)});
 
   // Resolver
-  let resolved=NaN;
+  let resolved=NaN, analyticProof=false;
   if(r.isIndet){
     const sym=symbolicLimit(fxStr,aStr,varName);
     if(sym && !sym.symbolic && sym.valueNum!==null && isFinite(sym.valueNum)){
       resolved=sym.valueNum;
-      steps.push({tipo:'lhopital_simbolico',result:sym.value});
+      analyticProof=true;
+      steps.push({tipo:'lhopital_simbolico',result:sym.value,derivatives:sym.derivatives});
     } else {
       resolved=resolveIndet(normalizedFx,a,steps,varName);
     }
@@ -956,6 +1164,13 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
     }
   }
   r.tipo=isZZ?'indet_00':isII?'indet_inf':(!isFinite(vr)||!isFinite(vl)?'infinito':'lateral');
+  if(!analyticProof){
+    r.inconclusive=true;
+    r.estimate=Number.isFinite(r.valueNum)?r.valueNum:null;
+    if(r.estimate===null) r.valueNum=NaN;
+    r.value='No demostrado'; r.exists=null; r.exact=null; r.isInfinity=false;
+    r.tipo='numerico';
+  }
   return r;
 }
 
@@ -966,6 +1181,22 @@ export function calculateLimitOperation(left,right,operation){
   const second=computeLimit(right.expr,right.point,right.side,right.variable||'x');
   const result={first,second,valueNum:NaN,reason:''};
   if(first.error||second.error) return result;
+  const samePoint=first.a===second.a&&left.side===right.side&&(left.variable||'x')===(right.variable||'x');
+  if(operation==='−'&&samePoint&&left.expr.trim()===right.expr.trim()){
+    const fn=calcParse(left.expr,left.variable||'x');
+    const a=first.a, h=Number.isFinite(a)?Math.max(1e-4,Math.abs(a)*1e-4):1e4;
+    const probes=left.side==='left'?[a-h]:left.side==='right'?[a+h]:
+      a===Infinity?[h]:a===-Infinity?[-h]:[a-h,a+h];
+    if(fn && probes.every(x=>{try{return Number.isFinite(fn(x,0));}catch{return false;}})){
+      result.valueNum=0;
+      result.reason='Identidad algebraica de la expresión conjunta: f−f=0 donde f está definida.';
+      return result;
+    }
+  }
+  if(first.inconclusive||second.inconclusive){
+    result.reason='Algún límite solo tiene una estimación numérica; la operación no queda demostrada.';
+    return result;
+  }
   const extended=r=>r.isInfinity||/[∞]/.test(r.value||'')
     ? Math.sign(r.valueNum||1)*Infinity : r.valueNum;
   const a=extended(first), b=extended(second);
@@ -1235,6 +1466,36 @@ export function implicitDerivative(fn,x,y,h=1e-7){
   const fx=(fn(x+h,y)-fn(x-h,y))/(2*h);
   const fy=(fn(x,y+h)-fn(x,y-h))/(2*h);
   return {fval,fx,fy,slope:fy!==0?-fx/fy:NaN};
+}
+
+export function implicitCurveAt(expression,x,y,{dxdt=null}={}){
+  if(![x,y].every(Number.isFinite)||dxdt!==null&&!Number.isFinite(dxdt)) throw new RangeError('Ingresa coordenadas y tasa reales finitas.');
+  if(String(expression||'').length>500||collectVariables(expression).some(v=>!['x','y'].includes(v))) throw new RangeError('Usa únicamente x e y (máximo 500 caracteres).');
+  let source;
+  try{source=parseExpr(tokenize(expression));}catch{throw new RangeError('Expresión F(x,y) inválida.');}
+  const fxAST=simplify(collectTerms(simplify(diffAST(source,'x'))));
+  const fyAST=simplify(collectTerms(simplify(diffAST(source,'y'))));
+  const evaluate=node=>evalAST(substAST(substAST(node,'x',{type:'num',val:x}),'y',{type:'num',val:y}));
+  const fval=evaluate(source), fx=evaluate(fxAST), fy=evaluate(fyAST);
+  if(![fval,fx,fy].every(Number.isFinite)) throw new RangeError('La función o sus parciales no tienen valor real finito en el punto; revisa el dominio.');
+  const scale=Math.max(Math.abs(fval),Math.abs(fx)*Math.max(1,Math.abs(x)),Math.abs(fy)*Math.max(1,Math.abs(y)));
+  const residual=scale===0?0:Math.abs(fval)/scale;
+  const result={fval,fx,fy,residual,tolerance:1e-9,symbolicFx:astToStr(fxAST),symbolicFy:astToStr(fyAST),
+    hypotheses:'F debe ser diferenciable cerca del punto. Para y(x), se requiere Fᵧ≠0; la tangente usa Fₓ(x−x₀)+Fᵧ(y−y₀)=0.'};
+  if(residual>result.tolerance) return {...result,status:'off-curve',reason:'El punto no satisface F(x,y)=0 dentro de la tolerancia relativa.'};
+  const gradientScale=Math.max(Math.abs(fx),Math.abs(fy));
+  if(gradientScale===0) return {...result,status:'singular',reason:'Fₓ=Fᵧ=0: la linealización no determina una tangente única.'};
+  const vertical=Math.abs(fy)<=1e-12*gradientScale;
+  result.status=vertical?'vertical':'regular';
+  result.slope=vertical?null:-fx/fy;
+  result.intercept=vertical?null:y-result.slope*x;
+  if(dxdt!==null){
+    result.rates=vertical
+      ? dxdt===0?{status:'undetermined',reason:'Con dx/dt=0, esta ecuación no determina dy/dt.'}:
+        {status:'incompatible',reason:'Fₓ·dx/dt≠0 y Fᵧ≈0: la tasa dada no satisface la relación diferenciada.'}
+      : {status:'evaluated',dxdt,dydt:result.slope*dxdt};
+  }
+  return result;
 }
 
 // AST internals shared with the symbolic integration engine.

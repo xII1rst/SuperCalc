@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-study-29';
+const CACHE = 'supercalc-v1.0-study-32';
 const APP_PRECACHE = [
   './',
   './index.html',
