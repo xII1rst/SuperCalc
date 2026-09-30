@@ -230,21 +230,23 @@ function ivpStep(fn, method, x, y, h, previousSlope) {
   return {next:y+h*(k1+2*k2+2*k3+k4)/6,slope:k1};
 }
 
-export function ivpTrace(fn, x0, y0, h, steps, method = 'rk4') {
+export function ivpTrace(fn, x0, y0, h, steps, method = 'rk4', {startup='rk4'}={}) {
   if (typeof fn!=='function') throw new TypeError('y′ debe ser función');
   finite(x0,'x inicial');finite(y0,'y inicial');finite(h,'Paso');
   if (h===0) throw new RangeError('El paso no puede ser cero');
   count(steps,'Pasos',2000);
   if (!['euler','rk2','rk4','ab2'].includes(method)) throw new RangeError('Método de PVI inválido');
+  if (!['rk2','rk4'].includes(startup)) throw new RangeError('Arranque de Adams-Bashforth inválido');
   const history=[{iteration:0,x:x0,y:y0}];
   let x=x0,y=y0, previousSlope=null;
   for (let iteration=1;iteration<=steps;iteration++) {
-    const result=ivpStep(fn,method,x,y,h,previousSlope);
+    const stepMethod=method==='ab2'&&iteration===1?startup:method;
+    const result=ivpStep(fn,stepMethod,x,y,h,previousSlope);
     previousSlope=result.slope;
     x=x0+iteration*h;
     y=result.next;
     if (!Number.isFinite(y)) return {status:'diverged',history,method,step:h};
     history.push({iteration,x,y});
   }
-  return {status:'completed',history,method,step:h,final:{x,y},startup:method==='ab2'?'RK4 en el primer paso':null};
+  return {status:'completed',history,method,step:h,final:{x,y},startup:method==='ab2'?`${startup.toUpperCase()}${startup==='rk2'?' punto medio':''} en el primer paso`:null};
 }

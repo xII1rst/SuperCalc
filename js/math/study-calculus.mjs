@@ -107,6 +107,41 @@ export function integrateVariableRegion(integrand,xStart,xEnd,lowerY,upperY,nx=8
   }
   return {value:sum,nx,ny,formula:'∫[xa,xb]∫[yinf(x),ysup(x)] f(x,y) dy dx',assumption:'regla de puntos medios; compara mallas para estimar convergencia'};
 }
+export function laminaProperties(density,coordinates,outerStart,outerEnd,innerLower,innerUpper,nOuter=80,nInner=80) {
+  interval(outerStart,outerEnd);
+  if(typeof density!=='function'||typeof innerLower!=='function'||typeof innerUpper!=='function'||
+    !['cartesian','polar'].includes(coordinates)||![nOuter,nInner].every(n=>Number.isInteger(n)&&n>=4&&n<=400))
+    throw new RangeError('Densidad, coordenadas o malla inválidas (4–400 divisiones por eje)');
+  const compute=(outerCount,innerCount)=>{
+    const totals=Array(6).fill(0),step=(outerEnd-outerStart)/outerCount;
+    for(let i=0;i<outerCount;i++) {
+      const outer=outerStart+(i+0.5)*step,lower=safe(innerLower(outer),'Límite interior inferior'),upper=safe(innerUpper(outer),'Límite interior superior');
+      if(coordinates==='polar'&&lower<0) throw new RangeError('El radio debe ser no negativo');
+      if(upper<lower) throw new RangeError('Límites interiores invertidos');
+      const innerStep=(upper-lower)/innerCount;
+      for(let j=0;j<innerCount;j++) {
+        const inner=lower+(j+0.5)*innerStep;
+        const x=coordinates==='polar'?inner*Math.cos(outer):outer;
+        const y=coordinates==='polar'?inner*Math.sin(outer):inner;
+        const rho=safe(density(x,y),'Densidad');
+        if(rho<0) throw new RangeError('La densidad de masa debe ser no negativa');
+        const dm=rho*step*innerStep*(coordinates==='polar'?inner:1);
+        totals[0]+=dm;totals[1]+=x*dm;totals[2]+=y*dm;
+        totals[3]+=y*y*dm;totals[4]+=x*x*dm;totals[5]+=(x*x+y*y)*dm;
+      }
+    }
+    return totals;
+  };
+  const [mass,firstMomentX,firstMomentY,inertiaX,inertiaY,inertiaZ]=compute(nOuter,nInner);
+  if(!(mass>0)) throw new RangeError('Masa nula: el centro de masa no está definido');
+  const coarse=compute(Math.max(2,Math.floor(nOuter/2)),Math.max(2,Math.floor(nInner/2)));
+  return {mass,centerX:firstMomentX/mass,centerY:firstMomentY/mass,firstMomentX,firstMomentY,
+    inertiaX,inertiaY,inertiaZ,coarseMass:coarse[0],massRefinementDifference:Math.abs(mass-coarse[0]),
+    inertiaRefinementDifference:Math.abs(inertiaZ-coarse[5]),nx:nOuter,ny:nInner,
+    formula:coordinates==='polar'?'dm = ρ(r cosθ,r senθ)·r dr dθ; x̄ = ∫x dm/M; ȳ = ∫y dm/M; Iz = ∫r² dm':
+      'dm = ρ(x,y)dy dx; x̄ = ∫x dm/M; ȳ = ∫y dm/M; Iz = ∫(x²+y²)dm',
+    assumption:'lámina plana de densidad no negativa; regla de puntos medios; diferencias entre mallas no son cotas de error ni prueban el dominio completo'};
+}
 export function integrateTripleRegion(integrand,coordinates,outerStart,outerEnd,middleLower,middleUpper,innerLower,innerUpper,subintervals=40) {
   if(typeof integrand!=='function'||![middleLower,middleUpper,innerLower,innerUpper].every(fn=>typeof fn==='function')||
     !['cartesian','cylindrical','spherical'].includes(coordinates)||!Number.isFinite(outerStart)||!Number.isFinite(outerEnd)||outerStart>=outerEnd||
@@ -171,6 +206,94 @@ export function integrateParametricSurface(parameterization,integrand,uStart,uEn
   return {value,area,coarse,refinementDifference:Math.abs(value-coarse),subintervals,
     formula:'∫∫ f(r(u,v)) · |∂r/∂u × ∂r/∂v| du dv',
     assumption:'derivadas de la parametrización por diferencias centradas; superficie regular salvo singularidades de coordenadas y sin recubrimiento múltiple'};
+}
+export function integrateParametricFlux(parameterization,vectorField,uStart,uEnd,vStart,vEnd,subintervals=40,orientation='uv') {
+  if(typeof parameterization!=='function'||typeof vectorField!=='function'||
+    ![uStart,uEnd,vStart,vEnd].every(Number.isFinite)||uStart>=uEnd||vStart>=vEnd||
+    !Number.isInteger(subintervals)||subintervals<8||subintervals>80||subintervals%4!==0||
+    !['uv','vu'].includes(orientation)) throw new RangeError('Campo, superficie, orientación o malla inválidos');
+  const point=(u,v)=>{
+    const value=parameterization(u,v);
+    if(!Array.isArray(value)||value.length!==3||value.some(component=>!Number.isFinite(component)))
+      throw new RangeError('Parametrización fuera de dominio');
+    return value;
+  };
+  const integrand=(u,v)=>{
+    const h=1e-5*Math.max(1,Math.abs(u),Math.abs(v));
+    const center=point(u,v),plusU=point(u+h,v),minusU=point(u-h,v),plusV=point(u,v+h),minusV=point(u,v-h);
+    const du=plusU.map((item,i)=>(item-minusU[i])/(2*h));
+    const dv=plusV.map((item,i)=>(item-minusV[i])/(2*h));
+    const field=vectorField(...center);
+    if(!Array.isArray(field)||field.length!==3||field.some(component=>!Number.isFinite(component)))
+      throw new RangeError('Campo vectorial fuera de dominio');
+    const normal=[du[1]*dv[2]-du[2]*dv[1],du[2]*dv[0]-du[0]*dv[2],du[0]*dv[1]-du[1]*dv[0]];
+    return (orientation==='uv'?1:-1)*field.reduce((sum,item,i)=>sum+item*normal[i],0);
+  };
+  const calculate=n=>simpson(u=>simpson(v=>integrand(u,v),vStart,vEnd,n),uStart,uEnd,n);
+  const flux=calculate(subintervals),coarse=calculate(subintervals/2);
+  return {flux,coarse,refinementDifference:Math.abs(flux-coarse),subintervals,
+    orientation:orientation==='uv'?'rᵤ×rᵥ':'rᵥ×rᵤ',
+    formula:'Φ = ∫∫ F(r(u,v)) · (rᵤ×rᵥ) du dv (signo según orientación)',
+    assumption:'superficie paramétrica regular, sin recubrimiento múltiple; derivadas centradas y Simpson anidado; la diferencia entre mallas no es cota de error'};
+}
+export function linearObjectiveCylinderPlane(radiusSquared,plane,objective) {
+  if(!Number.isFinite(radiusSquared)||radiusSquared<=0||!Array.isArray(plane)||plane.length!==4||
+    !Array.isArray(objective)||objective.length!==3||[...plane,...objective].some(value=>!Number.isFinite(value))||plane[2]===0)
+    throw new RangeError('Usa x²+y²=R² con R²>0, un plano ax+by+cz=d con c≠0 y objetivo px+qy+sz');
+  const [a,b,c,d]=plane,[p,q,s]=objective,mu=s/c;
+  const projected=[p-mu*a,q-mu*b],norm=Math.hypot(...projected),radius=Math.sqrt(radiusSquared);
+  const formula='z=(d−ax−by)/c; f=sd/c+(p−sa/c)x+(q−sb/c)y; x²+y²=R²';
+  if(norm===0) return {status:'constante en toda la intersección',value:mu*d,
+    formula,assumption:'cilindro circular y plano con c≠0; todos los puntos de la elipse de intersección son extremos'};
+  const candidate=sign=>{
+    const x=sign*radius*projected[0]/norm,y=sign*radius*projected[1]/norm,z=(d-a*x-b*y)/c;
+    const lambda=sign*norm/(2*radius),value=p*x+q*y+s*z;
+    return {point:[x,y,z],value,lambda,mu,
+      constraintResiduals:[x*x+y*y-radiusSquared,a*x+b*y+c*z-d],
+      stationarityResidual:[p-2*lambda*x-mu*a,q-2*lambda*y-mu*b,s-mu*c]};
+  };
+  return {status:'dos extremos globales',minimum:candidate(-1),maximum:candidate(1),
+    formula,assumption:'intersección compacta de cilindro circular y plano con c≠0; λ para x²+y²−R² y μ para ax+by+cz−d'};
+}
+export function minimumNormOnPlane(normal,constant) {
+  if(!Array.isArray(normal)||normal.length!==3||normal.some(value=>!Number.isFinite(value))||
+    !Number.isFinite(constant)) throw new RangeError('Introduce normal 3D y constante finitas');
+  const normSquared=normal.reduce((sum,value)=>sum+value*value,0);
+  if(!Number.isFinite(normSquared)||normSquared===0) throw new RangeError('La normal del plano debe ser no nula');
+  const multiplier=2*constant/normSquared,point=normal.map(value=>constant*value/normSquared);
+  const value=constant*constant/normSquared;
+  if(!Number.isFinite(value)||point.some(item=>!Number.isFinite(item))) throw new RangeError('Resultado fuera del rango numérico');
+  return {minimum:{point,value,multiplier,
+    constraintResidual:normal.reduce((sum,item,i)=>sum+item*point[i],0)-constant,
+    stationarityResidual:point.map((item,i)=>2*item-multiplier*normal[i])},
+    maximum:'no existe: el plano no está acotado',
+    formula:'minimizar ||x||² sujeto a n·x=d: 2x=λn ⇒ x*=dn/||n||² y fmin=d²/||n||²',
+    assumption:'objetivo x²+y²+z² y un plano afín con normal no nula; mínimo global por convexidad estricta'};
+}
+export function logarithmicRadialHarmonic(scale,x,y) {
+  if([scale,x,y].some(value=>!Number.isFinite(value))) throw new RangeError('Coeficiente y punto finitos requeridos');
+  const radiusSquared=x*x+y*y;
+  if(radiusSquared===0||!Number.isFinite(radiusSquared)) throw new RangeError('El origen queda fuera del dominio de ln r');
+  const value=scale*Math.log(Math.sqrt(radiusSquared));
+  const gradient=[scale*x/radiusSquared,scale*y/radiusSquared];
+  const secondDerivatives=[scale*(radiusSquared-2*x*x)/radiusSquared**2,
+    scale*(radiusSquared-2*y*y)/radiusSquared**2];
+  const laplacian=secondDerivatives[0]+secondDerivatives[1];
+  if([value,...gradient,...secondDerivatives,laplacian].some(item=>!Number.isFinite(item)))
+    throw new RangeError('Derivadas fuera del rango numérico');
+  return {value,gradient,secondDerivatives,laplacian,
+    formula:'u=k ln r, r²=x²+y²; uxx=k(r²−2x²)/r⁴, uyy=k(r²−2y²)/r⁴ ⇒ Δu=0',
+    assumption:'dominio ℝ² sin el origen; el origen es singular y no satisface Laplace clásicamente'};
+}
+export function trilinearPotentialIntegral(coefficient,from,to) {
+  if(!Number.isFinite(coefficient)||![from,to].every(point=>Array.isArray(point)&&point.length===3&&point.every(Number.isFinite)))
+    throw new RangeError('Coeficiente y dos puntos 3D finitos requeridos');
+  const potential=point=>coefficient*point[0]*point[1]*point[2];
+  const fromPotential=potential(from),toPotential=potential(to),lineIntegral=toPotential-fromPotential;
+  if([fromPotential,toPotential,lineIntegral].some(value=>!Number.isFinite(value))) throw new RangeError('Integral fuera del rango numérico');
+  return {fromPotential,toPotential,lineIntegral,curl:[0,0,0],
+    formula:'F=(k yz,k xz,k xy)=∇(k xyz); ∫C F·dr=Φ(fin)−Φ(inicio)',
+    assumption:'campo definido en todo ℝ³; cualquier curva suave por tramos entre los extremos da el mismo resultado'};
 }
 export function tangentPlane(functionXY,x,y,step=1e-5) {
   finite(x,'x');finite(y,'y');if(typeof functionXY!=='function'||!Number.isFinite(step)||step<=0) throw new RangeError('Función o paso inválidos');

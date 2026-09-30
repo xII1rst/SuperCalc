@@ -708,6 +708,14 @@ body:has(#update-banner) .sc-toast-stack { bottom:calc(84px + env(safe-area-inse
 .num-table{border-collapse:collapse;min-width:100%;font:10px/1.5 'Space Mono',monospace;color:var(--text-soft)}
 .num-table th,.num-table td{padding:6px 9px;border:1px solid var(--line-subtle);white-space:nowrap;text-align:left}
 .num-table th{color:var(--tool-color);background:var(--chrome)}
+.logic-graph-figure{margin:16px 0;padding:8px;border:1px solid var(--line-subtle);border-radius:10px;background:var(--chrome)}
+.logic-graph-figure svg{display:block;width:100%;height:auto;max-height:420px}
+.logic-graph-figure svg text{font:700 12px 'Space Mono',monospace;text-anchor:middle}
+.logic-graph-figure svg .logic-graph-weight{fill:var(--text-strong);paint-order:stroke;stroke:var(--chrome);stroke-width:5px;stroke-linejoin:round}
+.logic-graph-figure figcaption{color:var(--text-muted);font:10px/1.5 'Space Mono',monospace;margin:4px 8px 2px}
+.logic-tree-figure{overflow:auto;max-height:640px}
+.logic-tree-figure svg{max-height:none}
+.logic-tree-figure svg .logic-tree-bit{fill:var(--text-strong);paint-order:stroke;stroke:var(--chrome);stroke-width:5px}
 @media(max-width:540px){.num-controls{grid-template-columns:1fr}.num-controls label{margin-top:6px}}
 .tool-stats-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px; }
 .tool-stat { display:flex;flex-direction:column;gap:5px;min-width:0; }

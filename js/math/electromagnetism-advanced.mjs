@@ -162,6 +162,52 @@ export function nodalCircuit(nodeCount,resistors,fixedVoltages,currentInjections
   });
   return {voltages,branchCurrents,kclResiduals:kcl,convention:'I de a hacia b; corriente inyectada positiva entra al nodo'};
 }
+export function nodalVoltageSources(nodeCount,resistors,voltageSources,currentInjections=[]) {
+  if(!Number.isInteger(nodeCount)||nodeCount<2||nodeCount>12||!Array.isArray(resistors)||resistors.length>50||
+    !Array.isArray(voltageSources)||!voltageSources.length||voltageSources.length>20||!Array.isArray(currentInjections)||currentInjections.length>50)
+    throw new RangeError('Circuito: 2–12 nodos, hasta 50 resistores y 1–20 fuentes de tensión requeridos');
+  const checkNode=node=>{if(!Number.isInteger(node)||node<0||node>=nodeCount) throw new RangeError('Nodo fuera del circuito');};
+  for(const item of resistors) {
+    checkNode(item.a);checkNode(item.b);positive(item.resistance,'Resistencia');
+    if(item.a===item.b) throw new RangeError('Resistor entre el mismo nodo');
+  }
+  for(const item of voltageSources) {
+    checkNode(item.a);checkNode(item.b);finite(item.voltage,'Voltaje de fuente');
+    if(item.a===item.b) throw new RangeError('Fuente entre el mismo nodo');
+  }
+  for(const item of currentInjections) {checkNode(item.node);finite(item.current,'Corriente inyectada');}
+  const voltageUnknowns=nodeCount-1,size=voltageUnknowns+voltageSources.length;
+  const matrix=Array.from({length:size},()=>Array(size).fill(0)),rhs=Array(size).fill(0);
+  for(const {a,b,resistance} of resistors) {
+    const g=1/resistance;
+    for(const [at,other] of [[a,b],[b,a]]) if(at!==0) {
+      matrix[at-1][at-1]+=g;
+      if(other!==0) matrix[at-1][other-1]-=g;
+    }
+  }
+  for(const {node,current} of currentInjections) if(node!==0) rhs[node-1]+=current;
+  voltageSources.forEach(({a,b,voltage},k)=>{
+    const col=voltageUnknowns+k;
+    if(a!==0) {matrix[a-1][col]+=1;matrix[col][a-1]+=1;}
+    if(b!==0) {matrix[b-1][col]-=1;matrix[col][b-1]-=1;}
+    rhs[col]=voltage;
+  });
+  const solved=solveSystem(matrix,rhs),voltages=[0,...solved.slice(0,voltageUnknowns)];
+  const branchCurrents=resistors.map(({a,b,resistance})=>(voltages[a]-voltages[b])/resistance);
+  const sourceCurrents=solved.slice(voltageUnknowns);
+  const kclResiduals=Array.from({length:nodeCount-1},(_,i)=>{
+    const node=i+1;
+    const resistorOut=resistors.reduce((sum,item,k)=>sum+(item.a===node?branchCurrents[k]:item.b===node?-branchCurrents[k]:0),0);
+    const sourceOut=voltageSources.reduce((sum,item,k)=>sum+(item.a===node?sourceCurrents[k]:item.b===node?-sourceCurrents[k]:0),0);
+    const injected=currentInjections.reduce((sum,item)=>sum+(item.node===node?item.current:0),0);
+    return resistorOut+sourceOut-injected;
+  });
+  const voltageResiduals=voltageSources.map(({a,b,voltage})=>voltages[a]-voltages[b]-voltage);
+  return {voltages,branchCurrents,sourceCurrents,kclResiduals,voltageResiduals,
+    formula:'KCL en nodos distintos de tierra; V(a)−V(b)=ε para cada fuente; I_R=(Va−Vb)/R',
+    assumption:'topología y polaridad explícitas; nodo 0 a tierra; fuentes y conductores ideales; solución única requerida',
+    convention:'corrientes de ramas y fuentes positivas de a hacia b; corriente inyectada positiva entra al nodo'};
+}
 export function magneticGeometries(kind,current,turns,size,position=null) {
   finite(current,'Corriente');positive(size,'Radio o longitud');
   if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
@@ -173,6 +219,94 @@ export function magneticGeometries(kind,current,turns,size,position=null) {
     return {field:EM_MU0*turns*current/(2*Math.PI*position),formula:'B = μ₀NI/(2πr), dentro del toroide ideal'};
   }
   throw new RangeError('Geometría no soportada');
+}
+export function circularLoopAxis(current,turns,radius,position) {
+  finite(current,'Corriente');positive(radius,'Radio');finite(position,'Posición axial');
+  if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
+  const centerField=EM_MU0*turns*current/(2*radius);
+  return {centerField,axisField:centerField*(radius/Math.hypot(radius,position))**3,
+    formula:'B(z) = μ₀NI R²/[2(R²+z²)^(3/2)]; B(0) = μ₀NI/(2R)',
+    assumption:'espiras circulares delgadas coaxiales; signo respecto al eje según la regla de la mano derecha'};
+}
+export function loopTorque(turns,current,width,height,field,planeAngleDegrees) {
+  if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
+  finite(current,'Corriente');positive(width,'Ancho');positive(height,'Alto');finite(field,'Campo');
+  finite(planeAngleDegrees,'Ángulo');
+  if(planeAngleDegrees<0||planeAngleDegrees>90) throw new RangeError('Ángulo plano-campo entre 0° y 90° requerido');
+  const area=width*height,magneticMoment=turns*current*area;
+  return {area,magneticMoment,torqueMagnitude:planeAngleDegrees===90?0:Math.abs(magneticMoment*field*Math.cos(planeAngleDegrees*Math.PI/180)),
+    formula:'A = ancho × alto; |τ| = N|I|AB cos β, β = ángulo entre el plano y B',
+    assumption:'bobina rígida en campo uniforme; se muestra la magnitud, el sentido depende de la orientación del circuito'};
+}
+export function solenoidSelfInductance(turns,length,area,current=0,relativePermeability=1) {
+  if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
+  positive(length,'Longitud');positive(area,'Área');finite(current,'Corriente');positive(relativePermeability,'Permeabilidad relativa');
+  const inductance=EM_MU0*relativePermeability*turns**2*area/length;
+  return {inductance,energy:0.5*inductance*current**2,
+    formula:'L = μ₀μr N²A/l; U = ½LI²',assumption:'solenoide largo ideal; campo exterior y efectos de borde despreciables'};
+}
+export function toroidSelfInductance(turns,meanRadius,area,current,relativePermeability=1) {
+  if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
+  positive(meanRadius,'Radio medio');positive(area,'Sección');finite(current,'Corriente');positive(relativePermeability,'Permeabilidad relativa');
+  const inductance=EM_MU0*relativePermeability*turns**2*area/(2*Math.PI*meanRadius);
+  return {inductance,energy:0.5*inductance*current**2,
+    formula:'L ≈ μ₀μr N²A/(2πrmedio); U = ½LI²',
+    assumption:'toroide ideal de sección pequeña frente al radio medio; fuga de flujo despreciable'};
+}
+export function sinusoidalFluxEmf(turns,area,fieldAmplitude,angularFrequency,time) {
+  if(!Number.isInteger(turns)||turns<=0) throw new RangeError('Vueltas enteras positivas');
+  positive(area,'Área');finite(fieldAmplitude,'Amplitud de B');positive(angularFrequency,'Frecuencia angular');finite(time,'Tiempo');
+  const phase=angularFrequency*time,emfAmplitude=turns*area*Math.abs(fieldAmplitude)*angularFrequency;
+  return {fluxLinkage:turns*area*fieldAmplitude*Math.sin(phase),emf:-turns*area*fieldAmplitude*angularFrequency*Math.cos(phase),emfAmplitude,
+    formula:'NΦ(t) = NAB₀ sen(ωt); ε(t) = −NAB₀ω cos(ωt)',
+    assumption:'campo uniforme normal a todas las espiras; área y orientación fijas; signo según la normal elegida'};
+}
+export function railBarCircuit(field,length,speed,resistance) {
+  finite(field,'Campo');positive(length,'Longitud');finite(speed,'Velocidad');positive(resistance,'Resistencia');
+  const emf=field*length*speed,current=emf/resistance,forceMagnitude=Math.abs(current*field*length);
+  return {emf,current,forceMagnitude,power:current**2*resistance,mechanicalPower:forceMagnitude*Math.abs(speed),
+    formula:'ε = Bℓv; I = ε/R; |F| = |I|ℓ|B|; P = I²R = |Fv|',
+    assumption:'barra perpendicular a v y B, rieles ideales, resistencia total R; la fuerza magnética se opone al movimiento'};
+}
+export function seriesRlcTransient(resistance,inductance,capacitance,initialCharge,initialCurrent,time) {
+  if(!Number.isFinite(resistance)||resistance<0) throw new RangeError('Resistencia no negativa requerida');
+  positive(inductance,'Inductancia');positive(capacitance,'Capacitancia');finite(initialCharge,'Carga inicial');
+  finite(initialCurrent,'Corriente inicial');
+  if(!Number.isFinite(time)||time<0) throw new RangeError('Tiempo no negativo requerido');
+  const decayRate=resistance/(2*inductance),naturalFrequency=1/Math.sqrt(inductance*capacitance);
+  const discriminant=decayRate**2-naturalFrequency**2;
+  let regime,angularFrequency=null,charge,current;
+  if(Math.abs(discriminant)<=1e-12*naturalFrequency**2) {
+    regime='críticamente amortiguado';
+    const coefficient=initialCurrent+decayRate*initialCharge,decay=Math.exp(-decayRate*time);
+    charge=decay*(initialCharge+coefficient*time);
+    current=decay*(initialCurrent-decayRate*coefficient*time);
+  } else if(discriminant<0) {
+    regime=resistance===0?'sin amortiguamiento':'subamortiguado';
+    angularFrequency=Math.sqrt(-discriminant);
+    const decay=Math.exp(-decayRate*time),cos=Math.cos(angularFrequency*time),sin=Math.sin(angularFrequency*time);
+    charge=decay*(initialCharge*cos+(initialCurrent+decayRate*initialCharge)*sin/angularFrequency);
+    current=decay*(initialCurrent*cos-(decayRate*initialCurrent+naturalFrequency**2*initialCharge)*sin/angularFrequency);
+  } else {
+    regime='sobreamortiguado';
+    const root=Math.sqrt(discriminant),r1=-decayRate+root,r2=-decayRate-root;
+    const a=(initialCurrent-r2*initialCharge)/(r1-r2),b=initialCharge-a;
+    charge=a*Math.exp(r1*time)+b*Math.exp(r2*time);
+    current=r1*a*Math.exp(r1*time)+r2*b*Math.exp(r2*time);
+  }
+  return {regime,decayRate,naturalFrequency,angularFrequency,charge,current,
+    energy:charge**2/(2*capacitance)+0.5*inductance*current**2,
+    formula:'Lq″ + Rq′ + q/C = 0; I = q′; α = R/(2L); ω₀ = 1/√(LC); ω′ = √(ω₀²−α²) si α < ω₀',
+    assumption:'RLC serie libre, sin fuente; q(0)=q₀ e I(0)=I₀ según la orientación elegida'};
+}
+export function circularDisplacementField(plateRadius,position,fieldRate) {
+  positive(plateRadius,'Radio de placas');
+  if(!Number.isFinite(position)||position<0) throw new RangeError('Radio de observación no negativo requerido');
+  finite(fieldRate,'Derivada del campo');
+  const enclosedRadius=Math.min(position,plateRadius),totalCurrent=EM_EPS0*Math.PI*plateRadius**2*fieldRate;
+  return {displacementCurrent:totalCurrent,magneticField:position===0?0:EM_MU0*EM_EPS0*enclosedRadius**2*fieldRate/(2*position),
+    formula:'Id = ε₀πR² dE/dt; B(r) = μ₀ε₀ min(r,R)²(dE/dt)/(2r)',
+    assumption:'placas circulares ideales en vacío; campo E uniforme dentro y nulo fuera; contorno amperiano concéntrico'};
 }
 export function magneticForceWire(current,length,field,angleDegrees=90) {
   finite(current,'Corriente');positive(length,'Longitud');finite(field,'Campo');finite(angleDegrees,'Ángulo');

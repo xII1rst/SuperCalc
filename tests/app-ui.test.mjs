@@ -15,6 +15,7 @@ const modules = new Map([
   ['./js/math/graphs.mjs', new URL('../js/math/graphs.mjs', import.meta.url)],
   ['./js/math/waves.mjs', new URL('../js/math/waves.mjs', import.meta.url)],
   ['./js/graphics/wave-plot.mjs', new URL('../js/graphics/wave-plot.mjs', import.meta.url)],
+  ['./js/graphics/logic-graph.mjs', new URL('../js/graphics/logic-graph.mjs', import.meta.url)],
   ['./js/math/mechanics-advanced.mjs', new URL('../js/math/mechanics-advanced.mjs', import.meta.url)],
   ['./js/math/electromagnetism-advanced.mjs', new URL('../js/math/electromagnetism-advanced.mjs', import.meta.url)],
   ['./js/math/numerical-advanced.mjs', new URL('../js/math/numerical-advanced.mjs', import.meta.url)],
@@ -406,7 +407,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('num-result').innerHTML,/n mínimo.*102/);
   actions.closeModule('num');
   actions.launchSubmod('num-ode');
-  for (const [id,value] of Object.entries({'num-ode-f':'x+y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'2','num-ode-method':'euler','num-ode-reference':'','num-ode-lambda':''}))
+  for (const [id,value] of Object.entries({'num-ode-f':'x+y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'2','num-ode-method':'euler','num-ode-startup':'rk4','num-ode-reference':'','num-ode-lambda':''}))
     getElementById(id).value=value;
   actions.numCalcODE();
   assert.match(getElementById('num-result').innerHTML,/1\.22/);
@@ -419,6 +420,11 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('num-result').innerHTML,/Comparación de PVI/);
   assert.match(getElementById('num-result').innerHTML,/2\.44140625/);
   assert.match(getElementById('num-result').innerHTML,/Adams–Bashforth 2/);
+  for(const [id,value] of Object.entries({'num-ode-f':'x-y','num-ode-x0':'0','num-ode-y0':'1','num-ode-h':'0.1','num-ode-n':'4','num-ode-method':'ab2','num-ode-startup':'rk2','num-ode-reference':''}))
+    getElementById(id).value=value;
+  actions.numCalcODE();
+  assert.match(getElementById('num-result').innerHTML,/RK2 punto medio en el primer paso/);
+  assert.match(getElementById('num-result').innerHTML,/0\.74266625/);
   getElementById('num-ode-reference').value='2*exp(x)';
   actions.numCalcODE();
   assert.match(getElementById('num-result').textContent,/no satisface el valor inicial/);
@@ -452,6 +458,11 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('logic-set-inner').value='exists';
   actions.logicCalculateSets();
   assert.match(getElementById('logic-result').innerHTML,/∀x ∃y/);
+  getElementById('logic-set-mode').value='integers';
+  getElementById('logic-set-infinite-domain').value='N';
+  actions.logicCalculateSets();
+  assert.match(getElementById('logic-result').innerHTML,/ℕ=\{0,1,2,…\}/);
+  assert.match(getElementById('logic-result').innerHTML,/∃x∀y/);
   actions.closeModule('logic');
   actions.launchSubmod('logic-propositions');
   getElementById('logic-prop-mode').value='table';
@@ -462,6 +473,16 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   getElementById('logic-prop-expression').value='p→q';
   actions.logicCalculateProposition();
   assert.match(getElementById('logic-result').innerHTML,/FNC/);
+  getElementById('logic-prop-mode').value='induction';
+  getElementById('logic-prop-induction').value='factorial';
+  getElementById('logic-prop-n').value='4';
+  actions.logicCalculateProposition();
+  assert.match(getElementById('logic-result').innerHTML,/4!=24/);
+  assert.match(getElementById('logic-result').innerHTML,/k\+1≥5/);
+  getElementById('logic-prop-mode').value='proof';
+  actions.logicCalculateProposition();
+  assert.match(getElementById('logic-result').innerHTML,/Prueba formal guiada/);
+  assert.match(getElementById('logic-result').innerHTML,/ramas 4–6, 7–9/);
   actions.closeModule('logic');
   actions.launchSubmod('logic-boolean');
   getElementById('logic-bool-names').value='A, B, C';
@@ -474,16 +495,52 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('logic-result').innerHTML,/código Gray/);
   actions.closeModule('logic');
   actions.launchSubmod('logic-graphs');
+  for (const [id,value] of Object.entries({'logic-graph-mode':'counts','logic-graph-count-edges':'7',
+    'logic-graph-count-vertices':'6','logic-graph-count-left':'3','logic-graph-count-right':'4',
+    'logic-graph-count-leaves':'8'})) getElementById(id).value=value;
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Suma de grados con 7 aristas/);
+  assert.match(getElementById('logic-result').innerHTML,/Aristas de K3,4/);
+  assert.match(getElementById('logic-result').innerHTML,/binario lleno/);
   for (const [id,value] of Object.entries({'logic-graph-mode':'dijkstra','logic-graph-edges':'A B 4\nA C 2\nB C 1\nB D 5\nC D 8\nC E 10\nD E 2','logic-graph-start':'A','logic-graph-target':'E','logic-graph-directed':'undirected'}))
     getElementById(id).value=value;
   actions.logicCalculateGraph();
   assert.match(getElementById('logic-result').innerHTML,/Distancia mínima = 10/);
+  assert.match(getElementById('logic-result').innerHTML,/Dijkstra: vértices fijados y camino mínimo/);
+  assert.match(getElementById('logic-result').innerHTML,/<svg /);
+  getElementById('logic-graph-mode').value='bfs';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Vértice visitado/);
+  getElementById('logic-graph-mode').value='flow';
+  getElementById('logic-graph-edges').value='s a 10\ns b 5\na b 15\na t 5\nb t 10';
+  getElementById('logic-graph-start').value='s';
+  getElementById('logic-graph-target').value='t';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Flujo máximo = 15/);
+  assert.match(getElementById('logic-result').innerHTML,/Capacidad residual final/);
+  assert.match(getElementById('logic-result').innerHTML,/Flujo máximo: lado alcanzable y corte mínimo/);
   getElementById('logic-graph-mode').value='matching';
   getElementById('logic-graph-left').value='A, B';
   getElementById('logic-graph-right').value='X, Y';
   getElementById('logic-graph-edges').value='A X\nB X\nB Y';
   actions.logicCalculateGraph();
   assert.match(getElementById('logic-result').innerHTML,/Tamaño máximo = 2/);
+  assert.match(getElementById('logic-result').innerHTML,/Aristas resaltadas: parejas elegidas/);
+  getElementById('logic-graph-mode').value='petri';
+  getElementById('logic-graph-marking').value='1, 0';
+  getElementById('logic-graph-transitions').value='[{"name":"mover","input":[1,0],"output":[0,1]}]';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Estados alcanzados: 2/);
+  assert.match(getElementById('logic-result').innerHTML,/Red de alcanzabilidad de Petri/);
+  getElementById('logic-graph-mode').value='tree';
+  getElementById('logic-graph-tree').value='{"value":8,"left":{"value":3},"right":{"value":10}}';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Árbol binario/);
+  getElementById('logic-graph-mode').value='huffman';
+  getElementById('logic-graph-sequence').value='a 45, b 13, c 12, d 16, e 9, f 5';
+  actions.logicCalculateGraph();
+  assert.match(getElementById('logic-result').innerHTML,/Costo total = 224/);
+  assert.match(getElementById('logic-result').innerHTML,/Árbol de Huffman/);
   actions.closeModule('logic');
   actions.closeSubmod();
   actions.openSubmod('al');
@@ -608,6 +665,34 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     ['study-integral','series',{center:'2',radius:'2',power:'2'},/Extremo derecho/],
     ['study-multivariable','plane',{expr:'x^2+y^2',x:'1',y:'1',step:'0.00001'},/Gradiente/],
     ['study-ode','forced',{damping:'0',stiffness:'1',force:'2',omega:'1',y0:'0',v0:'0',time:'1'},/Resonancia/],
+    ['study-ode','linearvariable',{a:'2',b:'1',m:'3',x0:'1',y0:'0',x:'2'},/Factor integrante/],
+    ['study-ode','bernoullilinear',{p:'1',q:'1',constant:'0',x:'1'},/Solución y\(x\)/],
+    ['study-ode','cooling',{ambient:'20',initialTemperature:'90',observedTemperature:'60',observationTime:'10',time:'20'},/42\.85714286/],
+    ['study-ode','logistic',{rate:'0.1',capacity:'500',x0:'0',y0:'50',x:'10'},/Equilibrio/],
+    ['study-ode','rlcircuit',{inductance:'2',resistance:'10',voltage:'12',initialCurrent:'0',time:'1'},/Constante de tiempo/],
+    ['study-ode','orthogonal',{power:'2',x:'1',y:'1'},/x²\+\(2\)y²=C/],
+    ['study-ode','thirdrepeated',{root:'1',amplitude:'1',c0:'0',c1:'0',c2:'0',x:'1'},/Tercera derivada/],
+    ['study-ode','laplacesystem',{matrix:'2, -1, 1, 0',initial:'1, 0',time:'1'},/Transformada X\(s\)/],
+    ['study-ode','eigenmodes',{diagonal:'1',coupling:'2',initial:'1, 0',time:'1'},/Autovectores/],
+    ['study-ode','separable',{a:'3',xp:'2',yp:'0',x0:'0',y0:'2',x:'2'},/10/],
+    ['study-ode','separable',{a:'1',xp:'-1',yp:'1',x0:'1',y0:'2',x:'3'},/6/],
+    ['study-ode','separable',{a:'1',xp:'1',yp:'-1',x0:'0',y0:'2',x:'2'},/2\.828427125/],
+    ['study-ode','exactode',{mterms:'3, 1, 1\n1, 0, 2',nterms:'1, 2, 0\n1, 1, 1',factorX:'1',factorY:'0'},/x\^3·y \+ 0\.5·x\^2·y\^2 = C/],
+    ['study-ode','laplace',{kind:'timeSine',parameter:'2'},/4s\/\(s²\+4\)²/],
+    ['study-ode','laplace',{kind:'timeSquared',parameter:'2'},/2\/s³/],
+    ['study-ode','laplace',{kind:'sine',parameter:'3'},/3\/\(s²\+9\)/],
+    ['study-ode','laplacesum',{rate:'2',timeCoefficient:'3'},/1\/\(s−\(2\)\) \+ \(3\)\/s²/],
+    ['study-ode','laplaceinversepower',{coefficient:'6',shift:'0',order:'4',time:'2'},/Solución en tiempo/],
+    ['study-ode','laplaceinversepower',{coefficient:'1',shift:'4',order:'1',time:'0.5'},/Solución en tiempo/],
+    ['study-ode','laplaceinversequadratic',{numeratorSlope:'1',numeratorConstant:'3',linearCoefficient:'4',constantCoefficient:'13',time:'0.5'},/par conjugado/],
+    ['study-ode','laplacefirstorder',{p:'-3',amplitude:'1',rate:'2',initialValue:'1',time:'1'},/Solución en tiempo/],
+    ['study-ode','laplacefirstorder',{p:'2',amplitude:'1',rate:'-1',initialValue:'0',time:'1'},/Familia general/],
+    ['study-ode','forced',{damping:'0',stiffness:'4',force:'1',omega:'2',y0:'0',v0:'0',time:'1'},/Resonancia/],
+    ['study-ode','laplacerepeated',{root:'1',amplitude:'1',power:'0',y0:'0',v0:'0',time:'1'},/Solución en tiempo/],
+    ['study-ode','laplaceharmonic',{damping:'0',stiffness:'4',cosineForce:'0',sineForce:'1',omega:'1',y0:'0',v0:'0',time:'1'},/Transformada/],
+    ['study-ode','laplaceharmonic',{damping:'2',stiffness:'2',cosineForce:'0',sineForce:'0',omega:'1',y0:'1',v0:'0',time:'1'},/Solución en tiempo/],
+    ['study-ode','laplaceharmonic',{damping:'2',stiffness:'5',cosineForce:'10',sineForce:'0',omega:'1',y0:'0',v0:'0',time:'1'},/Solución en tiempo/],
+    ['study-ode','laplacerepeated',{root:'1',amplitude:'1',power:'1',y0:'0',v0:'0',time:'1'},/Solución en tiempo/],
   ]) {
     assert.match(calcCards,new RegExp(`data-arg="${card}"`));
     actions.launchSubmod(card);
@@ -619,6 +704,22 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     actions.closeModule('study');
   }
   actions.launchSubmod('study-multivariable');
+  for(const [mode,inputs,expected] of [
+    ['lamina',{density:'x+y',lower:'0',upper:'1-x',start:'0',end:'1',nx:'120',ny:'120'},/Centro de masa x̄<\/dt><dd>0\.375/],
+    ['laminapolar',{density:'1',lower:'0',upper:'2',start:'0',end:'2*π',nx:'120',ny:'120'},/Momento Iz = ∫\(x²\+y²\) dm/],
+    ['twoconstraints',{radiusSquared:'2',planeA:'1',planeB:'0',planeC:'1',planeD:'1',objectiveX:'1',objectiveY:'1',objectiveZ:'1'},/Máximo global/],
+    ['planenorm',{planeA:'1',planeB:'1',planeC:'1',planeD:'3'},/Mínimo global/],
+    ['harmoniclog',{scale:'1',x:'1',y:'2'},/Laplaciano Δu/],
+    ['trilinearpath',{coefficient:'1',from:'1, 1, 1',to:'2, 3, 4'},/Integral de línea<\/dt><dd>23/],
+    ['paramflux',{xexpr:'u',yexpr:'v',zexpr:'0',fieldX:'0',fieldY:'0',fieldZ:'1',uStart:'0',uEnd:'1',vStart:'0',vEnd:'1',orientation:'uv',n2:'20'},/Flujo orientado<\/dt><dd>1/],
+  ]) {
+    getElementById('study-mode').value=mode;
+    actions.studySelect();
+    for(const [key,value] of Object.entries(inputs)) getElementById(`study-${key}`).value=value;
+    actions.studyCalculate();
+    assert.equal(getElementById('study-result').classList.contains('tool-error'),false,getElementById('study-result').textContent);
+    assert.match(getElementById('study-result').innerHTML,expected);
+  }
   for(const [mode,inputs,expected] of [
     ['triplecart',{integrand3:'z',outerStart:'0',outerEnd:'1',middleLower:'0',middleUpper:'1-x',innerLower:'0',innerUpper:'1-x-y',n3:'20'},/0\.04166666667/],
     ['triplecyl',{integrand3:'1',outerStart:'0',outerEnd:'2',middleLower:'0',middleUpper:'2*π',innerLower:'0',innerUpper:'r^2',n3:'20'},/25\.13274/],
@@ -662,8 +763,18 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     ['emplus-electrostatics','ring',{charge:'1e-8',radius:'0.1',position:'0.2'},/Anillo cargado/],
     ['emplus-electrostatics','layered',{area:'0.01',layers:'0.001, 2\n0.002, 4',voltage:'100'},/Campos por capa/],
     ['emplus-magnetism','cable',{current:'8',radius:'0.002',position:'0.001'},/Cable con corriente uniforme/],
+    ['emplus-magnetism','loopaxis',{current:'3',turns:'1',radius:'0.05',position:'0.1'},/B en z \(T\)/],
+    ['emplus-magnetism','looptorque',{turns:'50',current:'2',width:'0.1',height:'0.2',field:'0.5',angle:'30'},/Torque \(N·m\)/],
+    ['emplus-magnetism','solenoidinductance',{turns:'500',length:'0.25',area:'0.0004',current:'0',er:'1'},/Autoinductancia \(H\)/],
+    ['emplus-magnetism','toroidinductance',{turns:'800',radius:'0.1',area:'0.0002',current:'3',er:'1'},/Autoinductancia \(H\)/],
+    ['emplus-magnetism','fluxemf',{turns:'20',width:'0.2',height:'0.3',field:'0.5',omega:'100',time:'0.01'},/FEM máxima/],
+    ['emplus-magnetism','railbar',{field:'0.3',length:'0.5',speed:'4',resistance:'2'},/Fuerza magnética/],
+    ['emplus-magnetism','displacementplates',{radius:'0.05',position:'0.02',rate:'1e12'},/Campo B a radio r/],
+    ['emplus-circuits','lc',{inductance:'0.1',capacitance:'0.00001',charge:'0.0001',time:'0.01'},/Energía total/],
+    ['emplus-circuits','rlctransient',{resistance:'20',inductance:'0.5',capacitance:'0.00005',charge:'0.0001',current:'0',time:'0.01'},/subamortiguado/],
     ['emplus-electrostatics','charges',{charges:'0.000001, -1, 0, 0\n0.000001, 1, 0, 0',point:'0, 0, 1'},/Potencial/],
     ['emplus-circuits','nodal',{nodes:'3',resistors:'1, 2, 1000\n2, 0, 1000',fixed:'0, 0\n1, 10',injections:''},/Potenciales de nodos/],
+    ['emplus-circuits','nodalfloating',{nodes:'3',resistors:'2, 0, 2',sources:'1, 0, 12\n1, 2, 6',injections:''},/Corrientes de fuentes/],
     ['emplus-magnetism','magnetic',{shape:'loop',current:'2',turns:'100',size:'0.2',position:'0.1'},/Campo E/],
   ]) {
     assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${card}"`));
@@ -675,6 +786,66 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
     assert.match(getElementById('emplus-result').innerHTML,expected);
     actions.closeModule('emplus');
   }
+  actions.launchSubmod('emplus-magnetism');
+  getElementById('emplus-mode').value='loopaxis';
+  actions.emPlusSelect();
+  assert.match(getElementById('emplus-fields').innerHTML,/data-action="emPlusUnitChanged"/);
+  for(const [key,value] of Object.entries({current:'3',turns:'1',radius:'0.05',position:'0.1'})) getElementById(`emplus-${key}`).value=value;
+  actions.emPlusCalculate();
+  const siLoopResult=getElementById('emplus-result').innerHTML;
+  for(const [key,kind,unit,expected] of [['current','current','mA',3000],['radius','length','cm',5],['position','length','cm',10]]) {
+    getElementById(`emplus-${key}-${kind}-unit`).value=unit;
+    actions.emPlusUnitChanged(`${key}:${kind}`);
+    assert.equal(Number(getElementById(`emplus-${key}`).value),expected);
+  }
+  actions.emPlusCalculate();
+  assert.equal(getElementById('emplus-result').innerHTML,siLoopResult);
+  actions.closeModule('emplus');
+  actions.launchSubmod('emplus-electrostatics');
+  getElementById('emplus-mode').value='charges';
+  actions.emPlusSelect();
+  getElementById('emplus-charges').value='0.000001, -1, 0, 0\n0.000001, 1, 0, 0';
+  getElementById('emplus-point').value='0, 0, 1';
+  actions.emPlusCalculate();
+  const siChargesResult=getElementById('emplus-result').innerHTML;
+  for(const [key,kind,unit] of [['charges','charge','µC'],['charges','length','cm'],['point','length','cm']]) {
+    getElementById(`emplus-${key}-${kind}-unit`).value=unit;
+    actions.emPlusUnitChanged(`${key}:${kind}`);
+  }
+  assert.match(getElementById('emplus-charges').value,/1, -100, 0, 0/);
+  assert.equal(getElementById('emplus-point').value,'0, 0, 100');
+  actions.emPlusCalculate();
+  assert.equal(getElementById('emplus-result').innerHTML,siChargesResult);
+  actions.closeModule('emplus');
+  actions.launchSubmod('emplus-circuits');
+  getElementById('emplus-mode').value='equivalent';
+  actions.emPlusSelect();
+  assert.match(getElementById('emplus-fields').innerHTML,/emPlusEquivalentKindChanged/);
+  for(const [key,value] of Object.entries({values:'4, 6',kind:'resistor',inputUnit:'kΩ',connection:'parallel',outputUnit:'kΩ'}))
+    getElementById(`emplus-${key}`).value=value;
+  actions.emPlusCalculate();
+  assert.match(getElementById('emplus-result').innerHTML,/<dt>Equivalente<\/dt><dd>2\.4<\/dd>/);
+  assert.match(getElementById('emplus-result').innerHTML,/<dt>Equivalente en SI \(Ω o F\)<\/dt><dd>2400<\/dd>/);
+  getElementById('emplus-values').value='10, 20, 30';
+  getElementById('emplus-inputUnit').value='Ω';
+  getElementById('emplus-outputUnit').value='Ω';
+  getElementById('emplus-connection').value='parallel';
+  actions.emPlusCalculate();
+  assert.match(getElementById('emplus-result').innerHTML,/5\.454545455/);
+  getElementById('emplus-kind').value='capacitor';
+  actions.emPlusEquivalentKindChanged();
+  assert.equal(getElementById('emplus-inputUnit').value,'F');
+  getElementById('emplus-values').value='4, 6';
+  getElementById('emplus-inputUnit').value='µF';
+  getElementById('emplus-outputUnit').value='µF';
+  getElementById('emplus-connection').value='series';
+  actions.emPlusCalculate();
+  assert.match(getElementById('emplus-result').innerHTML,/<dt>Equivalente<\/dt><dd>2\.4<\/dd>/);
+  assert.match(getElementById('emplus-result').innerHTML,/0\.0000024/);
+  getElementById('emplus-inputUnit').value='Ω';
+  actions.emPlusCalculate();
+  assert.match(getElementById('emplus-result').textContent,/deben corresponder/);
+  actions.closeModule('emplus');
   assert.match(getElementById('submod-cards').innerHTML,/data-arg="em-basics"/);
   actions.closeSubmod();
   actions.openSubmod('waves');

@@ -1,4 +1,4 @@
-import { truthTable, minimizeBoolean } from './logic.mjs';
+import { truthTable, argumentValidity, minimizeBoolean } from './logic.mjs';
 
 export function normalForms(expression) {
   const {variables,rows,status}=truthTable(expression);
@@ -28,6 +28,34 @@ export function quantifiedRelation(domain,pairs,outer='forall',inner='exists') {
   const result=outer==='forall'?rows.every(row=>row.result):rows.some(row=>row.result);
   const decisive=outer==='forall'?(result?null:rows.find(row=>!row.result)):(result?rows.find(row=>row.result):null);
   return {result,rows,decisive,statement:`${outer==='forall'?'∀':'∃'}x ${inner==='forall'?'∀':'∃'}y R(x,y)`,universe:domain};
+}
+
+export function integerQuantifierExample(domain) {
+  if(!['Z','N'].includes(domain)) throw new RangeError('Elige ℤ o ℕ');
+  const integers=domain==='Z';
+  return {domain,convention:integers?'ℤ contiene todos los enteros.':'ℕ={0,1,2,…}; si ℕ empieza en 1, las conclusiones siguen iguales.',
+    rows:[
+      {statement:'∀x∃y (x+y=0)',truth:integers,
+        reason:integers?'Para cada x∈ℤ, el testigo y=−x pertenece a ℤ.':'Contraejemplo x=1: para todo y∈ℕ, 1+y>0.'},
+      {statement:'∃y∀x (x+y=0)',truth:false,
+        reason:integers?'Para cualquier y∈ℤ, x=1−y da x+y=1, así que ningún y sirve.':'Para cualquier y∈ℕ, x=1 da x+y≥1, así que ningún y sirve.'},
+      {statement:'¬∀x∃y (x+y=0) ⇔ ∃x∀y (x+y≠0)',truth:!integers,
+        reason:integers?'Es falsa: dado x, elegir y=−x produce suma cero.':'Es verdadera: x=1 funciona para todos los y∈ℕ.'},
+      {statement:'¬∃y∀x (x+y=0) ⇔ ∀y∃x (x+y≠0)',truth:true,
+        reason:integers?'Es verdadera: dado y, elegir x=1−y produce suma 1.':'Es verdadera: para todo y∈ℕ sirve x=1.'},
+    ]};
+}
+
+export function guidedDisjunctionProof() {
+  const premises=['p→q','r→s','p∨r'],conclusion='q∨s';
+  const validity=argumentValidity(premises,conclusion);
+  return {premises,conclusion,valid:validity.valid,
+    steps:[
+      ['1','p→q','Premisa'],['2','r→s','Premisa'],['3','p∨r','Premisa'],
+      ['4','p','Supuesto: primera rama'],['5','q','→E, 1 y 4'],['6','q∨s','∨I, 5'],
+      ['7','r','Supuesto: segunda rama'],['8','s','→E, 2 y 7'],['9','q∨s','∨I, 8'],
+      ['10','q∨s','∨E, 3 y ramas 4–6, 7–9'],
+    ]};
 }
 
 function nonnegativeInteger(value,name,max=100) {
@@ -103,4 +131,29 @@ export function inductionSum(kind,n) {
   return {kind,n,value,closedForm:formulas[kind](n),base:{left:terms[kind](1),right:formulas[kind](1)},
     inductionStep:`Hipótesis: S(k)=F(k). Entonces S(k+1)=F(k)+a(k+1): ${steps[kind]}. Por inducción, vale para todo n≥1.`,
     warning:'La igualdad numérica en n es un ejemplo; la prueba exige el paso algebraico general.'};
+}
+
+export function guidedInduction(kind,n) {
+  nonnegativeInteger(n,'n',1000);
+  if(!['power2','power7','odds','factorial'].includes(kind)) throw new RangeError('Identidad no soportada');
+  const start=kind==='factorial'?4:1;
+  if(n<start) throw new RangeError(`La prueba de este caso comienza en n=${start}`);
+  if(kind==='power2'||kind==='power7') {
+    const base=kind==='power2'?3:7,divisor=base-1;
+    const value=BigInt(base)**BigInt(n)-1n;
+    return {kind,n,start,statement:`${base}ⁿ−1 es divisible por ${divisor} para n≥1`,
+      base:`n=1: ${base}−1=${divisor}, múltiplo de ${divisor}.`,
+      step:`Si ${base}ᵏ−1=${divisor}m para algún entero m, entonces ${base}^(k+1)−1 = ${base}(${base}ᵏ−1)+${divisor} = ${divisor}(${base}m+1). Por inducción, vale para todo n≥1.`,
+      example:`n=${n}: residuo al dividir ${base}ⁿ−1 entre ${divisor} = ${value%BigInt(divisor)}.`};
+  }
+  if(kind==='odds') return {kind,n,start,statement:'1+3+⋯+(2n−1)=n² para n≥1',
+    base:'n=1: 1=1².',
+    step:'Si S(k)=k², entonces S(k+1)=k²+[2(k+1)−1]=k²+2k+1=(k+1)². Por inducción, vale para todo n≥1.',
+    example:`n=${n}: suma de impares = ${n*n}; fórmula n² = ${n*n}.`};
+  let factorial=1n;
+  for(let k=2;k<=n;k++) factorial*=BigInt(k);
+  return {kind,n,start,statement:'n! > 2ⁿ para n≥4',
+    base:'n=4: 4!=24 > 16=2⁴.',
+    step:'Si k! > 2ᵏ y k≥4, entonces (k+1)!=(k+1)k! > (k+1)2ᵏ > 2·2ᵏ=2^(k+1), porque k+1≥5>2. Por inducción, vale para todo n≥4.',
+    example:`n=${n}: n! > 2ⁿ es ${factorial>2n**BigInt(n)?'verdadero':'falso'}.`};
 }

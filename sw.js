@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-study-18';
+const CACHE = 'supercalc-v1.0-study-28';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ const APP_PRECACHE = [
   './js/graphics/em-canvas.mjs',
   './js/graphics/colors.mjs',
   './js/graphics/wave-plot.mjs',
+  './js/graphics/logic-graph.mjs',
   './js/graphics/formula-background.mjs',
   './js/utils/format.mjs',
   './js/ui/algebra/matrix.mjs',

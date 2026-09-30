@@ -15,6 +15,19 @@ function checkedEdges(edges, directed = false) {
   return {vertices,adjacency};
 }
 
+export function graphFamilyCounts({edges,vertices,left,right,leaves}) {
+  const values=[edges,vertices,left,right,leaves];
+  if(values.some(value=>!Number.isSafeInteger(value)||value<0||value>1000000)||
+    vertices<1||left<1||right<1||leaves<1) throw new RangeError('Usa cantidades enteras válidas; vértices y hojas deben ser positivos');
+  return {
+    degreeSum:2*edges,
+    completeEdges:vertices*(vertices-1)/2,
+    treeEdges:vertices-1,
+    bipartiteEdges:left*right,
+    fullBinaryNodes:2*leaves-1,
+  };
+}
+
 export function graphSummary(edges, directed = false) {
   const graph=checkedEdges(edges,directed);
   const matrix=graph.vertices.map(from=>graph.vertices.map(to=>graph.adjacency.get(from).filter(edge=>edge.to===to).length));
@@ -128,7 +141,7 @@ export function huffman(frequencies) {
   };
   walk(queue[0],'');
   const cost=entries.reduce((sum,[symbol,weight])=>sum+weight*codes[symbol].length,0);
-  return {codes,cost,steps,totalWeight:queue[0].weight};
+  return {codes,cost,steps,totalWeight:queue[0].weight,tree:queue[0]};
 }
 
 export function maxFlow(edges,source,sink) {
@@ -175,7 +188,10 @@ export function maxFlow(edges,source,sink) {
   }
   const cut=edges.filter(([from,to])=>reachable.has(from)&&!reachable.has(to));
   const cutCapacity=cut.reduce((sum,[from,to,value=1])=>sum+value,0);
-  return {flow,augmentations,cut,cutCapacity,reachable:[...reachable]};
+  const residualArcs=[...residual].flatMap(([from,neighbors])=>[...neighbors].map(([to,remaining])=>({
+    from,to,remaining:Math.abs(remaining)<1e-12?0:remaining,
+  }))).sort((a,b)=>a.from.localeCompare(b.from)||a.to.localeCompare(b.to));
+  return {flow,augmentations,cut,cutCapacity,reachable:[...reachable],residualArcs};
 }
 
 export function binaryTreeTraversals(root) {

@@ -74,5 +74,9 @@ test('Análisis 13, 16, 31 y 48: diferencias, Euler, RK4 y AB2',()=>{
   const ab2=ivpTrace((x,y)=>y,0,1,0.1,5,'ab2');
   assert.equal(ab2.startup,'RK4 en el primer paso');
   assert.equal(ab2.history.length,6);
+  const rk2Start=ivpTrace((x,y)=>x-y,0,1,0.1,4,'ab2',{startup:'rk2'});
+  assert.equal(rk2Start.startup,'RK2 punto medio en el primer paso');
+  [1,0.91,0.8385,0.783225,0.74266625].forEach((value,i)=>close(rk2Start.history[i].y,value));
+  assert.throws(()=>ivpTrace((x,y)=>y,0,1,0.1,2,'ab2',{startup:'euler'}),/Arranque/);
   assert.throws(()=>ivpTrace((x,y)=>y,0,1,0,5,'rk4'),RangeError);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalForms,quantifiedRelation,finiteCounting,karnaughMap,nandNetwork,inductionSum} from '../js/math/logic-advanced.mjs';
+import {normalForms,quantifiedRelation,integerQuantifierExample,guidedDisjunctionProof,finiteCounting,karnaughMap,nandNetwork,inductionSum,guidedInduction} from '../js/math/logic-advanced.mjs';
 import {bipartiteMatching,petriReachability} from '../js/math/graphs.mjs';
 
 test('Lógica 21, 26–27 y 41: formas normales, cuantificadores y conteos',()=>{
@@ -40,4 +40,37 @@ test('Lógica 47–50: emparejamiento máximo y red de Petri acotada',()=>{
   assert.equal(network.status,'complete');
   const growing=petriReachability([1],[{name:'duplicar',input:[1],output:[2]}],{maxTokens:3});
   assert.equal(growing.status,'bounded search');
+});
+
+test('Lógica 27, 42 y 43: inducción guiada declara caso base, paso y dominio',()=>{
+  const byTwo=guidedInduction('power2',10);
+  assert.match(byTwo.step,/3\(3ᵏ−1\)\+2/);
+  assert.match(byTwo.example,/= 0/);
+  const bySix=guidedInduction('power7',6);
+  assert.match(bySix.step,/6\(7m\+1\)/);
+  assert.match(bySix.example,/= 0/);
+  const odds=guidedInduction('odds',8);
+  assert.match(odds.step,/\(k\+1\)²/);
+  assert.match(odds.example,/64/);
+  const factorial=guidedInduction('factorial',4);
+  assert.match(factorial.base,/24 > 16/);
+  assert.match(factorial.example,/verdadero/);
+  assert.throws(()=>guidedInduction('factorial',3),RangeError);
+});
+
+test('Lógica 41: cuantificadores y negaciones cambian al pasar de ℤ a ℕ',()=>{
+  const integers=integerQuantifierExample('Z'),naturals=integerQuantifierExample('N');
+  assert.deepEqual(integers.rows.map(row=>row.truth),[true,false,false,true]);
+  assert.deepEqual(naturals.rows.map(row=>row.truth),[false,false,true,true]);
+  assert.match(integers.rows[0].reason,/y=−x/);
+  assert.match(naturals.rows[0].reason,/x=1/);
+  assert.match(naturals.convention,/0,1,2/);
+  assert.throws(()=>integerQuantifierExample('R'),RangeError);
+});
+
+test('Lógica 40: la prueba por casos descarga ambos supuestos',()=>{
+  const proof=guidedDisjunctionProof();
+  assert.equal(proof.valid,true);
+  assert.deepEqual(proof.premises,['p→q','r→s','p∨r']);
+  assert.deepEqual(proof.steps.at(-1),['10','q∨s','∨E, 3 y ramas 4–6, 7–9']);
 });

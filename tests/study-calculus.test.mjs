@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {piecewiseContinuity,parametricDerivatives,implicitSlope,polarAreaBetween,curveArcLength,
-  surfaceOfRevolution,integrateVariableRegion,integrateTripleRegion,integrateParametricSurface,tangentPlane,powerSeriesInterval,telescopingOffset} from '../js/math/study-calculus.mjs';
+  surfaceOfRevolution,integrateVariableRegion,laminaProperties,integrateTripleRegion,integrateParametricSurface,
+  integrateParametricFlux,linearObjectiveCylinderPlane,minimumNormOnPlane,logarithmicRadialHarmonic,trilinearPotentialIntegral,tangentPlane,powerSeriesInterval,telescopingOffset} from '../js/math/study-calculus.mjs';
 const near=(actual,expected,tolerance=1e-5)=>assert.ok(Math.abs(actual-expected)<tolerance*Math.max(1,Math.abs(expected)),`${actual} != ${expected}`);
 
 test('Diferencial 12, 24, 25 y 33: continuidad y derivadas de curvas',()=>{
@@ -44,6 +45,21 @@ test('Multivariable 26 y 35–38: tetraedro, cilindro, esfera y cono',()=>{
   assert.throws(()=>triple(()=>1,'cartesian',0,1,()=>1,()=>0,()=>0,()=>1),/Límite medio/);
 });
 
+test('Multivariable 39–40: centro de masa triangular y momento de disco',()=>{
+  const triangle=laminaProperties((x,y)=>x+y,'cartesian',0,1,()=>0,x=>1-x,120,120);
+  near(triangle.mass,1/3,1e-4);
+  near(triangle.centerX,3/8,1e-4);near(triangle.centerY,3/8,1e-4);
+  near(triangle.inertiaZ,2/15,1e-4);
+  const disk=laminaProperties(()=>1,'polar',0,2*Math.PI,()=>0,()=>2,120,120);
+  near(disk.mass,4*Math.PI,1e-4);
+  near(disk.centerX,0,1e-8);near(disk.centerY,0,1e-8);
+  near(disk.inertiaZ,8*Math.PI,1e-4);
+  near(disk.inertiaX+disk.inertiaY,disk.inertiaZ,1e-8);
+  assert.throws(()=>laminaProperties(()=>-1,'cartesian',0,1,()=>0,()=>1),/no negativa/);
+  assert.throws(()=>laminaProperties(()=>0,'cartesian',0,1,()=>0,()=>1),/Masa nula/);
+  assert.throws(()=>laminaProperties(()=>1,'polar',0,1,()=>-1,()=>1),/radio/);
+});
+
 test('Multivariable 42–45: integrales escalares sobre superficies paramétricas',()=>{
   const surface=(map,fn,a,b,c,d)=>integrateParametricSurface(map,fn,a,b,c,d,40);
   const paraboloid=surface((u,v)=>[u*Math.cos(v),u*Math.sin(v),u*u],()=>1,0,2,0,2*Math.PI);
@@ -55,4 +71,46 @@ test('Multivariable 42–45: integrales escalares sobre superficies paramétrica
   const helicoid=surface((u,v)=>[u*Math.cos(v),u*Math.sin(v),v],()=>1,0,1,0,2*Math.PI);
   near(helicoid.area,Math.PI*(Math.sqrt(2)+Math.asinh(1)),1e-5);
   assert.throws(()=>surface(()=>[NaN,0,0],()=>1,0,1,0,1),/fuera de dominio/);
+});
+
+test('Multivariable: flujo de superficie cambia de signo con la orientación',()=>{
+  const plane=(u,v)=>[u,v,0],up=integrateParametricFlux(plane,()=>[0,0,1],0,1,0,1,20);
+  near(up.flux,1,1e-6);
+  near(integrateParametricFlux(plane,()=>[0,0,1],0,1,0,1,20,'vu').flux,-1,1e-6);
+  const sphere=(u,v)=>[Math.sin(u)*Math.cos(v),Math.sin(u)*Math.sin(v),Math.cos(u)];
+  near(integrateParametricFlux(sphere,(x,y,z)=>[x,y,z],0,Math.PI,0,2*Math.PI,40).flux,4*Math.PI,1e-5);
+  assert.throws(()=>integrateParametricFlux(plane,()=>[0,0,1],0,1,0,1,20,'sideways'),/orientación/);
+});
+
+test('Multivariable 46: dos restricciones dan ambos extremos y multiplicadores',()=>{
+  const result=linearObjectiveCylinderPlane(2,[1,0,1,1],[1,1,1]);
+  assert.equal(result.status,'dos extremos globales');
+  near(result.maximum.value,1+Math.sqrt(2));near(result.minimum.value,1-Math.sqrt(2));
+  near(result.maximum.point[0],0);near(result.maximum.point[1],Math.sqrt(2));near(result.maximum.point[2],1);
+  result.maximum.constraintResiduals.concat(result.maximum.stationarityResidual).forEach(value=>near(value,0));
+  assert.equal(linearObjectiveCylinderPlane(2,[1,0,1,1],[1,0,1]).status,'constante en toda la intersección');
+  assert.throws(()=>linearObjectiveCylinderPlane(2,[1,0,0,1],[1,1,1]),/c≠0/);
+});
+
+test('Multivariable 47: mínimo global de norma sobre plano',()=>{
+  const result=minimumNormOnPlane([1,1,1],3);
+  assert.deepEqual(result.minimum.point,[1,1,1]);
+  near(result.minimum.value,3);
+  near(result.minimum.constraintResidual,0);
+  result.minimum.stationarityResidual.forEach(value=>near(value,0));
+  assert.match(result.maximum,/no existe/);
+  near(minimumNormOnPlane([2,0,0],4).minimum.value,4);
+  assert.throws(()=>minimumNormOnPlane([0,0,0],3),/no nula/);
+});
+
+test('Multivariable 49–50: Laplace radial y potencial trilineal',()=>{
+  const harmonic=logarithmicRadialHarmonic(1,1,2);
+  near(harmonic.secondDerivatives[0],3/25);
+  near(harmonic.secondDerivatives[1],-3/25);
+  near(harmonic.laplacian,0);
+  assert.throws(()=>logarithmicRadialHarmonic(1,0,0),/origen/);
+  const field=trilinearPotentialIntegral(1,[1,1,1],[2,3,4]);
+  near(field.fromPotential,1);near(field.toPotential,24);near(field.lineIntegral,23);
+  assert.deepEqual(field.curl,[0,0,0]);
+  near(trilinearPotentialIntegral(2,[1,1,1],[2,3,4]).lineIntegral,46);
 });
