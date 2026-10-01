@@ -17,8 +17,10 @@ if (background) createFormulaBackground(background).start();
     { element:e3, rotation:-Math.PI/3, angle:4.2, speed:.011 },
   ];
   let tick = 0;
+  // Con movimiento reducido los electrones quedan quietos en su posición inicial.
+  const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
   function frame(){
-    if (!document.hidden) {
+    if (!document.hidden && !(reduced?.matches && tick > 0)) {
       tick++;
       for (const orbit of orbits) {
         const angle = orbit.angle + tick*orbit.speed;

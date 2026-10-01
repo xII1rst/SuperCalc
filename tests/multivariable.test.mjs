@@ -22,11 +22,11 @@ test('límite multivariable que no existe: (x²−y²)/(x²+y²) en (0,0)', () =
   assert.equal(r.status, 'disproved');
 });
 
-test('caminos coincidentes no prueban el límite multivariable', () => {
+test('encaje radial prueba el límite sin inferirlo de caminos coincidentes', () => {
   const r = multivariableLimit('x^2*y/(x^2+y^2)', 0, 0);
-  assert.equal(r.exists, null);
-  assert.equal(r.status, 'undetermined');
-  assert.ok(r.paths.every(path => path.formalValue === 0));
+  assert.equal(r.exists, true);
+  assert.equal(r.status, 'proved');
+  assert.match(r.proof,/δ=/);
 });
 
 test('caminos con límites analíticos distintos refutan xy/(x²+y²)', () => {

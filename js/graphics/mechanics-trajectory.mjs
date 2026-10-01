@@ -25,7 +25,7 @@ function arrow(ctx,x1,y1,x2,y2,color,label) {
   ctx.fillStyle = color;
   ctx.lineWidth = 2;
   if (Math.hypot(x2-x1,y2-y1) < 1) {
-    ctx.font = '10px Space Mono, monospace';
+    ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
     ctx.fillText(`${label} = 0`,x1+5,y1-7);
     return;
   }
@@ -34,7 +34,7 @@ function arrow(ctx,x1,y1,x2,y2,color,label) {
   ctx.lineTo(x2-8*Math.cos(angle-.5),y2-8*Math.sin(angle-.5));
   ctx.lineTo(x2-8*Math.cos(angle+.5),y2-8*Math.sin(angle+.5));
   ctx.closePath(); ctx.fill();
-  ctx.font = '10px Space Mono, monospace';
+  ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
   ctx.fillText(label,Math.min(x2+5,ctx.canvas?.width || x2+5),y2-7);
 }
 
@@ -57,7 +57,7 @@ export function drawLinearMotion(canvas,values,time,lengthUnit,palette = readCan
   arrow(ctx,originX,82,currentX,82,palette('fi'),'Δx');
   const direction = Math.sign(current.velocity);
   arrow(ctx,currentX,161,Math.max(22,Math.min(width-22,currentX+direction*Math.min(65,Math.abs(current.velocity)*6))),161,palette('text-strong'),'v');
-  ctx.fillStyle = palette('text-muted'); ctx.font = '10px Space Mono, monospace';
+  ctx.fillStyle = palette('text-muted'); ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
   ctx.fillText(`${fN(fromMechanicsSI(low,'length',lengthUnit),3)} ${lengthUnit}`,22,204);
   ctx.fillText(`${fN(fromMechanicsSI(high,'length',lengthUnit),3)} ${lengthUnit}`,Math.max(22,width-105),204);
 }
@@ -92,7 +92,7 @@ export function drawExerciseProjectile(canvas,values,time,xUnit,yUnit,palette = 
   const speed = Math.max(1,Math.hypot(current.vx,current.vy));
   arrow(ctx,x(current.x),y(current.y),x(current.x)+current.vx/speed*48,y(current.y)-current.vy/speed*48,palette('text-strong'),'v');
   ctx.fillStyle = palette('fi'); ctx.beginPath(); ctx.arc(x(current.x),y(current.y),4,0,2*Math.PI); ctx.fill();
-  ctx.fillStyle = palette('text-muted'); ctx.font = '10px Space Mono, monospace';
+  ctx.fillStyle = palette('text-muted'); ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
   ctx.fillText(`${fN(fromMechanicsSI(points.at(-1).x,'length',xUnit),3)} ${xUnit}`,Math.max(22,width-110),height-10);
   ctx.fillText(`${fN(fromMechanicsSI(maxY,'length',yUnit),3)} ${yUnit}`,38,16);
 }
@@ -144,7 +144,7 @@ export function drawProjectileTrajectory(canvas, result, palette = readCanvasPal
     ctx.fill();
   }
   ctx.fillStyle = palette('text-muted');
-  ctx.font = '10px Space Mono, monospace';
+  ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
   ctx.fillText('0', left, height - 12);
   ctx.fillText(`${fN(result.range, 2)} m`, Math.max(left, right - 70), height - 12);
   ctx.fillText(`${fN(result.maxHeight, 2)} m`, left + 5, top + 9);

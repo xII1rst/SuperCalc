@@ -54,7 +54,7 @@ export function drawNumberLine(canvas,points){
   const ay=38;
   ctx.strokeStyle=color('line-subtle'); ctx.lineWidth=2; ctx.beginPath();
   ctx.moveTo(12,ay); ctx.lineTo(W-12,ay); ctx.stroke();
-  ctx.fillStyle=color('text-faint'); ctx.font='10px Space Mono'; ctx.textAlign='center';
+  ctx.fillStyle=color('text-faint'); ctx.font='11px JetBrains Mono, ui-monospace, monospace'; ctx.textAlign='center';
   for(let v=Math.ceil(lo);v<=Math.floor(hi);v++){
     const x=toX(v);
     ctx.strokeStyle=color('line-subtle'); ctx.lineWidth=1; ctx.beginPath();
@@ -71,7 +71,7 @@ export function drawNumberLine(canvas,points){
     if(filled){ ctx.fillStyle=markColor; ctx.fill(); }
     else { ctx.fillStyle=color('surface-result'); ctx.fill(); ctx.stroke(); }
     ctx.stroke();
-    ctx.fillStyle=markColor; ctx.font='bold 10px Space Mono'; ctx.textAlign='center';
+    ctx.fillStyle=markColor; ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace'; ctx.textAlign='center';
     ctx.fillText(matFmtNum(val),x,ay-14);
   });
 }

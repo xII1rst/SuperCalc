@@ -22,7 +22,7 @@ function figParamsHTML(prefix, type, vals={}){
   const ps = FIG_PARAMS[type] || [];
   if(!ps.length) return '';
   return `<div style="margin-bottom:8px">
-    <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;letter-spacing:.04em">Parámetros</div>
+    <div style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px;">Parámetros</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${ps.map(p=>`<div class="inp-group"><label>${p.label}</label><input type="number" id="${prefix}${p.id}" value="${vals[p.id]??p.def}" step="any" min="0.1"/></div>`).join('')}
     </div>

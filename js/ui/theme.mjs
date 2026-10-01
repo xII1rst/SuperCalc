@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'sc-theme';
-const META_COLOR = { dark: '#0a0f1a', light: '#fffdf7' };
+const META_COLOR = { dark: '#182029', light: '#fff8f4' };
 
 export function applyTheme(theme, { persist = true, notify = true } = {}) {
   const next = theme === 'light' ? 'light' : 'dark';

@@ -266,3 +266,17 @@ export function petriReachability(initial,transitions,{maxStates=300,maxTokens=2
   }
   return {states,arcs,status:truncated?'bounded search':'complete',maxStates,maxTokens};
 }
+
+export function classifyTree(edges,root){
+ const {vertices,adjacency}=checkedEdges(edges,false);
+ if(typeof root!=='string'||!root.trim())throw new RangeError('Raíz con nombre requerida.');
+ if(!vertices.length)vertices.push(root),adjacency.set(root,[]);
+ if(!adjacency.has(root))throw new RangeError('La raíz no pertenece al grafo.');
+ const reached=new Set([root]),queue=[root],parent=new Map([[root,null]]),depth=new Map([[root,0]]),children=new Map(vertices.map(v=>[v,[]]));
+ for(let i=0;i<queue.length;i++)for(const{to}of adjacency.get(queue[i]))if(!reached.has(to)){reached.add(to);queue.push(to);parent.set(to,queue[i]);depth.set(to,depth.get(queue[i])+1);children.get(queue[i]).push(to);}
+ const connected=reached.size===vertices.length,tree=connected&&edges.length===vertices.length-1;
+ if(!tree)return {tree:false,connected,vertices,unreachable:vertices.filter(v=>!reached.has(v)),reason:!connected?'Grafo desconectado.':'Conectado, pero |E|≠|V|−1: contiene un ciclo (incluidos lazos o aristas paralelas).',proof:'Un multigrafo no dirigido conectado es árbol si y solo si tiene |V|−1 aristas.'};
+ const leaves=vertices.filter(v=>children.get(v).length===0),binary=vertices.every(v=>children.get(v).length<=2),full=binary&&vertices.every(v=>[0,2].includes(children.get(v).length)),height=Math.max(...depth.values()),perfect=full&&leaves.every(v=>depth.get(v)===height);
+ return {tree:true,connected:true,root,vertices,height,leaves,binary,full,perfect,breadthFirst:queue,
+  rows:vertices.map(v=>({vertex:v,parent:parent.get(v),depth:depth.get(v),children:children.get(v)})),proof:'Conectividad por BFS y |E|=|V|−1; camino único. Árbol binario: ≤2 hijos; lleno: 0 o 2; perfecto: lleno y todas las hojas a la misma profundidad.',assumption:'Grafo no dirigido; altura en aristas. La clasificación binaria depende de la raíz. Sin orden izquierda/derecha no se decide la propiedad de árbol completo.'};
+}

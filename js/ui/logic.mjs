@@ -2,9 +2,9 @@ import {
   convertBase, parseBaseNumber, baseArithmetic, twosComplement, signedBinaryAddition, bitwiseWord,
   truthTable, argumentValidity, finiteSetOperations, relationProperties, minimizeBoolean,
 } from '../math/logic.mjs';
-import { normalForms, quantifiedRelation, integerQuantifierExample, guidedDisjunctionProof, finiteCounting, karnaughMap, nandNetwork, inductionSum, guidedInduction } from '../math/logic-advanced.mjs';
+import { booleanMinterms, norNetwork, setCardinality, quantifiedPredicate, affinePowerComposition, guidedNegations, normalForms, quantifiedRelation, integerQuantifierExample, guidedDisjunctionProof, finiteCounting, karnaughMap, nandNetwork, inductionSum, guidedInduction } from '../math/logic-advanced.mjs';
 import {
-  graphFamilyCounts, graphSummary, graphTraversal, dijkstra, kruskal, havelHakimi,
+  classifyTree, graphFamilyCounts, graphSummary, graphTraversal, dijkstra, kruskal, havelHakimi,
   huffman, maxFlow, binaryTreeTraversals, bipartiteMatching, petriReachability,
 } from '../math/graphs.mjs';
 import { renderLogicGraph, renderLogicTree } from '../graphics/logic-graph.mjs';
@@ -20,7 +20,15 @@ const panels={
     <label for="logic-base-to">Base de salida</label><input id="logic-base-to" class="tool-input" type="number" min="2" max="36" value="2">
     <label for="logic-base-width">Ancho de palabra (2–64)</label><input id="logic-base-width" class="tool-input" type="number" min="2" max="64" value="8">`},
   sets:{title:'Conjuntos y relaciones',description:'Calcula operaciones de conjuntos finitos y prueba reflexividad, simetría y transitividad de una relación.',action:'logicCalculateSets',controls:`
-    <label for="logic-set-mode">Operación</label><select id="logic-set-mode" class="tool-input"><option value="sets">Dos conjuntos</option><option value="relation">Relación finita</option><option value="quantified">Cuantificadores sobre R(x,y)</option><option value="integers">Ejemplo x+y=0 sobre ℤ o ℕ</option><option value="count">Conteo de funciones y relaciones</option></select>
+    <label for="logic-set-mode">Operación</label><select id="logic-set-mode" class="tool-input"><option value="cardinality">Cardinalidades e inclusión-exclusión</option><option value="predicate">Predicado en universo finito</option><option value="composition">Composición e inversa: ax+b y xⁿ</option><option value="sets">Dos conjuntos</option><option value="relation">Relación finita</option><option value="quantified">Cuantificadores sobre R(x,y)</option><option value="integers">Ejemplo x+y=0 sobre ℤ o ℕ</option><option value="count">Conteo de funciones y relaciones</option></select>
+    <label for="logic-set-sizes">Cardinalidades A,B o A,B,C</label><input id="logic-set-sizes" class="tool-input" value="30,25">
+    <label for="logic-set-intersections">Intersecciones AB o AB,AC,BC</label><input id="logic-set-intersections" class="tool-input" value="10">
+    <label for="logic-set-triple">Intersección ABC (0 para dos conjuntos)</label><input id="logic-set-triple" class="tool-input" type="number" min="0" value="0">
+    <label for="logic-set-universe">Cardinalidad del universo (opcional)</label><input id="logic-set-universe" class="tool-input" type="text" value="60">
+    <label for="logic-set-predicate">P(x), comparación en x</label><input id="logic-set-predicate" class="tool-input" value="x^2&lt;10">
+    <label for="logic-set-slope">a en f(x)=ax+b</label><input id="logic-set-slope" class="tool-input" type="number" step="any" value="2">
+    <label for="logic-set-intercept">b</label><input id="logic-set-intercept" class="tool-input" type="number" step="any" value="1">
+    <label for="logic-set-power">n en g(x)=xⁿ</label><input id="logic-set-power" class="tool-input" type="number" value="2">
     <label for="logic-set-infinite-domain">Dominio del ejemplo</label><select id="logic-set-infinite-domain" class="tool-input"><option value="Z">ℤ (enteros)</option><option value="N">ℕ (naturales)</option></select>
     <label for="logic-set-outer">Cuantificador exterior</label><select id="logic-set-outer" class="tool-input"><option value="forall">∀x</option><option value="exists">∃x</option></select>
     <label for="logic-set-inner">Cuantificador interior</label><select id="logic-set-inner" class="tool-input"><option value="exists">∃y</option><option value="forall">∀y</option></select>
@@ -30,19 +38,21 @@ const panels={
     <label for="logic-set-b">B</label><input id="logic-set-b" class="tool-input" type="text" value="4, 5, 6, 7">
     <label for="logic-set-pairs">Pares de R (uno por línea: a,b)</label><textarea id="logic-set-pairs" class="tool-textarea" rows="4">1,1\n1,2\n2,3</textarea>`},
   propositions:{title:'Proposiciones y argumentos',description:'Genera tablas de verdad o comprueba inferencias mediante todas las asignaciones (hasta seis variables).',action:'logicCalculateProposition',controls:`
-    <label for="logic-prop-mode">Operación</label><select id="logic-prop-mode" class="tool-input"><option value="table">Tabla de verdad</option><option value="argument">Validez de argumento</option><option value="proof">Prueba guiada por casos</option><option value="forms">FNC y FND canónicas</option><option value="induction">Inducción guiada</option></select>
+    <label for="logic-prop-mode">Operación</label><select id="logic-prop-mode" class="tool-input"><option value="negations">De Morgan y negación de cuantificadores</option><option value="table">Tabla de verdad</option><option value="argument">Validez de argumento</option><option value="proof">Prueba guiada por casos</option><option value="forms">FNC y FND canónicas</option><option value="induction">Inducción guiada</option></select>
     <label for="logic-prop-induction">Identidad para inducción</label><select id="logic-prop-induction" class="tool-input"><option value="natural">1+…+n</option><option value="squares">1²+…+n²</option><option value="cubes">1³+…+n³</option><option value="power2">3ⁿ−1 divisible por 2</option><option value="power7">7ⁿ−1 divisible por 6</option><option value="odds">Suma de impares = n²</option><option value="factorial">n! &gt; 2ⁿ desde n=4</option></select>
     <label for="logic-prop-n">Ejemplo con n</label><input id="logic-prop-n" class="tool-input" type="number" min="1" max="1000" value="10">
     <label for="logic-prop-expression">Expresión</label><input id="logic-prop-expression" class="tool-input" type="text" value="(p→q)↔(¬p∨q)">
     <label for="logic-prop-premises">Premisas, una por línea</label><textarea id="logic-prop-premises" class="tool-textarea" rows="3">p→q\nq→r\n¬r</textarea>
     <label for="logic-prop-conclusion">Conclusión</label><input id="logic-prop-conclusion" class="tool-input" type="text" value="¬p">`},
   boolean:{title:'Simplificación booleana',description:'Encuentra una suma mínima de productos con minitérminos y condiciones indiferentes, hasta cuatro variables.',action:'logicCalculateBoolean',controls:`
-    <label for="logic-bool-mode">Vista</label><select id="logic-bool-mode" class="tool-input"><option value="minimal">Implicantes</option><option value="karnaugh">Mapa de Karnaugh</option><option value="nand">Red de compuertas NAND</option></select>
+    <label for="logic-bool-mode">Vista</label><select id="logic-bool-mode" class="tool-input"><option value="minimal">Implicantes</option><option value="karnaugh">Mapa de Karnaugh</option><option value="nand">Red de compuertas NAND</option><option value="nor">Red de compuertas NOR</option></select>
+    <label for="logic-bool-source">Entrada</label><select id="logic-bool-source" class="tool-input"><option value="minterms">Σm: minitérminos</option><option value="maxterms">ΠM: maxitérminos</option><option value="formula">Fórmula proposicional</option></select>
+    <label for="logic-bool-expression">Fórmula (∧,∨,¬ o apóstrofe)</label><input id="logic-bool-expression" class="tool-input" value="(A∨B)∧(¬A∨C)">
     <label for="logic-bool-names">Variables en orden</label><input id="logic-bool-names" class="tool-input" type="text" value="A, B, C">
-    <label for="logic-bool-minterms">Minitérminos Σm</label><input id="logic-bool-minterms" class="tool-input" type="text" value="1, 3, 5, 6, 7">
+    <label for="logic-bool-minterms">Índices Σm o ΠM según entrada</label><input id="logic-bool-minterms" class="tool-input" type="text" value="1, 3, 5, 6, 7">
     <label for="logic-bool-dontcare">Indiferentes d (opcional)</label><input id="logic-bool-dontcare" class="tool-input" type="text" value="">`},
   graphs:{title:'Grafos y árboles',description:'Analiza aristas y recorre paso a paso caminos, árboles mínimos, flujos, grados y códigos.',action:'logicCalculateGraph',controls:`
-    <label for="logic-graph-mode">Algoritmo</label><select id="logic-graph-mode" class="tool-input"><option value="summary">Matriz, grados y Euler</option><option value="counts">Conteos de grafos y árboles</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="dijkstra">Dijkstra</option><option value="kruskal">Kruskal</option><option value="flow">Flujo máximo y corte</option><option value="havel">Havel-Hakimi</option><option value="huffman">Huffman</option><option value="tree">Recorridos de árbol binario</option><option value="matching">Emparejamiento bipartito</option><option value="petri">Red de Petri acotada</option></select>
+    <label for="logic-graph-mode">Algoritmo</label><select id="logic-graph-mode" class="tool-input"><option value="summary">Matriz, grados y Euler</option><option value="counts">Conteos de grafos y árboles</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="dijkstra">Dijkstra</option><option value="kruskal">Kruskal</option><option value="flow">Flujo máximo y corte</option><option value="havel">Havel-Hakimi</option><option value="huffman">Huffman</option><option value="classifytree">Clasificar árbol enraizado</option><option value="tree">Recorridos de árbol binario</option><option value="matching">Emparejamiento bipartito</option><option value="petri">Red de Petri acotada</option></select>
     <label for="logic-graph-count-edges">Aristas de un grafo</label><input id="logic-graph-count-edges" class="tool-input" type="number" min="0" max="1000000" value="7">
     <label for="logic-graph-count-vertices">Vértices (Kₙ y árbol)</label><input id="logic-graph-count-vertices" class="tool-input" type="number" min="1" max="1000000" value="6">
     <label for="logic-graph-count-left">Vértices de la primera parte de Kₘ,ₙ</label><input id="logic-graph-count-left" class="tool-input" type="number" min="1" max="1000000" value="3">
@@ -138,6 +148,20 @@ export function logicCalculateSets() {
   try {
     const domain=items('logic-set-a');
     const mode=read('logic-set-mode');
+    if(mode==='cardinality'){
+      const result=setCardinality(ints('logic-set-sizes'),ints('logic-set-intersections'),integer('logic-set-triple'),read('logic-set-universe')?integer('logic-set-universe'):null);
+      show('Cardinalidades',`<p>${result.formula}. Unión = ${result.union}; complemento = ${result.complement===null?'universo no dado':result.complement}.</p><p>Regiones disjuntas verificadas: ${result.atoms.join(', ')}.</p>`);return;
+    }
+    if(mode==='predicate'){
+      const universe=domain.map(Number);if(domain.some(x=>x===''||!Number.isFinite(Number(x))))throw new RangeError('Universo numérico requerido');
+      const result=quantifiedPredicate(universe,read('logic-set-predicate'));
+      show('Predicado en universo finito',`<p>U=${list(domain)}; P(x)=${escapeHtml(read('logic-set-predicate'))}.</p><p>∀x P(x): ${result.universal?'verdadero':'falso'}; ∃x P(x): ${result.existential?'verdadero':'falso'}.</p><p>Testigo: ${result.witness??'ninguno'}; contraejemplo: ${result.counterexample??'ninguno'}. ${result.negations}</p>`+table(['x','Izquierda','Derecha','P(x)'],result.rows.map(r=>[r.x,r.left,r.right,r.truth?'V':'F'])));return;
+    }
+    if(mode==='composition'){
+      const numeric=id=>{const raw=read(id);if(!raw||!Number.isFinite(Number(raw)))throw new RangeError('Coeficiente finito requerido');return Number(raw);};
+      const result=affinePowerComposition(numeric('logic-set-slope'),numeric('logic-set-intercept'),integer('logic-set-power'));
+      show('Composición e inversa',`<p>g∘f = ${escapeHtml(result.gAfterF)}; f∘g = ${escapeHtml(result.fAfterG)}; f⁻¹ = ${escapeHtml(result.inverse)}.</p><p>${result.proof}</p>`);return;
+    }
     if (mode==='integers') {
       const result=integerQuantifierExample(read('logic-set-infinite-domain'));
       show('Cuantificadores sobre conjuntos infinitos',`<p>${escapeHtml(result.convention)}</p>`+
@@ -148,7 +172,7 @@ export function logicCalculateSets() {
       show('Operaciones de conjuntos',`<p>A∪B = ${list(result.union)}; A∩B = ${list(result.intersection)}.</p><p>A−B = ${list(result.difference)}; A△B = ${list(result.symmetricDifference)}.</p>`);
     } else if(mode==='count') {
       const result=finiteCounting(integer('logic-set-n'),integer('logic-set-m'));
-      show('Conteo finito',`<p>Funciones A→B = ${result.functions}; inyectivas = ${result.injective}; sobreyectivas = ${result.surjective}.</p><p>Relaciones en A×B = ${result.relations}; subconjuntos de A = ${result.subsets}. ${result.assumption}.</p>`);
+      show('Conteo finito',`<p>Funciones A→B = ${result.functions}; inyectivas = ${result.injective}; sobreyectivas = ${result.surjective}.</p><p>Relaciones en A×B = ${result.relations}; subconjuntos de A = ${result.subsets}; |A×B| = ${result.cartesianSize}.</p><p>Relaciones binarias en A = ${result.binaryRelations}; reflexivas = ${result.reflexiveRelations}; simétricas = ${result.symmetricRelations}; equivalencias = ${result.equivalenceRelations}. ${result.assumption}.</p>`);
     } else {
       const pairs=read('logic-set-pairs').split(/[;\n]+/).map(line=>line.trim()).filter(Boolean).map(line=>{
         const parts=line.split(/[,\s]+/).filter(Boolean);
@@ -166,7 +190,7 @@ export function logicCalculateSets() {
       show('Relación finita',`<p>Dominio observado = ${list([...new Set(pairs.map(pair=>pair[0]))])}; rango = ${list(result.range)}.</p>
         <p>Reflexiva: ${result.reflexive?'sí':'no'}; simétrica: ${result.symmetric?'sí':'no'}; transitiva: ${result.transitive?'sí':'no'}.</p>
         <p>${result.equivalence?`Clases: ${result.classes.map(list).join(', ')}.`:'No es relación de equivalencia.'}</p>`+
-        table(['',...domain],result.matrix.map((row,i)=>[domain[i],...row])));
+        table(['',...domain],result.matrix.map((row,i)=>[domain[i],...row]))+table(['Propiedad fallida','Contraejemplo'],Object.entries(result.counterexamples).filter(([,value])=>value!==null).map(([key,value])=>[key,list(value)])));
     }
   } catch(error) {fail(error);}
 }
@@ -174,6 +198,9 @@ export function logicCalculateSets() {
 export function logicCalculateProposition() {
   try {
     const mode=read('logic-prop-mode');
+    if(mode==='negations'){
+      const result=guidedNegations();show('Negaciones y alcance',`<p>${result.deMorgan}</p><p>${result.negationOfNegatedConjunction}</p><p>${escapeHtml(result.quantified)}</p><p>${result.proof}</p>`);return;
+    }
     if (mode==='table') {
       const expression=read('logic-prop-expression'), result=truthTable(expression);
       show('Tabla de verdad',`<p>${escapeHtml(expression)}: ${result.status}; ${result.rows.length} asignaciones.</p>`+
@@ -209,17 +236,20 @@ export function logicCalculateProposition() {
 
 export function logicCalculateBoolean() {
   try {
-    const names=items('logic-bool-names'),minterms=ints('logic-bool-minterms'),dontCares=ints('logic-bool-dontcare');
+    const names=items('logic-bool-names'),source=read('logic-bool-source');
+    const minterms=booleanMinterms(names,['maxterms','formula'].includes(source)?source:'minterms',source==='formula'?[]:ints('logic-bool-minterms'),read('logic-bool-expression')),dontCares=ints('logic-bool-dontcare');
     const mode=read('logic-bool-mode');
     if(mode==='karnaugh') {
       const result=karnaughMap(names,minterms,dontCares);
       show('Mapa de Karnaugh',`<p>Filas y columnas en código Gray; X = indiferente. F = ${escapeHtml(result.expression)}.</p>`+
-        table(['',...result.columns],result.cells.map((row,i)=>[result.rows[i],...row.map(cell=>`${cell.value} (m${cell.index})`)])));
+        table(['',...result.columns],result.cells.map((row,i)=>[result.rows[i],...row.map(cell=>`${cell.value} (m${cell.index}) ${cell.groups.join(', ')}`)]))+table(['Grupo','Patrón','Celdas (incluye X)'],result.groups.map(group=>[group.name,group.pattern,group.indices.join(', ')])));
       return;
     }
-    if(mode==='nand') {
-      const result=nandNetwork(names,minterms,dontCares);
-      show('Realización NAND',`<p>F = ${escapeHtml(result.expression)}; salida = ${escapeHtml(result.output)}. NAND(x,x) invierte x.</p>`+
+    if(mode==='nand'||mode==='nor') {
+      const result=mode==='nand'?nandNetwork(names,minterms,dontCares):norNetwork(names,minterms,dontCares);
+      const gateName=mode.toUpperCase();
+      show(`Realización ${gateName}`,`<p>F = ${escapeHtml(result.expression)}; salida = ${escapeHtml(result.output)}. ${gateName}(x,x) invierte x; compuertas = ${result.gates.length}.</p><p>Se comparten inversores. El número cuenta compuertas con las entradas indicadas; constantes y cables no cuentan. Σm = ${minterms.join(', ')}.</p>`+
+        renderLogicGraph(result.gates.flatMap(gate=>gate.inputs.map(input=>[input,gate.output,gate.operation])),{directed:true,vertices:names,title:`Red de ${gateName}: conexiones`,caption:`Cada nodo nᵢ aplica ${gateName} a sus entradas; salida ${result.output}.`})+
         table(['Salida','Entradas','Compuerta'],result.gates.map(gate=>[gate.output,gate.inputs.join(', '),gate.operation])));
       return;
     }
@@ -303,9 +333,13 @@ export function logicCalculateGraph() {
     }
     const edges=graphEdges(),start=read('logic-graph-start'),target=read('logic-graph-target');
     const directed=read('logic-graph-directed')==='directed';
+    if(mode==='classifytree'){
+      if(directed)throw new RangeError('La clasificación requiere un grafo no dirigido.');
+      const r=classifyTree(edges,start);show('Clasificación de árbol',`<p>${r.tree?`Árbol; raíz ${escapeHtml(r.root)}, altura ${r.height} aristas. Binario: ${r.binary?'sí':'no'}; lleno: ${r.full?'sí':'no'}; perfecto: ${r.perfect?'sí':'no'}. Hojas: ${list(r.leaves)}.`:`No es árbol: ${escapeHtml(r.reason)}`}</p><p>${escapeHtml(r.proof)}</p>${r.assumption?`<p>${escapeHtml(r.assumption)}</p>`:''}`+renderLogicGraph(edges,{vertices:r.vertices,title:'Árbol/grafo de entrada'})+(r.rows?table(['Vértice','Padre','Profundidad','Hijos'],r.rows.map(row=>[row.vertex,row.parent??'raíz',row.depth,list(row.children)])):''));return;
+    }
     if (mode==='summary') {
       const result=graphSummary(edges,directed);
-      show('Grafo',`<p>Vértices: ${list(result.vertices)}; aristas: ${result.edgeCount}; estado euleriano: ${result.euler}.</p>`+
+      show('Grafo',`<p>Vértices: ${list(result.vertices)}; aristas: ${result.edgeCount}; estado euleriano: ${result.euler} (${({circuit:'circuito cerrado: euleriano',trail:'camino abierto; no es euleriano cerrado',none:'sin camino euleriano',not_applicable:'criterio de Euler no aplicado a grafos dirigidos'})[result.euler]}).</p>`+
         renderLogicGraph(edges,{directed,title:'Grafo de entrada'})+
         table(['',...result.vertices],result.matrix.map((row,i)=>[result.vertices[i],...row]))+
         table(['Vértice','Grado'],result.vertices.map(vertex=>[vertex,JSON.stringify(result.degrees[vertex])])));

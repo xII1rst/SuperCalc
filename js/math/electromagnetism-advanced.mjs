@@ -1,4 +1,5 @@
-import { EM_EPS0, EM_MU0, EM_K } from './electromagnetism.mjs';
+import { EM_EPS0, EM_MU0, EM_K, rcCircuit } from './electromagnetism.mjs';
+import { tokenize, parseExpr, diffAST, simplify, astToStr, substAST, evalAST } from './calculus.mjs';
 
 function finite(value,name) {
   if(typeof value!=='number'||!Number.isFinite(value)) throw new RangeError(`${name}: valor finito requerido`);
@@ -12,6 +13,95 @@ function positive(value,name) {
 function vector3(value,name) {
   if(!Array.isArray(value)||value.length!==3||value.some(item=>!Number.isFinite(item))) throw new RangeError(`${name}: vector de tres componentes requerido`);
   return value;
+}
+export function uniformElectricFlux(field,area,normalAngleDegrees=0) {
+  finite(field,'Campo');positive(area,'Área');finite(normalAngleDegrees,'Ángulo');
+  return {flux:field*area*Math.cos(normalAngleDegrees*Math.PI/180),formula:'Φ = EA cos θ; θ entre E y la normal de la superficie'};
+}
+export function enclosedChargeFlux(charge) {
+  finite(charge,'Carga encerrada');return {flux:charge/EM_EPS0,formula:'Φ cerrada = Q encerrada/ε₀'};
+}
+export function dipoleAxis(charge,separation,position) {
+  finite(charge,'Carga positiva del par');positive(separation,'Separación');finite(position,'Posición axial');
+  const plus=position-separation/2,minus=position+separation/2;
+  if(plus===0||minus===0)throw new RangeError('El punto coincide con una carga del dipolo.');
+  return {dipoleMoment:charge*separation,potential:EM_K*charge*(1/Math.abs(plus)-1/Math.abs(minus)),
+    approximatePotential:position===0?null:EM_K*charge*separation*Math.sign(position)/position**2,
+    formula:'p=qd; V eje exacto=kq(1/|z−d/2|−1/|z+d/2|); V lejano≈kp·sign(z)/z²',
+    assumption:'Par +q en z=d/2 y −q en z=−d/2; p apunta hacia +z para q>0. Aproximación solo si |z|≫d.'};
+}
+export function dielectricCapacitor(initialCapacitance,initialVoltage,relativePermittivity,connected=false) {
+  positive(initialCapacitance,'Capacitancia inicial');finite(initialVoltage,'Voltaje inicial');positive(relativePermittivity,'Permitividad relativa');
+  if(relativePermittivity<1)throw new RangeError('Dieléctrico pasivo: κ ≥ 1 requerido.');
+  const capacitance=initialCapacitance*relativePermittivity,voltage=connected?initialVoltage:initialVoltage/relativePermittivity;
+  return {initialCapacitance,capacitance,initialCharge:initialCapacitance*initialVoltage,charge:capacitance*voltage,voltage,energy:.5*capacitance*voltage**2,
+    formula:'C nueva=κC₀; aislado: Q constante, V=V₀/κ; conectado: V constante; U=½CV²',
+    assumption:'Dieléctrico llena completamente el capacitor; '+(connected?'conectado a fuente ideal de voltaje.':'aislado, sin pérdida de carga.')};
+}
+export function rcState(resistance,capacitance,voltage,time,fraction=.1) {
+  const r=rcCircuit(resistance,capacitance,voltage,time);
+  if(!r)throw new RangeError('RC: R,C positivos, voltaje finito y tiempo no negativo requeridos.');
+  if(!Number.isFinite(fraction)||fraction<=0||fraction>=1)throw new RangeError('La fracción residual debe estar entre 0 y 1.');
+  return {...r,chargingCharge:capacitance*r.chargeVoltage,dischargingCharge:capacitance*r.dischargeVoltage,timeToFraction:-r.tau*Math.log(fraction),
+    formula:'τ=RC; carga: q=CV₀(1−e^(−t/τ)), I=(V₀/R)e^(−t/τ); descarga: V=V₀e^(−t/τ); t fracción=−τ ln(f)',
+    assumption:'Carga desde capacitor descargado; descarga desde V₀; circuito ideal RC y escalón de tensión.'};
+}
+export function solenoidFieldDensity(turnsPerLength,current,relativePermeability=1) {
+  positive(turnsPerLength,'Espiras por metro');finite(current,'Corriente');positive(relativePermeability,'Permeabilidad relativa');
+  const permeability=EM_MU0*relativePermeability,field=permeability*turnsPerLength*current;
+  return {field,energyDensity:field**2/(2*permeability),formula:'B=μnI; uB=B²/(2μ)',assumption:'Solenoide largo; medio lineal homogéneo, campo exterior despreciable.'};
+}
+export function chargedParticleOrbit(charge,mass,speed,field) {
+  finite(charge,'Carga');positive(mass,'Masa');finite(speed,'Rapidez');finite(field,'Campo');
+  if(charge===0||field===0||speed<0)throw new RangeError('Órbita magnética: carga/campo no nulos y rapidez no negativa requeridos.');
+  const angularFrequency=Math.abs(charge*field)/mass;
+  return {orbitRadius:speed/angularFrequency,period:2*Math.PI/angularFrequency,angularFrequency,
+    formula:'r=mv/(|q|·|B|); T=2πm/(|q|·|B|)',assumption:'Partícula no relativista en vacío, v perpendicular a B uniforme; no hay campo E.'};
+}
+export function radialChargedCylinder(densityAtSurface,radius,position) {
+  finite(densityAtSurface,'ρ₀');positive(radius,'Radio');finite(position,'Distancia radial');
+  if(position<0)throw new RangeError('Distancia radial no negativa requerida.');
+  return {field:position<=radius?densityAtSurface*position**2/(3*EM_EPS0*radius):densityAtSurface*radius**2/(3*EM_EPS0*position),
+    linearCharge:2*Math.PI*densityAtSurface*radius**2/3,
+    formula:'ρ(r)=ρ₀r/R; λ encerrada=2πρ₀min(r,R)³/(3R); E dentro=ρ₀r²/(3ε₀R); E fuera=ρ₀R²/(3ε₀r)',
+    assumption:'Cilindro infinito aislante con simetría radial; signo de E según ρ₀ y dirección radial saliente.'};
+}
+export function uniformSphereSelfEnergy(charge,radius) {
+  finite(charge,'Carga');positive(radius,'Radio');
+  return {energy:3*EM_K*charge**2/(5*radius),formula:'U=3kQ²/(5R)',assumption:'Esfera aislante uniformemente cargada; energía para ensamblar su carga desde infinito.'};
+}
+function polynomialAST(expression) {
+  if(typeof expression!=='string'||!expression.trim()||expression.length>500)throw new RangeError('Introduce un polinomio en x,y,z de hasta 500 caracteres.');
+  let node;try{node=parseExpr(tokenize(expression));}catch{throw new RangeError('Polinomio inválido: usa x,y,z y multiplicación explícita.');}
+  const inspect=n=>{
+    if(n.type==='num'){if(!Number.isFinite(n.val))throw new RangeError('Coeficiente no finito.');return;}
+    if(n.type==='var'&&['x','y','z'].includes(n.val))return;
+    if(n.type==='neg'){inspect(n.arg);return;}
+    if(['+','-','*'].includes(n.type)){inspect(n.left);inspect(n.right);return;}
+    if(n.type==='^'&&n.right.type==='num'&&Number.isInteger(n.right.val)&&n.right.val>=0&&n.right.val<=8){inspect(n.left);return;}
+    throw new RangeError('Familia admitida: polinomios en x,y,z, exponentes enteros de 0 a 8; sin cocientes ni funciones.');
+  };inspect(node);return node;
+}
+function atPoint(node,point){
+  vector3(point,'Punto');
+  ['x','y','z'].forEach((variable,i)=>{node=substAST(node,variable,{type:'num',val:point[i]});});
+  const result=evalAST(node);finite(result,'Evaluación');return result;
+}
+export function polynomialPotential(expression,point) {
+  const source=polynomialAST(expression),partials=['x','y','z'].map(v=>simplify(diffAST(source,v)));
+  const second=partials.map((node,i)=>simplify(diffAST(node,['x','y','z'][i])));
+  const laplacian=second.reduce((sum,node)=>sum+atPoint(node,point),0);
+  return {potential:atPoint(source,point),field:partials.map(node=>-atPoint(node,point)),laplacian,chargeDensity:-EM_EPS0*laplacian,
+    fieldExpressions:partials.map(node=>astToStr(simplify({type:'neg',arg:node}))),secondExpressions:second.map(node=>astToStr(node)),
+    formula:'E=−∇V; ∇²V=Vxx+Vyy+Vzz; ρ=−ε₀∇²V',assumption:'Potencial polinómico en voltios, coordenadas en metros; electrostática en vacío.'};
+}
+export function polynomialFieldDivergence(expressions,point) {
+  if(!Array.isArray(expressions)||expressions.length!==3)throw new RangeError('Introduce Ex,Ey,Ez por separado.');
+  const nodes=expressions.map(polynomialAST),partials=nodes.map((n,i)=>simplify(diffAST(n,['x','y','z'][i])));
+  const divergence=partials.reduce((sum,node)=>sum+atPoint(node,point),0);
+  return {field:nodes.map(n=>atPoint(n,point)),divergence,chargeDensity:EM_EPS0*divergence,
+    divergenceExpressions:partials.map(node=>astToStr(node)),formula:'ρ/ε₀=∇·E=∂Ex/∂x+∂Ey/∂y+∂Ez/∂z',
+    assumption:'Campo polinómico en N/C, coordenadas en metros; electrostática en vacío.'};
 }
 export function pointChargeSystem(charges,point) {
   vector3(point,'Punto');
@@ -317,7 +407,8 @@ export function hallEffect(current,field,carrierDensity,charge,thickness) {
   finite(current,'Corriente');finite(field,'Campo');positive(carrierDensity,'Densidad de portadores');
   finite(charge,'Carga del portador');if(charge===0) throw new RangeError('Carga del portador no nula');positive(thickness,'Espesor');
   return {hallVoltage:current*field/(carrierDensity*charge*thickness),
-    magnitude:Math.abs(current*field/(carrierDensity*charge*thickness)),formula:'VH = IB/(nqt); signo dado por q'};
+    magnitude:Math.abs(current*field/(carrierDensity*charge*thickness)),formula:'VH = IB/(nqt); signo dado por q',
+    convention:'Portadores con carga q indicada; el signo usa los sentidos positivos elegidos para I y B y la orientación de medición Hall.'};
 }
 export function motionalEmf(field,length,speed,angleDegrees=90) {
   finite(field,'Campo');positive(length,'Longitud');finite(speed,'Rapidez');finite(angleDegrees,'Ángulo');
@@ -327,7 +418,7 @@ export function rlTransient(resistance,inductance,voltage,time) {
   positive(resistance,'Resistencia');positive(inductance,'Inductancia');finite(voltage,'Voltaje');
   if(!Number.isFinite(time)||time<0) throw new RangeError('Tiempo no negativo requerido');
   const tau=inductance/resistance,decay=Math.exp(-time/tau);
-  return {tau,growingCurrent:voltage/resistance*(1-decay),decayingCurrent:voltage/resistance*decay,
+  return {tau,growingCurrent:voltage/resistance*(1-decay),decayingCurrent:voltage/resistance*decay,finalEnergy:.5*inductance*(voltage/resistance)**2,
     growingInductorVoltage:voltage*decay,assumption:'escalón de tensión; corriente inicial 0 al conectar o V/R al desconectar'};
 }
 export function seriesRlcAc(resistance,inductance,capacitance,frequency,rmsVoltage) {
@@ -335,12 +426,16 @@ export function seriesRlcAc(resistance,inductance,capacitance,frequency,rmsVolta
   positive(inductance,'Inductancia');positive(capacitance,'Capacitancia');positive(frequency,'Frecuencia');finite(rmsVoltage,'Voltaje RMS');
   const omega=2*Math.PI*frequency,reactanceInductive=omega*inductance,reactanceCapacitive=1/(omega*capacitance);
   const reactance=reactanceInductive-reactanceCapacitive,impedance=Math.hypot(resistance,reactance);
+  if(resistance===0&&Math.abs(reactance)<=16*Number.EPSILON*Math.max(Math.abs(reactanceInductive),Math.abs(reactanceCapacitive)))
+    throw new RangeError('Resonancia ideal sin resistencia: no existe respuesta estacionaria acotada.');
   const current=Math.abs(rmsVoltage)/impedance,phase=Math.atan2(reactance,resistance);
+  if(!Number.isFinite(current))throw new RangeError('Resonancia ideal sin resistencia: corriente estacionaria no finita.');
   const resonanceFrequency=1/(2*Math.PI*Math.sqrt(inductance*capacitance));
   const quality=resistance===0?Infinity:Math.sqrt(inductance/capacitance)/resistance;
   return {reactanceInductive,reactanceCapacitive,reactance,impedance,current,phaseRadians:phase,
     powerFactor:Math.cos(phase),averagePower:current**2*resistance,resonanceFrequency,
-    quality,bandwidthHz:resistance/(2*Math.PI*inductance),assumption:'RLC serie sinusoidal en régimen permanente'};
+    quality,bandwidthHz:resistance/(2*Math.PI*inductance),resonanceCurrent:resistance===0?null:Math.abs(rmsVoltage)/resistance,
+    assumption:'RLC serie sinusoidal en régimen permanente; V e I son RMS. I en resonancia=V/R si R>0.'};
 }
 export function displacementCurrent(area,fieldRate,relativePermittivity=1) {
   positive(area,'Área');finite(fieldRate,'Derivada del campo');positive(relativePermittivity,'Permitividad relativa');
@@ -351,5 +446,8 @@ export function poissonOneDimensional(length,leftVoltage,rightVoltage,chargeDens
   if(!Number.isFinite(position)||position<0||position>length) throw new RangeError('Posición fuera del dominio');
   const slope=(rightVoltage-leftVoltage)/length+chargeDensity*length/(2*EM_EPS0);
   return {potential:leftVoltage+slope*position-chargeDensity*position**2/(2*EM_EPS0),
-    field:-slope+chargeDensity*position/EM_EPS0,formula:'V″ = −ρ/ε₀; V(0)=V₀, V(L)=VL; E=−V′'};
+    field:-slope+chargeDensity*position/EM_EPS0,
+    potentialFormula:`V(x) = ${leftVoltage} + (${slope})x − (${chargeDensity/(2*EM_EPS0)})x²`,
+    fieldFormula:`E(x) = −(${slope}) + (${chargeDensity/EM_EPS0})x`,
+    formula:'V″ = −ρ/ε₀; V(0)=V₀, V(L)=VL; E=−V′'};
 }

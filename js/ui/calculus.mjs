@@ -1,3 +1,6 @@
+import { polynomialPotentialStudy, greenRegionStudy, stokesDiskStudy } from '../math/multivariable-study.mjs';
+import { functionAnalysisSvg } from '../graphics/function-analysis.mjs';
+import { tangentDifferential, rationalFunctionAnalysis, theoremCheck } from '../math/differential-applications.mjs';
 import {
   calcParse, collectVariables, normalizeExpression, symbolicDeriv, derivativeDetails, computeLimit, calculateLimitOperation, fmtA, fmtNum,
   fmtResult, visSubstitute, basicAntideriv, rk4Refinement,
@@ -8,11 +11,11 @@ import {
 } from '../math/calculus.mjs';
 import { fN, formatResult } from '../utils/format.mjs';
 import {
-  optimizeFunction, populationGrowth, motionAt, tangentAt, relatedRates, solveSecondOrderHomogeneous,
+  optimizeFunction, populationGrowth, motionAt, relatedRates, solveSecondOrderHomogeneous,
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
   hyperbolicValues, inverseHyperbolic,
 } from '../math/applications.mjs';
-import { integrate, definiteIntegral } from '../math/integration.mjs';
+import { integrate, definiteIntegral, polynomialRevolutionEvaluation } from '../math/integration.mjs';
 import { riemannSum, trapezoidalRule } from '../math/numeric.mjs';
 import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries } from '../math/series.mjs';
 import {
@@ -99,11 +102,11 @@ function buildKB(containerId){
   if(!el || el.dataset.built) return;
   el.dataset.built = '1';
   el.innerHTML = CALC_KB.map(g=>`
-    <div class="calc-kb-group">
-      <div class="calc-kb-label">${g.label}</div>
+    <div class="calc-kb-group" role="group" aria-label="${g.label}">
+      <div class="calc-kb-label" aria-hidden="true">${g.label}</div>
       <div class="calc-kb-btns">
         ${g.btns.map(b=>`
-          <button class="calc-kb-btn"
+          <button type="button" class="calc-kb-btn" aria-label="${b.name}" title="${b.name}"
             data-action="kbInsert" data-event="pointerdown" data-insert="${b.ins}">
             <span class="kb-icon">${b.icon}</span>
             <span class="kb-name">${b.name}</span>
@@ -171,12 +174,14 @@ function toggleCard(id){
       c.classList.remove('active');
       c.querySelector('.calc-card-body').classList.remove('open');
       c.querySelector('.calc-card-arrow').classList.remove('open');
+      c.querySelector('.calc-card-header')?.setAttribute('aria-expanded','false');
     });
   }
 
   body.classList.toggle('open',  !isOpen);
   arr.classList.toggle('open',   !isOpen);
   card.classList.toggle('active',!isOpen);
+  card.querySelector?.('.calc-card-header')?.setAttribute('aria-expanded',String(!isOpen));
 
   if(!isOpen){
     const cv = body.querySelector('.calc-preview[data-gmode]');
@@ -480,40 +485,22 @@ function calcImplicit(){
 }
 
 function calcAnalysis(){
-  const fxStr=document.getElementById('dif-ana-fx').value.trim();
-  const res=document.getElementById('res-ana');
-  if(!fxStr){res.innerHTML=errBox('Ingresa una función');return;}
-  const fn=calcParse(fxStr);
-  if(!fn){res.innerHTML=errBox('Función inválida');return;}
-
-  const h=1e-6, N=400, a=-8, b=8, dx=(b-a)/N;
-  let incr=0, decr=0;
-  const maxs=[], mins=[], infs=[];
-  let prevFp=(fn(a+h,0)-fn(a-h,0))/(2*h);
-  let prevFpp=(fn(a+h,0)-2*fn(a,0)+fn(a-h,0))/(h*h);
-
-  for(let i=1;i<=N;i++){
-    const x=a+i*dx;
-    const fp=(fn(x+h,0)-fn(x-h,0))/(2*h);
-    const fpp=(fn(x+h,0)-2*fn(x,0)+fn(x-h,0))/(h*h);
-    if(isFinite(fp)){
-      if(fp>0) incr++; else decr++;
-      if(prevFp*fp<0&&isFinite(prevFp))
-        (prevFp>0?maxs:mins).push(parseFloat(x.toFixed(3)));
-    }
-    if(isFinite(fpp)&&isFinite(prevFpp)&&prevFpp*fpp<0)
-      infs.push(parseFloat(x.toFixed(3)));
-    prevFp=fp; prevFpp=fpp;
-  }
-  let html='';
-  html+=resBox('Monotonía en [−8,8]',
-    `↑ Crece: ${incr} puntos  ↓ Decrece: ${decr} puntos`);
-  html+=resBox('Máximos locales',maxs.length?maxs.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
-  html+=resBox('Mínimos locales',mins.length?mins.map(x=>`x≈${x}`).join(', '):'Ninguno en [−8,8]');
-  html+=resBox('Puntos de inflexión',infs.length?infs.map(x=>`x≈${x}`).join(', '):'Ninguno detectado');
-  res.innerHTML=html;
+  const expression=v('dif-ana-fx'),res=document.getElementById('res-ana');
+  const number=value=>value===Infinity?'+∞':value===-Infinity?'−∞':fN(value,8);
+  const interval=c=>`(${number(c.left)}, ${number(c.right)}): ${c.trend}`;
+  const point=p=>`(${number(p.x)}, ${number(p.value)}): ${p.type||'inflexión'}`;
+  try {
+    const r=rationalFunctionAnalysis(expression);
+    res.innerHTML=resBox('Dominio y simetría',`${r.domain}; ${r.symmetry}`)+
+      resBox('Puntos críticos',r.criticalPoints.map(point).join('<br>')||'Sin puntos críticos aislados')+
+      resBox('Signos de f′ y monotonía',r.monotonicity.map(interval).join('<br>'))+
+      resBox('Signos de f″ y concavidad',r.concavity.map(interval).join('<br>'))+
+      resBox('Inflexiones',r.inflections.map(point).join('<br>')||'Ninguna')+
+      resBox('Discontinuidades',r.discontinuities.map(p=>`x=${number(p.x)}: ${p.type}; ${p.type==='asíntota vertical'?`límite izquierdo ${number(p.left)}, derecho ${number(p.right)}`:`límite ${number(p.limit)}`}`).join('<br>')||'Ninguna')+
+      resBox('Asíntota al infinito',r.asymptote?`${r.asymptoteType}; coeficientes desde constante: [${r.asymptote.map(number).join(', ')}]`:'No aplica a polinomios')+
+      resBox('Método y alcance',r.formula+' '+r.assumption)+functionAnalysisSvg(r);
+  }catch(error){res.innerHTML=errBox(error.message);}
 }
-
 
 
 // ═══════════════════════════════════════════════════════
@@ -688,14 +675,28 @@ function clearAppResult(){ appRes(''); }
 function appOptimize(){
   const fxStr=v('app-opt-fx'), a=pf('app-opt-a'), b=pf('app-opt-b');
   const fn=calcParse(fxStr);
-  if(!fn||isNaN(a)||isNaN(b)){appRes(errBox('Verifica los datos'));return;}
+  if(!fn||!Number.isFinite(a)||!Number.isFinite(b)||collectVariables(fxStr).some(name=>name!=='x')){appRes(errBox('Usa solo x y extremos finitos'));return;}
+  if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b){appRes(errBox('Se requiere intervalo finito a < b'));return;}
+  try {
+    const r=rationalFunctionAnalysis(fxStr,{start:a,end:b,closedInterval:true});
+    if(typeof r.extrema==='string'){appRes(errBox(r.extrema));return;}
+    const list=points=>points.map(p=>`x≈${fN(p.x,6)}, f(x)≈${fN(p.value,6)}`).join('<br>');
+    appRes(resBox('Todos los candidatos: extremos y f′=0',list(r.extrema.candidates))+
+      resBox('Máximo absoluto en ['+a+','+b+']',list(r.extrema.maximum))+
+      resBox('Mínimo absoluto en ['+a+','+b+']',list(r.extrema.minimum))+
+      resBox('Hipótesis y método',r.assumption));
+    return;
+  } catch(error) {
+    // Otras familias solo pueden producir una estimación de la búsqueda finita.
+  }
   const {crits,maxX,minX,maxV,minV}=optimizeFunction(fn,a,b);
   const sym=symbolicDeriv(fxStr,1);
   let html=sym?resBox("f'(x) =",sym):'';
   html+=resBox('Puntos críticos f\'=0 en ['+a+','+b+']',
     crits.length?crits.map(c=>`x≈${c.x} (${c.type}, f≈${fN(c.y)})`).join('<br>'):'Ninguno detectado');
-  html+=resBox('Máximo global en ['+a+','+b+']',`x≈${fN(maxX,4)},  f(x)≈${fN(maxV,6)}`,'')+
-        resBox('Mínimo global en ['+a+','+b+']',`x≈${fN(minX,4)},  f(x)≈${fN(minV,6)}`,'');
+  html+=resBox('Mayor valor estimado en ['+a+','+b+']',`x≈${fN(maxX,4)},  f(x)≈${fN(maxV,6)}`,'')+
+        resBox('Menor valor estimado en ['+a+','+b+']',`x≈${fN(minX,4)},  f(x)≈${fN(minV,6)}`,'');
+  html+=resBox('Alcance','Búsqueda numérica finita; puede omitir puntos críticos y no prueba extremos globales.');
   appRes(html);
 }
 
@@ -729,17 +730,14 @@ function appMotion(){
 
 function appTangent(){
   const fxStr=v('app-tan-fx'), x0=pf('app-tan-x0');
-  const fn=calcParse(fxStr);
-  if(!fn||isNaN(x0)){appRes(errBox('Verifica los datos'));return;}
-  const {fx0,fpx0,b}=tangentAt(fn,x0);
-  const symD=symbolicDeriv(fxStr,1);
-  const bStr=b>=0?` + ${fN(b,4)}`:` - ${fN(Math.abs(b),4)}`;
-  appRes(
-    (symD?resBox("f'(x) =",symD):'')+
-    resBox(`f(${x0}) — punto de tangencia`, formatResult(fx0,6))+
-    resBox(`f'(${x0}) — pendiente`, formatResult(fpx0,6), 'Ángulo ≈ '+fN(Math.atan(fpx0)*180/Math.PI,2)+'°')+
-    resBox('Ecuación recta tangente', `y = ${fN(fpx0,4)}x${bStr}`, `y − f(x₀) = f\'(x₀)·(x − x₀)`, true)
-  );
+  try {
+    const r=tangentDifferential(fxStr,x0);
+    const bStr=r.intercept>=0?` + ${fN(r.intercept,4)}`:` - ${fN(Math.abs(r.intercept),4)}`;
+    appRes(resBox("f'(x) =",r.derivative)+
+      resBox(`f(${x0}) — punto de tangencia`,formatResult(r.point[1],6))+
+      resBox(`f'(${x0}) — pendiente`,formatResult(r.slope,6),'Derivada simbólica evaluada en un punto regular')+
+      resBox('Ecuación recta tangente',`y = ${fN(r.slope,4)}x${bStr}`,`y − f(x₀) = f'(x₀)·(x − x₀)`,true));
+  } catch(error){appRes(errBox(error.message));}
 }
 
 function appRelated(){
@@ -783,13 +781,22 @@ function appNewton(){
 function appMVT(){
   const fxStr=v('app-mvt-fx'), a=pf('app-mvt-a'), b=pf('app-mvt-b');
   const fn=calcParse(fxStr);
-  if(!fn||isNaN(a)||isNaN(b)){appRes(errBox('Verifica los datos'));return;}
+  if(!fn||!Number.isFinite(a)||!Number.isFinite(b)||collectVariables(fxStr).some(name=>name!=='x')){appRes(errBox('Usa solo x y extremos finitos'));return;}
   if(a>=b){appRes(errBox('Se requiere a < b'));return;}
+  try {
+    const r=theoremCheck(fxStr,a,b);
+    appRes(resBox('Pendiente secante (f(b)−f(a))/(b−a)',formatResult(r.slope,6))+
+      resBox('Puntos c en (a,b)',r.points.map(c=>`c ≈ ${formatResult(c,6)}`).join(', '),r.allPoints||r.formula,true)+
+      resBox('Hipótesis verificadas',r.steps.join('; ')));
+    return;
+  }catch(error) {
+    // Fuera de las familias declaradas no se certifican las hipótesis.
+  }
   const {slope,c}=meanValueTheorem(fn,a,b);
   appRes(
     resBox('Pendiente secante (f(b)−f(a))/(b−a)', formatResult(slope,6))+
-    resBox('Punto c con f\'(c) = pendiente', c?`c ≈ ${formatResult(c,6)}`:'No encontrado',
-      'Verifica que f cumpla las hipótesis del teorema', true)
+    resBox('Candidato numérico a f\'(c) = pendiente', Number.isFinite(c)?`c ≈ ${formatResult(c,6)}`:'No encontrado',
+      'Hipótesis no verificadas; una muestra no demuestra continuidad o diferenciabilidad.', true)
   );
 }
 
@@ -831,13 +838,13 @@ function calcIntegralIndef(){
   const res=document.getElementById('res-indef');
   const fn=calcParse(fxStr);
   if(!fn){res.innerHTML=errBox('Función inválida');return;}
-  // Antiderivada simbólica básica (regla de potencia, constantes conocidas)
-  const antideriv=basicAntideriv(fxStr);
+  // Comparte el motor y el procedimiento con la tarjeta CAS.
+  const integral=integrate(fxStr),antideriv=integral.result;
   let html=antideriv?
     resBox('∫ f(x) dx =', antideriv+' + C', 'Verificable derivando el resultado', true):
     resBox('∫ f(x) dx','Usa la Integral Definida para calcular numéricamente','');
-  // Siempre dar verificación numérica
-  const v0=(fn(1+1e-4,0)-fn(1-1e-4,0))/(2e-4);
+  if(integral.steps.length)html+=resBox('Pasos',integral.steps.join('; '));
+  if(integral.domain.length)html+=resBox('Condiciones suficientes en cada intervalo',integral.domain.join('; '));
   html+=resBox('f(1) para referencia', formatResult(fn(1,0),6));
   res.innerHTML=html;
 }
@@ -863,12 +870,12 @@ function calcIntegralDef(){
   const label=`∫<sub>${bl(a)}</sub><sup>${bl(b)}</sup> f(x) dx`;
 
   if(r.diverges){
-    res.innerHTML=resBox(label, 'Diverge', 'La integral impropia no converge', true);
+    res.innerHTML=resBox(label, 'Diverge', 'La integral impropia no converge', true)+resBox('Criterio analítico',r.steps.join('; '));
     return;
   }
 
   let hint='';
-  if(r.improper) hint='Integral impropia';
+  if(r.improper) hint=r.proof==='analytic'?'Integral impropia · límite analítico':'Estimación impropia · convergencia no demostrada';
   else if(r.technique&&r.technique!=='ninguna') hint='Antiderivada · '+r.technique;
   else hint='Numérico (Simpson)';
 
@@ -879,7 +886,8 @@ function calcIntegralDef(){
     steps.push(`Antiderivada:  F(x) = ${r.antiderivative}`);
     steps.push(`F(${bl(b)}) − F(${bl(a)}) = ${r.value}`);
   }
-  if(r.improper) steps.push('Límite infinito: transformación x = a + t/(1−t) sobre [0,1]');
+  if(r.improper&&r.proof==='numerical') steps.push('Transformación numérica de límite infinito sobre [0,1]');
+  if(r.refinementDifference!==null)steps.push(`Diferencia entre mallas: ${r.refinementDifference}; no es cota de error.`);
   if(r.steps&&r.steps.length) steps.push(...r.steps);
   if(steps.length){
     html+=`<div class="calc-res-box"><div class="calc-res-label">Pasos</div><div class="calc-res-hint">${steps.map(s=>String(s).replace(/</g,'&lt;')).join('<br>')}</div></div>`;
@@ -917,6 +925,15 @@ function calcIntegralNumeric(){
       :'h/3·[f(a) + 4Σf(x impar) + 2Σf(x par) + f(b)]';
     res.innerHTML=resBox('Aproximación numérica',formatResult(value,8),
       `${formula}; h=(${fN(b,5)}−${fN(a,5)})/${n}=${fN(h,6)}`,true);
+    const reference=definiteIntegral(fxStr,a,b);
+    if(reference.proof==='antiderivative'&&!reference.error)res.innerHTML+=resBox('Referencia por antiderivada',reference.value)+
+      resBox('Error absoluto frente a referencia',formatResult(Math.abs(value-reference.valueNum),10));
+    const sampleCount=method==='trapezoid'||method==='simpson'?n+1:n;
+    const mesh=Array.from({length:Math.min(sampleCount,40)},(_,i)=>{
+      const x=method==='right'?a+(i+1)*h:method==='midpoint'?a+(i+.5)*h:a+i*h;
+      return `x=${fN(x,6)}, f(x)=${fN(fn(x,0),6)}`;
+    }).join('; ');
+    res.innerHTML+=resBox('Malla y valores',mesh+(sampleCount>40?`; … ${sampleCount} puntos en total`:''));
   }catch(e){res.innerHTML=errBox(e.message);}
 }
 
@@ -962,6 +979,9 @@ function calcRevolutionVolume(){
       resBox('Integral usada',formula,radiusHint);
     if(addMode&&usesRevolutionCoefficients(`${fx} ${gx}`))
       res.innerHTML+=resBox('Coeficientes sustituidos',`m = ${parameters.m}; b = ${parameters.b}`);
+    const normalized=source=>normalizeExpression(source.replace(/^\s*y\s*=\s*/i,'').replace(/\bm\b/g,`(${parameters.m})`).replace(/\bb\b/g,`(${parameters.b})`));
+    const symbolic=polynomialRevolutionEvaluation(normalized(fx),gx?normalized(gx):'0',a,b,axis,offset);
+    if(symbolic)res.innerHTML+=resBox('Sección simbólica',symbolic.section,symbolic.assumption)+resBox('Primitiva de la sección',symbolic.antiderivative)+resBox('Evaluación simbólica',symbolic.evaluation);
     if(gn){
       const crossings=curveIntersections(fn,gn,a,b);
       if(crossings.length) res.innerHTML+=resBox('Intersecciones en [x₀, x₁]',crossings.map(p=>`(${formatResult(p.x,6)}, ${formatResult(p.y,6)})`).join(' · '));
@@ -1161,15 +1181,14 @@ function calcConservative(){
   const res=document.getElementById('res-cons');
   if(!fx||!fy){res.innerHTML=errBox('Ingresa Fx y Fy');return;}
   try{
-    const conservative=isConservative2D(fx,fy);
-    let html=resBox('¿Conservativo? (∂P/∂y = ∂Q/∂x)',
-      conservative?'Sí':'No',
-      conservative?'Campo gradiente':'No es gradiente', true);
-    if(conservative){
-      const phi=potentialFunction2D(fx,fy);
-      if(!isNaN(x0)&&!isNaN(y0))
-        html+=resBox(`Potencial φ(${x0},${y0})`, formatResult(phi(x0,y0),8), 'φ vía integral de línea');
+    let proof;
+    try { proof=polynomialPotentialStudy(fx,fy,[0,0],[Number.isFinite(x0)?x0:0,Number.isFinite(y0)?y0:0]); }
+    catch(error){
+      res.innerHTML=resBox('¿Conservativo?','No demostrado',error.message+'; una igualdad de parciales en un punto no demuestra que el campo tenga potencial global.');return;
     }
+    let html=resBox('¿Conservativo?',proof.conservative?'Sí':'No',proof.proof,true);
+    html+=resBox('Qₓ−Pᵧ',proof.curl,'Identidad de coeficientes, no muestra en un punto');
+    if(proof.conservative)html+=resBox('Potencial Φ(x,y)',proof.potential+' + C')+resBox(`Φ(${x0},${y0})−Φ(0,0)`,formatResult(proof.value,8));
     res.innerHTML=html;
   }catch(e){ res.innerHTML=errBox(e.message); }
 }
@@ -1205,15 +1224,16 @@ function calcTheorems(){
   let html='';
   if(p&&q&&![x1,x2,y1,y2].some(isNaN)){
     try{
-      html+=resBox('Green ∮ P dx + Q dy', formatResult(greenLineIntegral(p,q,x1,x2,y1,y2),8),
-        `región [${x1},${x2}]×[${y1},${y2}]`, true);
-      html+=resBox('Flujo (Gauss 2D)', formatResult(fluxDivergenceTheorem(p,q,x1,x2,y1,y2),8));
+      const green=greenRegionStudy(p,q,x1,x2,()=>y1,()=>y2,120);
+      const gauss=greenRegionStudy(`-(${q})`,p,x1,x2,()=>y1,()=>y2,120);
+      html+=resBox('Green ∮ P dx + Q dy',formatResult(green.value,8),`Rectángulo; borde positivo antihorario. Qₓ−Pᵧ=${green.curl}. ${green.assumption} Diferencia entre mallas=${formatResult(green.refinementDifference,8)}.`,true);
+      html+=resBox('Flujo (Gauss 2D)',formatResult(gauss.value,8),'Normal exterior; ∇·F='+gauss.curl);
     }catch(e){ html+=errBox('Green: '+e.message); }
   }
   if(fx&&fy&&fz&&!isNaN(R)&&R>0){
     try{
-      html+=resBox('Stokes sobre disco de radio R', formatResult(stokesLineIntegral(fx,fy,fz,R),8),
-        `F=(${fx}, ${fy}, ${fz})`, true);
+      const solved=stokesDiskStudy([fx,fy,fz],R);
+      html+=resBox('Stokes sobre disco de radio R',formatResult(solved.value,8),`${solved.orientation}. ${solved.formula} ${solved.assumption} Integral de borde=${formatResult(solved.lineIntegral,8)}; diferencia borde/superficie=${formatResult(solved.agreementDifference,8)}.`,true);
     }catch(e){ html+=errBox('Stokes: '+e.message); }
   }
   if(!html) html=errBox('Completa Green (P,Q,región) o Stokes (F,R)');
@@ -1230,7 +1250,7 @@ function calcMvLimit(){
     const r=multivariableLimit(fxy,x0,y0);
     const answer=r.status==='proved'?fmtA(String(r.value))
       :r.status==='disproved'?'No existe':'Indeterminado con este método';
-    const hint=r.status==='proved'?'Sustitución directa en una expresión continua en el punto'
+    const hint=r.status==='proved'?(r.proof||'Sustitución directa en una expresión continua en el punto')
       :r.status==='disproved'?'Dos trayectorias tienen límites distintos'
       :'Un número finito de trayectorias coincidentes no demuestra el límite';
     let html=resBox('Límite',answer,hint,true);
@@ -1246,7 +1266,7 @@ function calcExtrema(){
   const res=document.getElementById('res-extr');
   if(!fxy){res.innerHTML=errBox('Ingresa f(x,y)');return;}
   if([x1,x2,y1,y2].some(isNaN)){res.innerHTML=errBox('Ingresa la región de búsqueda');return;}
-  let html='';
+  let html=resBox('Alcance','Búsqueda numérica en la ventana: candidatos verificados, sin garantizar que sean todos.');
   try{
     const pts=criticalPoints2D(fxy,x1,x2,y1,y2);
     html+=pts.length
@@ -1397,6 +1417,7 @@ function calcIntegrateCAS(){
   if(r.steps&&r.steps.length){
     html+=`<div class="calc-res-box"><div class="calc-res-label">Pasos</div><div class="calc-res-hint">${r.steps.map(s=>String(s).replace(/</g,'&lt;')).join('<br>')}</div></div>`;
   }
+  if(r.domain?.length)html+=resBox('Condiciones suficientes en cada intervalo',r.domain.join('; '));
   res.innerHTML=html;
 }
 
@@ -1428,12 +1449,12 @@ function calcSeries(){
     const term=v('series-term');
     if(!term){res.innerHTML=errBox('Ingresa el término aₙ');return;}
     const r=ratioTest(term);
-    html=resBox('Prueba de la razón', seriesVerdict(r.conclusion), `L = lim |aₙ₊₁/aₙ| ≈ ${fN(r.L,6)}`, true);
+    html=resBox('Prueba de la razón', seriesVerdict(r.conclusion), r.proof==='analytic'?`L = lim |aₙ₊₁/aₙ| = ${fN(r.L,6)}; familia analítica admitida`:`Cociente muestreado ≈ ${fN(r.sampleRatio,6)}; no demuestra el límite`, true);
   } else if(type==='nth'){
     const term=v('series-term');
     if(!term){res.innerHTML=errBox('Ingresa el término aₙ');return;}
     const r=nthTermTest(term);
-    html=resBox('Prueba del término n-ésimo', seriesVerdict(r.conclusion), `lim aₙ ≈ ${fN(r.limit,6)}`, true);
+    html=resBox('Prueba del término n-ésimo', seriesVerdict(r.conclusion),r.proof==='analytic'?`lim aₙ = ${fN(r.limit,6)}; límite analítico. Límite 0 no prueba convergencia de la serie.`:`Término muestreado ≈ ${fN(r.sampleTerm,6)}; no demuestra el límite`, true);
   } else if(type==='taylor'){
     const fx=v('series-fx'), a=pf('series-a')||0;
     const n=parseInt(document.getElementById('series-n')?.value)||5;
@@ -1750,7 +1771,7 @@ function drawRevolutionSolid(){
   });
   renderFigure(ctx, projectFn, {
     polys: revSolidPolys,
-    color: readCanvasPalette()('ca2'),
+    color: readCanvasPalette()('graph-curve2'),
     opacity: 60,
   });
   ctx.restore();

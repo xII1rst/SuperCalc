@@ -39,7 +39,7 @@ test('renderPreview no lanza y omite los ejes cuando el 0 está fuera de rango',
   const COLORS = {
     '--graph-bg': '#ffffff', '--graph-grid': '#eeeeee',
     '--graph-axis': '#000000', '--graph-text': '#333333', '--graph-curve': '#2563eb',
-    '--graph-point': '#ef4444', '--ca2': '#34d399',
+    '--graph-point': '#ef4444', '--graph-curve2': '#34d399',
   };
   globalThis.document = { documentElement: {} };
   globalThis.getComputedStyle = () => ({ getPropertyValue: n => COLORS[n] || '' });

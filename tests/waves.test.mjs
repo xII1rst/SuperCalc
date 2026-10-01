@@ -11,7 +11,7 @@ import {
 
 const close=(actual,expected,tolerance=1e-8)=>assert.ok(Math.abs(actual-expected)<=tolerance*Math.max(1,Math.abs(expected)),`${actual} ≠ ${expected}`);
 
-test('Ondas 1–6 y 19–23: MAS, péndulo y oscilador forzado',()=>{
+test('modelos de MAS, péndulo y oscilador forzado',()=>{
   const motion=harmonicMotion(0.05,4*Math.PI,Math.PI/3,0.5);
   close(motion.position,0.025);
   close(motion.frequency,2);
@@ -28,7 +28,7 @@ test('Ondas 1–6 y 19–23: MAS, péndulo y oscilador forzado',()=>{
   assert.throws(()=>springOscillator(1,100,0,10,10),RangeError);
 });
 
-test('Ondas 15–18 y 38–41: LC, tubos y Lissajous',()=>{
+test('modelos LC, tubos y Lissajous',()=>{
   const lc=lcOscillation(0.1,100e-6,0.001,0.005);
   close(lc.omega,1/Math.sqrt(1e-5));
   close(lc.capacitorEnergy+lc.inductorEnergy,lc.totalEnergy);
@@ -39,7 +39,7 @@ test('Ondas 15–18 y 38–41: LC, tubos y Lissajous',()=>{
   close(figure.x,1);close(figure.y,0);assert.equal(figure.points.length,200);
 });
 
-test('Ondas 48–50: varias rendijas y banda de red',()=>{
+test('varias rendijas y banda de red',()=>{
   close(multipleSlitInterference(4,1e-6,500e-9,0).normalizedIntensity,1);
   close(multipleSlitInterference(4,1e-6,500e-9,Math.asin(0.125)*180/Math.PI).normalizedIntensity,0);
   const orders=gratingOrders(2e-6,550e-9,380e-9,750e-9);
@@ -49,7 +49,7 @@ test('Ondas 48–50: varias rendijas y banda de red',()=>{
   assert.throws(()=>gratingOrders(1e-6,550e-9,750e-9,380e-9),/invertida/);
 });
 
-test('Ondas 7–12, 24–30 y 42: propagación, cuerda, fasores y estacionaria',()=>{
+test('modelos de propagación, cuerda, fasores y estacionaria',()=>{
   const wave=travelingWave(0.02,3,12);
   close(wave.speed,4);
   close(wave.wavelength,2*Math.PI/3);
@@ -69,7 +69,7 @@ test('Ondas 7–12, 24–30 y 42: propagación, cuerda, fasores y estacionaria',
   close(standing.componentAmplitude,0.02);
 });
 
-test('Ondas 32–37 y 43–44: fuentes, frontera de cuerda y Mach parcial',()=>{
+test('fuentes, frontera de cuerda y rechazo de Doppler supersónico',()=>{
   close(combineSoundLevels([60,60]).decibels,60+10*Math.log10(2));
   close(pointSourceSound(50,10).intensity,50/(400*Math.PI));
   const boundary=stringBoundary(100,0.01,0.04);
@@ -78,7 +78,7 @@ test('Ondas 32–37 y 43–44: fuentes, frontera de cuerda y Mach parcial',()=>{
   assert.throws(()=>dopplerFrequency(1000,343,350),RangeError);
 });
 
-test('Ondas 14 y 45–50: intensidad EM, polarizadores, Young, película y anillos',()=>{
+test('modelos de intensidad EM, polarizadores, Young, película y anillos',()=>{
   const em=electromagneticWave(300);
   close(em.magneticPeak,300/WAVE_C);
   close(em.peakPoynting,2*em.averageIntensity);

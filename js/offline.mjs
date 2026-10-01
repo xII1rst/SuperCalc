@@ -3,7 +3,7 @@ function showUpdateBanner(){
   if(document.getElementById('update-banner')) return;
   const banner=document.createElement('div');
   banner.id='update-banner';
-  banner.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--al2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:Space Grotesk,sans-serif;color:var(--text);font-size:13px';
+  banner.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--al2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:var(--font-ui);color:var(--text);font-size:15px';
   banner.innerHTML='<span>Hay una versión nueva de SuperCalc disponible.</span><button type="button" data-action="reloadApp" style="padding:7px 16px;background:var(--al2);color:var(--on-accent);border:none;border-radius:8px;font-weight:700;cursor:pointer">Actualizar</button>';
   document.body.appendChild(banner);
 }
@@ -28,8 +28,8 @@ function showInstallBanner(){
   if(document.getElementById('install-banner'))return;
   const b=document.createElement('div');
   b.id='install-banner';
-  b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:Space Grotesk,sans-serif;box-shadow:0 -4px 20px var(--panel-shadow)';
-  b.innerHTML='<div style="font-size:13px;color:var(--text);font-weight:600"><svg class="sc-icon" aria-hidden="true" style="width:16px;height:16px;display:inline-block;vertical-align:-3px;color:var(--al)"><use href="#sc-icon-phone"></use></svg> Añadir <span style="color:var(--al2)">SuperCalc</span> a inicio</div><div style="display:flex;gap:8px"><button data-action="installApp" style="padding:7px 16px;background:var(--gold);color:var(--on-accent);border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Instalar</button><button data-action="dismissInstall" style="padding:7px 12px;background:none;border:1px solid var(--border);color:var(--text2);border-radius:8px;font-size:12px;cursor:pointer">Ahora no</button></div>';
+  b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999;font-family:var(--font-ui);box-shadow:0 -4px 20px var(--panel-shadow)';
+  b.innerHTML='<div style="font-size:15px;color:var(--text);font-weight:600"><svg class="sc-icon" aria-hidden="true" style="width:16px;height:16px;display:inline-block;vertical-align:-3px;color:var(--al)"><use href="#sc-icon-phone"></use></svg> Añadir <span style="color:var(--al2)">SuperCalc</span> a inicio</div><div style="display:flex;gap:8px"><button data-action="installApp" style="padding:7px 16px;background:var(--gold);color:var(--on-accent);border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">Instalar</button><button data-action="dismissInstall" style="padding:7px 12px;background:none;border:1px solid var(--border);color:var(--text2);border-radius:8px;font-size:14px;cursor:pointer">Ahora no</button></div>';
   document.body.appendChild(b);
 }
 function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{

@@ -1,3 +1,4 @@
+import { polynomialRadialLimit } from './multivariable-study.mjs';
 // Cálculo multivariable numérico y simbólico (sin DOM): derivadas parciales
 // mixtas y 3D, límites por trayectorias, puntos críticos con clasificación por
 // Hessiano, multiplicadores de Lagrange, derivada direccional, integrales dobles
@@ -48,6 +49,7 @@ function requireFn(...fns) {
 // Se deriva sobre un único AST para evitar reparsear la cadena intermedia.
 export function mixedPartial(fxyStr, ordX, ordY) {
   try {
+    if(!Number.isInteger(ordX)||!Number.isInteger(ordY)||ordX<0||ordY<0||ordX+ordY>4||fxyStr.length>400)throw new RangeError('Órdenes 0–4');
     let ast = parseExpr(tokenize(fxyStr));
     for (let i = 0; i < ordX; i++) ast = simplify(collectTerms(simplify(diffAST(ast, 'x'))));
     for (let i = 0; i < ordY; i++) ast = simplify(collectTerms(simplify(diffAST(ast, 'y'))));
@@ -80,6 +82,7 @@ export function multivariableLimit(fxyStr, x0, y0) {
   requireFn(f);
   if (!Number.isFinite(x0) || !Number.isFinite(y0)) throw new RangeError('Punto inválido');
 
+  if(x0===0&&y0===0){try{const proof=polynomialRadialLimit(fxyStr);return {status:'proved',exists:true,value:0,method:'encaje radial',proof:proof.proof,paths:[]};}catch{}}
   const normalized=normalizeExpression(fxyStr);
   const powers=[...normalized.matchAll(/\^/g)];
   const rational = /^[0-9xy+\-*/^().\s]+$/.test(normalized)
@@ -126,7 +129,8 @@ export function directionalDerivative(fxyStr, x0, y0, dir) {
   const f = f2(fxyStr);
   requireFn(f);
   const grad = gradient2D(f, x0, y0);
-  const m = Math.hypot(dir.x, dir.y) || 1;
+  const m = Math.hypot(dir.x, dir.y);
+  if(!Number.isFinite(m)||m===0)throw new RangeError('Dirección finita no nula requerida');
   return grad.fx * (dir.x / m) + grad.fy * (dir.y / m);
 }
 
@@ -176,8 +180,9 @@ export function criticalPoints2D(fxyStr, x1, x2, y1, y2, grid = 24) {
       const g = gradient2D(f, px, py);
       return [g.fx, g.fy];
     }, cx, cy);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-    if (pts.some(([px, py]) => Math.hypot(px - x, py - y) < 1e-3)) continue;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x<x1 || x>x2 || y<y1 || y>y2) continue;
+    if (!Number.isFinite(mag(x,y)) || mag(x,y)>1e-12) continue;
+    if (pts.some(p => Math.hypot(p.x - x, p.y - y) < 1e-3)) continue;
     const h = 1e-4;
     const fxx = (gradient2D(f, x + h, y).fx - gradient2D(f, x - h, y).fx) / (2 * h);
     const fyy = (gradient2D(f, x, y + h).fy - gradient2D(f, x, y - h).fy) / (2 * h);
@@ -219,7 +224,8 @@ export function lagrangeMultipliers(fxyStr, gxyStr, c, x1, x2, y1, y2, grid = 16
   const out = [];
   for (const [cx, cy] of seeds) {
     const [x, y] = newton2(F, cx, cy);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x<x1 || x>x2 || y<y1 || y>y2) continue;
+    if(F(x,y).some(v=>!Number.isFinite(v)||Math.abs(v)>1e-6))continue;
     if (out.some(p => Math.hypot(p.x - x, p.y - y) < 1e-3)) continue;
     const gxv = gx(x, y);
     const lambda = Math.abs(gxv) > 1e-9 ? fx(x, y) / gxv : (Math.abs(gy(x, y)) > 1e-9 ? fy(x, y) / gy(x, y) : NaN);

@@ -65,7 +65,7 @@ export function renderGraphCanvas(cv,fn,pts,N){
 
   // ── Marcas y números en los ejes ──
   ctx.fillStyle = color('graph-text');
-  ctx.font = `${10}px Space Mono, monospace`;
+  ctx.font = `${10}px JetBrains Mono, ui-monospace, monospace`;
   ctx.strokeStyle = color('graph-axis');
   ctx.lineWidth = 1;
   // eje X: números

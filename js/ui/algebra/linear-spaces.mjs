@@ -1,11 +1,21 @@
 import {
   gramSchmidt, coordinatesInBasis, changeOfBasis, projectOntoSpan,
-  linearTransformation, representationInBases, matrixPowerByDiagonalization,
+  linearTransformation, representationInBases, matrixPowerByDiagonalization, spanMembership, homogeneousSubspace, determinantIdentities, repeatedEigenvalueParameter, orthogonalDiagonalization, rotationReflection, vectorApplications, transformationFromExpressions, transformationFromImages, representationFromExpressions,
 } from '../../math/algebra/linear-spaces.mjs';
 import { affineParameterSystem, similarityMatrix } from '../../math/algebra/parameter-systems.mjs';
 import { fN } from '../../utils/format.mjs';
 
 const modes = {
+  representationformulas: {fields:[['expressions','Componentes de T, una fórmula por línea','2*x+y\nx-y\n3*y'],['variables','Variables del dominio, en orden','x,y'],['from','Base B del dominio, un vector por línea','1,1\n0,1'],['to','Base C del codominio, un vector por línea','1,0,0\n0,1,0\n0,0,1']]},
+  formulas: {fields:[['expressions','Componentes de T, una fórmula por línea','x+y\nx-y'],['variables','Variables del dominio, en orden','x,y'],['target','Vector para evaluar T','0,0']]},
+  images: {fields:[['images','Imágenes T(eⱼ), una por línea (serán columnas de A)','1,2\n0,1\n3,-1'],['target','Vector para evaluar T','2,-1,4']]},
+  vectors: {fields:[['u','Vector u (2 o 3 coordenadas)','2, -1, 3'],['v','Vector v','1, 4, -2'],['a','Escalar a en au+bv','3'],['b','Escalar b','-2'],['w','Vector w opcional para volumen en ℝ³','']]},
+  span: {fields:[['vectors','Generadores: un vector por línea','1, 2, 3\n0, 1, 2'],['target','Vector objetivo','4, 5, 6']]},
+  subspace: {fields:[['matrix','A: ecuaciones de Ax=b, una fila por línea','1, 1, -1'],['rhs','b (ceros para subespacio)','0']]},
+  detproperties: {fields:[['determinant','det(A)','5'],['order','Orden n (1–8)','3'],['scalar','k en det(kA)','2'],['exponent','Potencia p (0–50)','3']]},
+  repeated: {fields:[['a','a de A=[[a,k],[c,d]]','2'],['d','d','3'],['c','c','1']]},
+  orthogonal: {fields:[['matrix','Matriz simétrica A','2, 2\n2, -1']]},
+  rotation: {fields:[['angle','Ángulo antihorario (grados)','45'],['exponent','Potencia k (0–50)','8'],['axis','Eje de reflexión: x o y','x']]},
   gram: {fields:[['vectors','Vectores, uno por línea','1, 1, 0\n1, 0, 1']]},
   coordinates: {fields:[['basis','Vectores de la base, uno por línea','1, 1\n1, -1'],['target','Vector objetivo','3, 1']]},
   change: {fields:[['from','Base B₁, un vector por línea','1, 2\n0, 1'],['to','Base B₂, un vector por línea','1, 1\n2, 3']]},
@@ -61,16 +71,53 @@ export function linearCalculate() {
   const mode=document.getElementById('linear-mode').value;
   const target=document.getElementById('linear-result');
   const read=key=>document.getElementById(`linear-${key}`).value;
+  const num=key=>{const raw=read(key).trim();if(!raw||!Number.isFinite(Number(raw)))throw new RangeError(`${key}: número finito requerido`);return Number(raw);};
   try {
     let title='', details='';
-    if (mode==='gram') {
+    if(mode==='representationformulas') {
+      const r=representationFromExpressions(read('expressions').split(/[;\n]+/).map(s=>s.trim()).filter(Boolean),read('variables').split(/[,\s]+/).filter(Boolean),parseRows(read('from')),parseRows(read('to')));
+      title='Matriz entre bases desde fórmulas de T';
+      details=steps([...r.steps,`Matriz canónica A = ${matrix(r.canonical)}`,r.formula,`[T]ᶜᵦ = ${matrix(r.matrix)}`,r.assumption]);
+    } else if(mode==='formulas'||mode==='images') {
+      const r=mode==='formulas'?transformationFromExpressions(read('expressions').split(/[;\n]+/).map(s=>s.trim()).filter(Boolean),read('variables').split(/[,\s]+/).filter(Boolean),parseVector(read('target'))):transformationFromImages(parseRows(read('images')),parseVector(read('target')));
+      title='Matriz canónica de transformación lineal';
+      details=steps([...r.steps,`A = ${matrix(r.matrix)}`,`Imágenes T(eⱼ) = ${r.images.map(vector).join(', ')}.`,`T(x) = Ax = ${vector(r.output)}.`,`rango(A) = ${r.spaces.rank}; nulidad(A) = ${r.spaces.nullity}.`,`Base del núcleo = ${r.spaces.kernelBasis.map(vector).join(', ')||'conjunto vacío (núcleo {0})'}.`,`Base de la imagen = ${r.spaces.columnBasis.map(vector).join(', ')||'conjunto vacío'}.`,...r.spaces.steps,r.assumption]);
+    } else if(mode==='vectors') {
+      const r=vectorApplications(parseVector(read('u')),parseVector(read('v')),num('a'),num('b'),read('w').trim()?parseVector(read('w')):null);
+      title='Operaciones, unitario y volumen';
+      details=steps([...r.steps,`u+v = ${vector(r.sum)}; au+bv = ${vector(r.combination)}.`,`u·v = ${fN(r.dot)}; ||u|| = ${fN(r.norm)}; unitario = ${r.unit?vector(r.unit):'no existe: u=0'}.`,...(r.cross?[`u×v = ${vector(r.cross)}.`]:[]),...(r.volume!==undefined?[`Producto triple orientado = ${fN(r.signedTriple)}; volumen = ${fN(r.volume)}.`]:[]),r.assumption]);
+    } else if(mode==='span') {
+      const r=spanMembership(parseRows(read('vectors')),parseVector(read('target')));
+      title='Independencia, base y pertenencia al generado';
+      details=steps([...r.steps,`rango(G) = ${r.rank}; dimensión ambiente = ${r.dimension}.`,`Generadores ${r.independent?'independientes':'dependientes'}; ${r.isBasis?'forman base del espacio ambiente':'no forman base del espacio ambiente'}.`,...r.solution.steps,r.belongs?`El objetivo pertenece: coeficientes c = ${vector(r.coefficients)}; Gc=v.`:'El objetivo no pertenece: sistema incompatible.',...(r.belongs&&r.coefficientDirections.length?[`Otras combinaciones: c=c₀+Σtᵢnᵢ, direcciones ${r.coefficientDirections.map(vector).join(', ')}.`]:[])]);
+    } else if(mode==='subspace') {
+      const r=homogeneousSubspace(parseRows(read('matrix')),parseVector(read('rhs')));
+      title=r.isSubspace?'Subespacio: demostración y base':'No es subespacio';
+      details=steps([r.formula,...r.steps,...(r.isSubspace?[`Base de W = ${r.spaces.kernelBasis.map(vector).join(', ')||'conjunto vacío'}; dimensión = ${r.spaces.nullity}.`,...r.spaces.steps]:[])]);
+    } else if(mode==='detproperties') {
+      const r=determinantIdentities(num('determinant'),num('order'),num('scalar'),num('exponent'));
+      title='Identidades del determinante';
+      details=steps([...r.steps,`det(kA) = ${fN(r.values.scaled)}; det(A⁻¹) = ${r.values.inverse===null?'no existe inversa':fN(r.values.inverse)}; det(A^p) = ${fN(r.values.powered)}; det(Aᵀ) = ${fN(r.values.transpose)}; det(adj A) = ${fN(r.values.adjugate)}.`,r.assumption]);
+    } else if(mode==='repeated') {
+      const r=repeatedEigenvalueParameter(num('a'),num('d'),num('c'));
+      title='Parámetro para valor propio repetido';
+      details=steps([...r.steps,`Estado: ${r.status}.`,...(r.k!==undefined?[`k = ${fN(r.k)}; valor propio doble λ = ${fN(r.lambda)}.`,`Base del espacio propio = ${r.eigenspace.map(vector).join(', ')}; multiplicidad geométrica = ${r.geometricMultiplicity}.`]:[]),r.assumption]);
+    } else if(mode==='orthogonal') {
+      const r=orthogonalDiagonalization(parseRows(read('matrix')));
+      title='Diagonalización ortogonal';
+      details=r.status!=='diagonalized'?steps([r.reason]):steps([r.formula,`P = ${matrix(r.P)}`,`D = ${matrix(r.D)}`,`Residuo AP−PD = ${fN(r.residual)}; residuo PᵀP−I = ${fN(r.orthogonalityResidual)}.`,r.assumption]);
+    } else if(mode==='rotation') {
+      const r=rotationReflection(num('angle'),num('exponent'),read('axis').trim());
+      title='Composición y potencia de rotación';
+      details=steps([...r.steps,`T = ${matrix(r.rotation)}`,`S = ${matrix(r.reflection)}`,`S∘T = ST = ${matrix(r.composition)}`,`T^${r.power} = ${matrix(r.powered)}`,r.assumption]);
+    } else if (mode==='gram') {
       const result=gramSchmidt(parseRows(read('vectors')));
       title='Gram-Schmidt';
       details=steps([
         ...result.steps.map(step=>step.status==='dependent'
           ? `v${step.index+1} es combinación de los anteriores: no añade dimensión.`
           : `u${step.index+1} = v${step.index+1} − Σ proy anteriores = ${vector(step.orthogonal)}; ||u|| = ${fN(step.length)}.`),
-        `Rango = ${result.rank}; base ortonormal = ${result.orthonormal.map(vector).join(', ') || '{0}'}.`,
+        `Rango = ${result.rank}; base ortonormal = ${result.orthonormal.map(vector).join(', ') || 'conjunto vacío'}.`,
       ]);
     } else if (mode==='coordinates') {
       const result=coordinatesInBasis(parseRows(read('basis')),parseVector(read('target')));
@@ -93,8 +140,8 @@ export function linearCalculate() {
       title='Transformación lineal';
       details=steps([`T(x) = Ax = ${vector(result.output)}.`,
         `rango(A) = ${result.spaces.rank}; nulidad(A) = ${result.spaces.nullity}.`,
-        `Base de imagen: ${result.spaces.columnBasis.map(vector).join(', ') || '{0}'}.`,
-        `Base de núcleo: ${result.spaces.kernelBasis.map(vector).join(', ') || '{0}'}.`]);
+        `Base de imagen: ${result.spaces.columnBasis.map(vector).join(', ') || 'conjunto vacío'}.`,
+        `Base de núcleo: ${result.spaces.kernelBasis.map(vector).join(', ') || 'conjunto vacío (núcleo {0})'}.`,...result.spaces.steps]);
     } else if (mode==='representation') {
       const result=representationInBases(parseRows(read('matrix')),parseRows(read('from')),parseRows(read('to')));
       title='Matriz de transformación entre bases';
@@ -106,7 +153,7 @@ export function linearCalculate() {
       const result=matrixPowerByDiagonalization(A,Number(raw));
       title='Diagonalización y potencia';
       if (result.status!=='diagonalized') details=steps([`Estado: ${result.reason}.`, 'No se presenta una potencia por diagonalización sin n autovectores reales verificados.']);
-      else details=steps([`A = P D P⁻¹; residuo máximo de AP − PD = ${fN(result.residual)}.`,
+      else details=steps([`χ(λ)=det(λI−A); vectores de ker(A−λI) normalizados.`, `A = P D P⁻¹; residuo máximo de AP − PD = ${fN(result.residual)}.`,
         `P = ${matrix(result.P)}`,`D = ${matrix(result.D)}`,`${result.formula}; A^${result.exponent} = ${matrix(result.value)}`]);
     } else if (mode==='affine') {
       const result=affineParameterSystem(parseRows(read('a0')),parseRows(read('at')),parseVector(read('b0')),parseVector(read('bu')));

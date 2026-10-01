@@ -1,3 +1,6 @@
+import { derivativeDetails } from './calculus.mjs';
+import { vdot, vcross } from './algebra/vector.mjs';
+
 export const MECH_G=9.80665;
 export const MECH_BIG_G=6.67430e-11;
 
@@ -11,6 +14,93 @@ function positive(value,label) {
   return value;
 }
 const radians=degrees=>degrees*Math.PI/180;
+
+function vector3(vector) {
+  if(!Array.isArray(vector)||vector.length!==3||!vector.every(Number.isFinite))throw new RangeError('Introduce tres componentes finitas por vector.');
+  return {vx:vector[0],vy:vector[1],vz:vector[2]};
+}
+export function vectorPair(first,second) {
+  const a=vector3(first),b=vector3(second),magnitudeA=Math.hypot(...first),magnitudeB=Math.hypot(...second);
+  const dot=vdot(a,b,3),cross=Object.values(vcross(a,b));
+  return {sum:first.map((x,i)=>x+second[i]),difference:first.map((x,i)=>x-second[i]),magnitudeA,magnitudeB,dot,cross,
+    angleDegrees:magnitudeA&&magnitudeB?Math.acos(Math.max(-1,Math.min(1,dot/(magnitudeA*magnitudeB))))*180/Math.PI:null,
+    parallelogramArea:Math.hypot(...cross)};
+}
+export function polarForce(magnitude,angleDegrees) {
+  finite(magnitude,'Magnitud');finite(angleDegrees,'Ángulo');
+  if(magnitude<0)throw new RangeError('La magnitud no puede ser negativa.');
+  return {resultant:[magnitude*Math.cos(radians(angleDegrees)),magnitude*Math.sin(radians(angleDegrees))],magnitude,angleDegrees};
+}
+export function particleKinematics(expressions,time) {
+  finite(time,'Tiempo');
+  if(!Array.isArray(expressions)||expressions.length<2||expressions.length>3)throw new RangeError('Introduce dos o tres funciones de t.');
+  const first=expressions.map(expr=>derivativeDetails(expr,1,'t')),second=expressions.map(expr=>derivativeDetails(expr,2,'t'));
+  if([...first,...second].some(r=>!r))throw new RangeError('Componente no admitida para derivación simbólica.');
+  const v=first.map(r=>r.evaluate(time)),a=second.map(r=>r.evaluate(time));
+  if([...v,...a].some(r=>r.status!=='evaluated'))throw new RangeError('El punto queda fuera del dominio de una componente o sus derivadas.');
+  const velocity=v.map(r=>r.value),acceleration=a.map(r=>r.value);
+  return {position:v.map(r=>r.functionValue),velocity,acceleration,speed:Math.hypot(...velocity),
+    velocityFormula:first.map(r=>r.derivative),accelerationFormula:second.map(r=>r.derivative),assumption:'Componentes en metros, t en segundos; derivadas simbólicas en el dominio real.'};
+}
+export function workByForce(force,distance,angleDegrees) {
+  finite(force,'Fuerza');finite(distance,'Desplazamiento');finite(angleDegrees,'Ángulo');
+  if(force<0||distance<0)throw new RangeError('Magnitudes de fuerza y desplazamiento no negativas.');
+  return {work:force*distance*Math.cos(radians(angleDegrees)),assumption:'Fuerza constante; ángulo entre fuerza y desplazamiento.'};
+}
+export function averagePower(work,time) {
+  finite(work,'Trabajo');positive(time,'Tiempo');return {power:work/time};
+}
+export function linearImpulse(mass,initialVelocity,finalVelocity) {
+  positive(mass,'Masa');finite(initialVelocity,'Velocidad inicial');finite(finalVelocity,'Velocidad final');
+  return {momentum:mass*initialVelocity,finalMomentum:mass*finalVelocity,impulse:mass*(finalVelocity-initialVelocity)};
+}
+export function gravitationalAttraction(firstMass,secondMass,distance) {
+  positive(firstMass,'Masa 1');positive(secondMass,'Masa 2');positive(distance,'Separación');
+  return {magnitude:MECH_BIG_G*firstMass*secondMass/distance**2,assumption:'Masas puntuales o cuerpos esféricos; separación entre centros, fuerza atractiva.'};
+}
+export function tablePulley(tableMass,hangingMass,kineticFriction,gravity=MECH_G) {
+  positive(tableMass,'Masa en mesa');positive(hangingMass,'Masa colgante');positive(gravity,'Gravedad');finite(kineticFriction,'Fricción');
+  if(kineticFriction<0)throw new RangeError('Fricción no negativa.');
+  const normal=tableMass*gravity,friction=kineticFriction*normal;
+  const acceleration=(hangingMass*gravity-friction)/(tableMass+hangingMass);
+  const tensionOne=tableMass*acceleration+friction,tensionTwo=hangingMass*(gravity-acceleration);
+  return {normal,friction,acceleration,tensionOne,tensionTwo,
+    assumption:'Cuerda y polea ideales; fricción cinética, masa colgante desciende. Si a≤0, el inicio desde reposo requiere analizar fricción estática.'};
+}
+export function springLaunch(stiffness,compression,mass) {
+  positive(stiffness,'Constante de resorte');positive(mass,'Masa');finite(compression,'Compresión');
+  if(compression<0)throw new RangeError('Compresión no negativa.');
+  const initialEnergy=.5*stiffness*compression**2;
+  return {initialEnergy,speed:Math.sqrt(2*initialEnergy/mass),assumption:'Toda la energía del resorte pasa a energía cinética; sin rozamiento.'};
+}
+export function ballisticPendulum(bulletMass,bulletSpeed,blockMass,gravity=MECH_G) {
+  positive(bulletMass,'Masa de bala');positive(blockMass,'Masa de bloque');positive(gravity,'Gravedad');finite(bulletSpeed,'Rapidez');
+  if(bulletSpeed<0)throw new RangeError('Rapidez no negativa.');
+  const totalMass=bulletMass+blockMass,speed=bulletMass*bulletSpeed/totalMass;
+  return {speed,height:speed**2/(2*gravity),lostEnergy:.5*bulletMass*bulletSpeed**2-.5*totalMass*speed**2,
+    assumption:'Bala incrustada: momentum conservado durante impacto; después energía mecánica conservada al subir.'};
+}
+export function angularMomentumVector(mass,position,velocity) {
+  positive(mass,'Masa');vector3(velocity);const r=vector3(position),p=vector3(velocity.map(v=>mass*v));
+  return {angularMomentumVector:Object.values(vcross(r,p)),assumption:'Momento respecto al origen, L=r×mv.'};
+}
+export function potentialEquilibria(coefficients) {
+  if(!Array.isArray(coefficients)||coefficients.length!==4||!coefficients.every(Number.isFinite))throw new RangeError('Introduce a,b,c,d para U=ax³+bx²+cx+d.');
+  const [a,b,c]=coefficients;
+  if(a===0&&b===0)return {equilibria:[],assumption:c===0?'Potencial constante: todo x es equilibrio indiferente.':'Fuerza constante no nula: no hay equilibrio.'};
+  let roots;
+  if(a===0)roots=[-c/(2*b)];
+  else{
+    const scale=Math.max(Math.abs(a),Math.abs(b),Math.abs(c)),A=3*(a/scale),B=2*(b/scale),C=c/scale;
+    const discriminant=B*B-4*A*C;
+    if(discriminant<0)roots=[];
+    else if(discriminant===0)roots=[-B/(2*A)];
+    else {const q=-.5*(B+(B>=0?1:-1)*Math.sqrt(discriminant));roots=[q/A,C/q].sort((x,y)=>x-y);}
+  }
+  return {equilibria:roots.map(x=>({position:x,curvature:6*a*x+2*b,
+    stability:6*a*x+2*b>0?'estable':6*a*x+2*b<0?'inestable':'sin extremo: inflexión estacionaria, inestable'})),
+    assumption:'F=−U′; U polinómica hasta grado 3. U″>0: mínimo estable; U″<0: máximo inestable.'};
+}
 
 export function forceSystem2D(forces,origin=[0,0]) {
   if (!Array.isArray(forces)||!forces.length||forces.length>50||forces.some(item=>!Array.isArray(item.force)||item.force.length!==2
@@ -121,7 +211,8 @@ export function collisionTwoDimensional(massOne,firstInitial,massTwo,secondIniti
   positive(massOne,'Primera masa');positive(massTwo,'Segunda masa');
   for (const value of [firstInitial,secondInitial,firstFinal]) if (!Array.isArray(value)||value.length!==2||value.some(v=>!Number.isFinite(v))) throw new RangeError('Velocidades 2D inválidas');
   const secondFinal=firstInitial.map((value,i)=>(massOne*value+massTwo*secondInitial[i]-massOne*firstFinal[i])/massTwo);
-  return {secondFinal,initialMomentum:firstInitial.map((value,i)=>massOne*value+massTwo*secondInitial[i])};
+  const initialEnergy=.5*massOne*firstInitial.reduce((s,v)=>s+v*v,0)+.5*massTwo*secondInitial.reduce((s,v)=>s+v*v,0),finalEnergy=.5*massOne*firstFinal.reduce((s,v)=>s+v*v,0)+.5*massTwo*secondFinal.reduce((s,v)=>s+v*v,0);
+  return {firstFinal:firstFinal.slice(),secondFinal,initialMomentum:firstInitial.map((value,i)=>massOne*value+massTwo*secondInitial[i]),initialEnergy,finalEnergy,energyChange:finalEnergy-initialEnergy,assumption:'Momentum conservado; no se impone energía cinética constante. Un aumento de energía requiere aporte energético; solo ΔE=0 es compatible con impacto elástico.'};
 }
 
 export function centerOfMass(particles) {
@@ -139,7 +230,8 @@ export function kineticDecomposition(particles) {
   const totalKinetic=particles.reduce((sum,item)=>sum+0.5*item.mass*(item.velocity[0]**2+item.velocity[1]**2),0);
   const centerKinetic=0.5*center.totalMass*(centerVelocity[0]**2+centerVelocity[1]**2);
   const angularMomentum=particles.reduce((sum,item)=>sum+item.mass*(item.position[0]*item.velocity[1]-item.position[1]*item.velocity[0]),0);
-  return {...center,centerVelocity,totalKinetic,centerKinetic,relativeKinetic:totalKinetic-centerKinetic,angularMomentum};
+  return {...center,centerVelocity,totalKinetic,centerKinetic,relativeKinetic:totalKinetic-centerKinetic,angularMomentum,
+    ...(particles.length===2?{reducedMass:particles[0].mass*particles[1].mass/center.totalMass}:{})};
 }
 
 export function standardInertia(shape,mass,size) {
@@ -213,5 +305,6 @@ export function rotatingFrameVelocity(inertialVelocity,position,angularVelocity)
   if (![inertialVelocity,position].every(vector=>Array.isArray(vector)&&vector.length===2&&vector.every(value=>Number.isFinite(value)))) throw new RangeError('Vectores 2D inválidos');
   finite(angularVelocity,'Velocidad angular');
   const rotational=[-angularVelocity*position[1],angularVelocity*position[0]];
-  return {rotational,relative:inertialVelocity.map((value,i)=>value-rotational[i])};
+  return {rotational,relative:inertialVelocity.map((value,i)=>value-rotational[i]),
+    assumption:'Origen común sin traslación; ω sobre +z, vectores expresados en los mismos ejes instantáneos.'};
 }

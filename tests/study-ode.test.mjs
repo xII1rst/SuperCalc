@@ -65,7 +65,7 @@ test('EDO 21–22: factor x^a y sustitución z=1/y',()=>{
   const logCase=linearPowerCoefficient(1,2,-2,1,3,Math.E);
   near(logCase.value,5/Math.E);
   assert.match(logCase.solution,/ln/);
-  assert.throws(()=>linearPowerCoefficient(2,1,3,-1,0,2),/positivo/);
+  assert.throws(()=>linearPowerCoefficient(2,1,3,-1,0,2),/no nulos/);
   const bernoulli=bernoulliLinearForcing(1,1,0,1);
   near(bernoulli.value,1/2);
   near(bernoulli.derivative,-1/4);

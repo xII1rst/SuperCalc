@@ -104,6 +104,9 @@ export function iterativeLinearSystem(matrix, rhs, initial, options = {}) {
   const limit=fixed?count(options.iterations,'Iteraciones'):count(options.maxIterations??100,'Máximo de iteraciones');
   const tolerance=options.tolerance??1e-8;
   if (!(tolerance>0 && Number.isFinite(tolerance))) throw new RangeError('La tolerancia debe ser positiva');
+  const stopCriterion=options.stopCriterion??'both';
+  if(!['both','change'].includes(stopCriterion))throw new RangeError('Criterio de parada inválido');
+  const dominance=matrix.map((row,i)=>Math.abs(row[i])-row.reduce((s,v,j)=>s+(i===j?0:Math.abs(v)),0));
   let current=[...initial];
   const history=[];
   for (let iteration=1;iteration<=limit;iteration++) {
@@ -113,14 +116,14 @@ export function iterativeLinearSystem(matrix, rhs, initial, options = {}) {
       for (let col=0;col<n;col++) if (col!==row) sum-=matrix[row][col]*(method==='seidel'?next[col]:current[col]);
       next[row]=sum/matrix[row][row];
     }
-    if (next.some(v=>!Number.isFinite(v)||Math.abs(v)>1e100)) return {status:'diverged',history,solution:current,method};
+    if (next.some(v=>!Number.isFinite(v)||Math.abs(v)>1e100)) return {status:'diverged',history,solution:current,method,stopCriterion,dominance,strictlyDominant:dominance.every(m=>m>0)};
     const difference=Math.max(...next.map((value,i)=>Math.abs(value-current[i])));
     const residual=Math.max(...matrix.map((row,i)=>Math.abs(row.reduce((sum,value,j)=>sum+value*next[j],0)-rhs[i])));
     history.push({iteration,vector:[...next],difference,residual});
     current=next;
-    if (!fixed && difference<=tolerance && residual<=tolerance) return {status:'converged',history,solution:current,method};
+    if (!fixed && difference<=tolerance && (stopCriterion==='change'||residual<=tolerance)) return {status:'converged',history,solution:current,method,stopCriterion,dominance,strictlyDominant:dominance.every(m=>m>0)};
   }
-  return {status:fixed?'fixed_steps':'max_iterations',history,solution:current,method};
+  return {status:fixed?'fixed_steps':'max_iterations',history,solution:current,method,stopCriterion,dominance,strictlyDominant:dominance.every(m=>m>0)};
 }
 
 function checkedPoints(points) {

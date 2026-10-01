@@ -1,3 +1,4 @@
+import { realPolynomialRoots } from './polynomial.mjs';
 // Álgebra lineal: matrices independientes del navegador.
 
 export function matMul(A, B) {
@@ -99,12 +100,17 @@ export function matGauss(A,b) {
     ||A.some(row=>row.some(v=>!Number.isFinite(v)))||b.some(v=>!Number.isFinite(v))){
     throw new RangeError('Matriz o vector de términos inválidos');
   }
-  const aug=A.map((row,i)=>[...row,b[i]]);
-  const scaleA=Math.max(...A.flat().map(Math.abs));
-  const scaleB=Math.max(...b.map(Math.abs));
-  const tolA=1e-10*scaleA, tolB=1e-10*scaleB;
   const steps=[], pivots=[];
   const display=v=>String(Number(v.toPrecision(8)));
+  const aug=A.map((row,i)=>{
+    const rowScale=Math.max(...row.map(Math.abs))||Math.abs(b[i])||1;
+    if(rowScale!==1)steps.push(`F${i+1} ← F${i+1} / ${display(rowScale)} (escala inicial)`);
+    const scaled=[...row.map(v=>v/rowScale),b[i]/rowScale];
+    if(scaled.some(v=>!Number.isFinite(v)))throw new RangeError('El sistema supera el rango numérico');
+    return scaled;
+  });
+  const rhsMagnitude=aug.map(row=>Math.abs(row[cols]));
+  const tolA=1e-10;
   let rank=0;
   for(let col=0;col<cols&&rank<rows;col++){
     let maxRow=rank;
@@ -112,21 +118,28 @@ export function matGauss(A,b) {
     if(Math.abs(aug[maxRow][col])<=tolA) continue;
     if(maxRow!==rank){
       [aug[rank],aug[maxRow]]=[aug[maxRow],aug[rank]];
+      [rhsMagnitude[rank],rhsMagnitude[maxRow]]=[rhsMagnitude[maxRow],rhsMagnitude[rank]];
       steps.push(`F${rank+1} ↔ F${maxRow+1}`);
     }
     const pivot=aug[rank][col];
     for(let j=col;j<=cols;j++) aug[rank][j]/=pivot;
+    rhsMagnitude[rank]/=Math.abs(pivot);
     steps.push(`F${rank+1} ← F${rank+1} / ${display(pivot)}`);
     for(let r=0;r<rows;r++){
       if(r===rank||Math.abs(aug[r][col])<=tolA) continue;
       const factor=aug[r][col];
       for(let j=col;j<=cols;j++) aug[r][j]-=factor*aug[rank][j];
+      rhsMagnitude[r]+=Math.abs(factor)*rhsMagnitude[rank];
       steps.push(`F${r+1} ← F${r+1} − (${display(factor)})·F${rank+1}`);
     }
     pivots.push(col);
     rank++;
   }
-  for(const row of aug) for(let j=0;j<=cols;j++) if(Math.abs(row[j])<=(j===cols?tolB:tolA)) row[j]=0;
+  if(aug.flat().some(v=>!Number.isFinite(v)))throw new RangeError('El sistema supera el rango numérico');
+  for(const [i,row]of aug.entries()) {
+    for(let j=0;j<cols;j++)if(Math.abs(row[j])<=tolA)row[j]=0;
+    if(row.slice(0,cols).every(v=>v===0)&&Math.abs(row[cols])<=1e-10*rhsMagnitude[i])row[cols]=0;
+  }
   const inconsistent=aug.some(row=>row.slice(0,cols).every(v=>v===0)&&row[cols]!==0);
   const status=inconsistent?'inconsistent':rank===cols?'unique':'infinite';
   const free=Array.from({length:cols},(_,i)=>i).filter(i=>!pivots.includes(i));
@@ -141,7 +154,8 @@ export function matGauss(A,b) {
   return {
     sol:status==='unique'?particular.map(toFrac2):null,
     status, inconsistent, rankA:rank, rankAug:rank+(inconsistent?1:0),
-    pivots, free, particular, nullspace, rref:aug, steps, isFrac:true,
+    pivots, free, particular, nullspace, rref:aug, steps, isFrac:true, tolerance:tolA,
+    residual:particular?Math.max(...A.map((row,i)=>Math.abs(row.reduce((sum,v,j)=>sum+v*particular[j],0)-b[i]))):null,
   };
 }
 export function matSpace(A) {
@@ -269,8 +283,53 @@ export function matEigenAll(M) {
     else if(pairs.length===1) pairs.message='Valor propio doble con un solo vector propio independiente; no es diagonalizable.';
     return pairs;
   }
+  if(n===3) {
+    const tr=M[0][0]+M[1][1]+M[2][2];
+    const minors=M[0][0]*M[1][1]-M[0][1]*M[1][0]+M[0][0]*M[2][2]-M[0][2]*M[2][0]+M[1][1]*M[2][2]-M[1][2]*M[2][1];
+    const characteristic=[-matDet(M),minors,-tr,1],pairs=[];
+    let rootIterations=0;
+    const roots=realPolynomialRoots(characteristic,{onIteration:()=>rootIterations++}).sort((a,b)=>b-a);
+    const scale=Math.max(1,...M.flat().map(Math.abs));
+    for(const lam of roots) {
+      const shifted=M.map((row,i)=>row.map((v,j)=>{const entry=v-(i===j?lam:0);return Math.abs(entry)<=1e-10*scale?0:entry;}));
+      const kernel=matGauss(shifted,[0,0,0]).nullspace;
+      // Repeat only independent eigenvectors; geometric multiplicity is explicit.
+      for(const basis of kernel) {
+        const vec=normalizeEigenvector(basis),residual=eigenResidual(M,lam,vec);
+        pairs.push({lam,vec,residual,iterations:rootIterations,rootTolerance:1e-13,maxIterationsPerInterval:160,converged:residual<=1e-8*scale,method:'polinomio característico 3×3 y núcleo',geometricMultiplicity:kernel.length});
+      }
+    }
+    pairs.characteristic=characteristic;
+    if(pairs.length!==n)pairs.message='No se obtuvieron tres autovectores reales independientes; pueden existir autovalores complejos, defectos o raíces numéricamente no separadas. No se declara diagonalización.';
+    return pairs;
+  }
   const pair=matPowerIter(M);
   const pairs=[pair];
   pairs.message='Matriz no simétrica: solo se calcula el par dominante; no se infieren los demás por deflación.';
   return pairs;
+}
+
+// Desarrollo visible de cofactores, con tamaño acotado por la interfaz.
+export function determinantExpansion(matrix,row=0) {
+  const n=matrix?.length;
+  if(!Number.isInteger(n)||n<1||n>5||!Number.isInteger(row)||row<0||row>=n||matrix.some(r=>!Array.isArray(r)||r.length!==n||r.some(x=>!Number.isFinite(x))))throw new RangeError('Matriz cuadrada finita de orden 1–5 y fila válida');
+  if(n===1)return {value:matrix[0][0],row,terms:[],formula:'det[a]=a.'};
+  const terms=matrix[row].map((coefficient,column)=>{
+    const minor=matrix.filter((_,i)=>i!==row).map(r=>r.filter((_,j)=>j!==column)),minorDeterminant=matDet(minor),sign=(row+column)%2?-1:1;
+    return {column,coefficient,sign,minor,minorDeterminant,contribution:sign*coefficient*minorDeterminant};
+  });
+  const value=terms.reduce((sum,t)=>sum+t.contribution,0);
+  if(!Number.isFinite(value)||terms.some(t=>!Number.isFinite(t.contribution)))throw new RangeError('El determinante supera el rango numérico');
+  return {value,row,terms,formula:'det A = Σⱼ (−1)^(i+j) aᵢⱼ det Mᵢⱼ.'};
+}
+export function inverseGaussJordan(matrix) {
+  const n=matrix?.length;
+  if(!Number.isInteger(n)||n<1||n>5||matrix.some(r=>!Array.isArray(r)||r.length!==n||r.some(x=>!Number.isFinite(x))))throw new RangeError('Matriz cuadrada finita de orden 1–5');
+  const results=Array.from({length:n},(_,j)=>matGauss(matrix,Array.from({length:n},(_,i)=>i===j?1:0)));
+  if(results.some(r=>r.status!=='unique'))return {status:'singular',steps:results[0].steps,formula:'Reducir [A|I] a [I|A⁻¹]; se requieren n pivotes.'};
+  const inverse=matrix.map((_,i)=>results.map(r=>r.particular[i]));
+  const check=matMul(matrix,inverse),residual=Math.max(...check.flatMap((row,i)=>row.map((v,j)=>Math.abs(v-(i===j?1:0)))));
+  if(!Number.isFinite(residual))throw new RangeError('La inversa supera el rango numérico');
+  return {status:'inverted',inverse,steps:results[0].steps,augmented:matrix.map((_,i)=>[...Array.from({length:n},(_,j)=>i===j?1:0),...inverse[i]]),residual,
+    formula:'Las operaciones de Gauss-Jordan sobre A se aplican a todas las columnas de I: [A|I] → [I|A⁻¹].'};
 }

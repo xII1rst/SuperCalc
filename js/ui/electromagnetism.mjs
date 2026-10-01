@@ -259,7 +259,7 @@ function emRenderGauss(){
   <div class="em-input-row">
     <div class="em-input-group">
       <label>Geometría</label>
-      <select id="em-gauss-geo" style="background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text1);font-family:Space Mono,monospace;font-size:11px;padding:7px 8px;width:100%">
+      <select id="em-gauss-geo" style="background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text1);font-family:var(--font-math);font-size:13px;padding:7px 8px;width:100%">
         <option value="sphere">Esfera</option>
         <option value="cylinder">Cilindro</option>
         <option value="plane">Plano infinito</option>

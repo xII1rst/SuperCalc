@@ -20,7 +20,7 @@ En **Integral → Volumen de revolución**, se define `f(x)` y el intervalo `[a,
 - Eje X: método de discos, `V = π∫ₐᵇ [f(x)]² dx`.
 - Eje Y: método de cascarones, `V = 2π∫ₐᵇ |x|·|f(x)| dx`; `[a,b]` debe quedar a un solo lado de `x = 0` para evitar contar dos veces un volumen superpuesto.
 
-Ambos resultados se aproximan con Simpson 1/3 y se expresan en unidades cúbicas. Los dos temas, oscuro y claro, se pueden alternar desde el launcher; la preferencia se guarda localmente. El service worker almacena los recursos propios para navegación y cálculos sin conexión tras su instalación; la fuente externa es opcional.
+Ambos resultados se aproximan con Simpson 1/3 y se expresan en unidades cúbicas. Los dos temas, «Pizarra» (oscuro, degradado violeta → aqua) y «Papel» (claro, degradado melocotón → azul pizarra), se alternan desde el launcher; la preferencia se guarda localmente. Cada menú y herramienta tiene su enlace directo (por ejemplo `#/ca/calc-int` abre Integral) y todos los controles funcionan con teclado. El service worker almacena los recursos propios para navegación y cálculos sin conexión tras su instalación; las fuentes externas (IBM Plex Sans y JetBrains Mono) son opcionales.
 
 ## Mapa del proyecto
 
@@ -76,6 +76,7 @@ SuperCalc/
 │   │   ├── experiments.mjs             Pantalla de experimentos
 │   │   ├── plotter.mjs                 Controles y tabla del graficador
 │   │   ├── navigation.mjs              Launcher, submódulos e historial
+│   │   ├── routes.mjs                  Enlaces directos #/menú/herramienta
 │   │   ├── events.mjs                  Delegación de data-action
 │   │   ├── figure-controls.mjs         Controles de figuras 3D
 │   │   ├── canvas-size.mjs             Ajuste del bitmap al contenedor
@@ -92,7 +93,7 @@ SuperCalc/
 │   ├── utils/format.mjs       Formato numérico, fracciones y radicales
 │   └── offline.mjs            Registro PWA, instalación y actualización
 ├── tests/                   Pruebas de Node, sin navegador
-│   ├── app-ui.test.mjs, events.test.mjs, offline.test.mjs
+│   ├── app-ui.test.mjs, events.test.mjs, interaction.test.mjs, offline.test.mjs
 │   ├── calculus.test.mjs, applications.test.mjs, electromagnetism.test.mjs
 │   ├── statistics.test.mjs, probability.test.mjs, mechanics.test.mjs
 │   ├── mechanics-solver.test.mjs
@@ -105,7 +106,7 @@ SuperCalc/
 │   ├── sequences.test.mjs, graph-types.test.mjs, format.test.mjs
 │   ├── canvas.test.mjs, canvas-size.test.mjs, analysis-graphics.test.mjs
 │   ├── figures.test.mjs, formula-background.test.mjs
-│   └── theme.test.mjs, toast.test.mjs
+│   └── theme.test.mjs, contrast.test.mjs, toast.test.mjs
 ```
 
 El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. `js/state/` y `js/utils/` sirven a varios dominios; `js/offline.mjs` y `sw.js` gestionan recursos y caché por separado. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable.

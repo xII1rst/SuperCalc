@@ -23,9 +23,9 @@ test('Integral 10 y 16: Riemann derecha y trapecio con cuatro subintervalos',()=
   close(trapezoidalRule(x=>1/x,1,3,4),67/60);
 });
 
-test('Multivariable 18 y 19: caminos distintos refutan; caminos iguales no bastan',()=>{
+test('Multivariable 18 y 19: caminos distintos refutan y encaje radial prueba',()=>{
   assert.equal(multivariableLimit('(x²−y²)/(x²+y²)',0,0).status,'disproved');
-  assert.equal(multivariableLimit('x²*y/(x²+y²)',0,0).status,'undetermined');
+  assert.equal(multivariableLimit('x²*y/(x²+y²)',0,0).status,'proved');
 });
 
 test('EDO 28: solución satisface y(0)=1, y\'(0)=−2',()=>{

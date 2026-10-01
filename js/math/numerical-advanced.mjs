@@ -34,8 +34,10 @@ export function luSolve(matrix,vector) {
   const permuted=permutation.map(i=>vector[i]),y=Array(n).fill(0),solution=Array(n).fill(0);
   for(let i=0;i<n;i++) y[i]=permuted[i]-lower[i].slice(0,i).reduce((sum,value,j)=>sum+value*y[j],0);
   for(let i=n-1;i>=0;i--) solution[i]=(y[i]-upper[i].slice(i+1).reduce((sum,value,j)=>sum+value*solution[i+1+j],0))/upper[i][i];
+  let inversions=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(permutation[i]>permutation[j])inversions++;
+  const determinant=(-1)**inversions*upper.reduce((value,row,i)=>value*row[i],1);
   const residual=matrix.map((row,i)=>row.reduce((sum,value,j)=>sum+value*solution[j],0)-vector[i]);
-  return {lower,upper,permutation,permuted,y,solution,residual,residualInfinity:Math.max(...residual.map(Math.abs)),steps};
+  return {lower,upper,permutation,permuted,y,solution,determinant,residual,residualInfinity:Math.max(...residual.map(Math.abs)),steps};
 }
 
 export function finitePrecisionElimination(matrix,vector,{digits=4,mode='round',pivoting=false}={}) {
@@ -105,13 +107,13 @@ export function bairstow(coefficients,initialR=0,initialS=1,{tolerance=1e-10,max
     for(let iteration=1;iteration<=maxIterations;iteration++) {
       step=factorIteration(working,r,s);
       const scale=Math.max(1,...working.map(Math.abs));
-      history.push({degree:working.length-1,iteration,r,s,remainder:[step.b[0],step.b[1]]});
+      history.push({degree:working.length-1,iteration,r,s,deltaR:step.deltaR,deltaS:step.deltaS,nextR:step.deltaR===undefined?r:r+step.deltaR,nextS:step.deltaS===undefined?s:s+step.deltaS,remainder:[step.b[0],step.b[1]]});
       if(Math.max(Math.abs(step.b[0]),Math.abs(step.b[1]))<=tolerance*scale) {converged=true;break;}
       if(step.status||!Number.isFinite(step.deltaR)||!Number.isFinite(step.deltaS)) break;
       r+=step.deltaR;s+=step.deltaS;
       if(!Number.isFinite(r)||!Number.isFinite(s)||Math.max(Math.abs(r),Math.abs(s))>1e12) break;
     }
-    if(!converged) return {status:'not converged',roots,factors,history,remaining:working};
+    if(!converged) return {status:'not converged',roots,factors,history,remaining:working,candidate:{r,s,remainder:factorIteration(working,r,s).b.slice(0,2)}};
     roots.push(...quadraticRoots(1,-r,-s));factors.push({r,s,remainder:[step.b[0],step.b[1]]});
     working=step.b.slice(2);
   }
@@ -137,14 +139,16 @@ export function exponentialFit(points) {
   const amplitude=Math.exp(lnA),residuals=points.map(([x,y])=>y-amplitude*Math.exp(rate*x));
   return {amplitude,rate,residuals,squaredError:residuals.reduce((sum,r)=>sum+r*r,0),assumption:'mínimos cuadrados sobre ln(y), no sobre y'};
 }
-export function sinusoidalFit(points,angularFrequency) {
+export function sinusoidalFit(points,angularFrequency,{includeOffset=true}={}) {
   pointsValid(points,3);
   if(!Number.isFinite(angularFrequency)||angularFrequency<=0) throw new RangeError('Frecuencia angular positiva requerida');
-  const [offset,sinCoefficient,cosCoefficient]=fitNormal(points.map(([x,y])=>({features:[1,Math.sin(angularFrequency*x),Math.cos(angularFrequency*x)],target:y})),3);
+  if(typeof includeOffset!=='boolean') throw new RangeError('Selección de término constante inválida');
+  const fitted=fitNormal(points.map(([x,y])=>({features:includeOffset?[1,Math.sin(angularFrequency*x),Math.cos(angularFrequency*x)]:[Math.sin(angularFrequency*x),Math.cos(angularFrequency*x)],target:y})),includeOffset?3:2);
+  const [offset,sinCoefficient,cosCoefficient]=includeOffset?fitted:[0,...fitted];
   const residuals=points.map(([x,y])=>y-offset-sinCoefficient*Math.sin(angularFrequency*x)-cosCoefficient*Math.cos(angularFrequency*x));
   return {offset,sinCoefficient,cosCoefficient,amplitude:Math.hypot(sinCoefficient,cosCoefficient),
     phase:Math.atan2(cosCoefficient,sinCoefficient),residuals,squaredError:residuals.reduce((sum,r)=>sum+r*r,0),
-    assumption:'frecuencia angular fijada por el usuario; ajuste lineal de c+a sen(ωx)+b cos(ωx)'};
+    assumption:`frecuencia angular fijada por el usuario; ajuste lineal de ${includeOffset?'c+':''}a sen(ωx)+b cos(ωx)`};
 }
 export function linearTestStability(lambda,step,method) {
   if(!Number.isFinite(lambda)||!Number.isFinite(step)||step<=0) throw new RangeError('λ finito y paso positivo requeridos');
@@ -210,7 +214,7 @@ export function newtonSystem2D(first,second,initialX,initialY,{iterations=10,tol
 
 export function quadratureWithBound(fn,start,end,subintervals,method,derivativeBound) {
   if(typeof fn!=='function'||!Number.isFinite(start)||!Number.isFinite(end)||start>=end||
-    !Number.isInteger(subintervals)||subintervals<2||subintervals>1000||!['trapezoid','simpson'].includes(method)||
+    !Number.isInteger(subintervals)||subintervals<1||subintervals>1000||!['trapezoid','simpson'].includes(method)||
     !Number.isFinite(derivativeBound)||derivativeBound<0) throw new RangeError('Intervalo, método o cota inválidos');
   if(method==='simpson'&&subintervals%2) throw new RangeError('Simpson requiere n par');
   const integrate=n=>{
@@ -237,7 +241,7 @@ export function minimumSubintervalsForBound(start,end,method,derivativeBound,tar
   const coefficient=method==='trapezoid'?derivativeBound*length**3/12:derivativeBound*length**5/180;
   if(!Number.isFinite(coefficient)) throw new RangeError('La cota excede el rango numérico');
   const power=method==='trapezoid'?2:4;
-  let count=Math.max(2,Math.floor((coefficient/targetError)**(1/power)));
+  let count=Math.max(method==='simpson'?2:1,Math.floor((coefficient/targetError)**(1/power)));
   if(method==='simpson'&&count%2) count++;
   const increment=method==='simpson'?2:1;
   while(count<=maxSubintervals&&coefficient/count**power>=targetError) count+=increment;

@@ -87,7 +87,7 @@ export function createFormulaBackground(canvas, { win=window, doc=document, rand
       ctx.save();
       ctx.translate(item.x,item.y);
       ctx.rotate(item.angle);
-      ctx.font = `${item.size}px "Space Mono", monospace`;
+      ctx.font = `${item.size}px JetBrains Mono, ui-monospace, monospace`;
       ctx.fillStyle = `rgba(${palette[item.colorIndex]},${opacity})`;
       ctx.fillText(item.text,0,0);
       ctx.restore();

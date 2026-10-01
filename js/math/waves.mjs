@@ -27,6 +27,27 @@ export function harmonicMotion(amplitude,omega,phase=0,time=0,springConstant=nul
     maxAcceleration:amplitude*omega**2,energy:springConstant===null?null:0.5*springConstant*amplitude**2};
 }
 
+export function waveRelation(speed,{frequency=null,wavelength=null}={}) {
+  positive(speed,'Velocidad');
+  if((frequency===null)===(wavelength===null)) throw new RangeError('Introduce frecuencia o longitud de onda, solo una.');
+  if(frequency!==null) {positive(frequency,'Frecuencia');wavelength=speed/frequency;}
+  else {positive(wavelength,'Longitud de onda');frequency=speed/wavelength;}
+  const result={speed,frequency,wavelength,period:1/frequency,omega:2*Math.PI*frequency,waveNumber:2*Math.PI/wavelength};
+  if(!Object.values(result).every(Number.isFinite)) throw new RangeError('Resultado fuera del rango numérico.');
+  return result;
+}
+
+export function dampingFromAmplitudes(initial,final,cycles,period) {
+  positive(initial,'Amplitud inicial');positive(final,'Amplitud final');positive(period,'Período amortiguado');
+  if(!Number.isInteger(cycles)||cycles<1) throw new RangeError('El número de oscilaciones debe ser un entero positivo.');
+  if(final>initial) throw new RangeError('La amplitud final no puede superar la inicial en este modelo de decaimiento.');
+  const decrement=(Math.log(initial)-Math.log(final))/cycles,gamma=decrement/period;
+  const dampedOmega=2*Math.PI/period,omega0=Math.hypot(dampedOmega,gamma);
+  if(![decrement,gamma,dampedOmega,omega0].every(Number.isFinite))throw new RangeError('Resultado fuera del rango numérico.');
+  return {decrement,gamma,dampedOmega,omega0,quality:gamma===0?Infinity:omega0/(2*gamma),
+    assumption:'Envolvente A(t)=A₀e^(−γt) de un oscilador lineal subamortiguado; T es su período amortiguado.'};
+}
+
 export function springOscillator(mass,springConstant,damping=0,driveForce=null,driveOmega=null) {
   positive(mass,'Masa');positive(springConstant,'Constante elástica');nonnegative(damping,'Amortiguamiento');
   const omega0=Math.sqrt(springConstant/mass),gamma=damping/(2*mass);
@@ -39,16 +60,29 @@ export function springOscillator(mass,springConstant,damping=0,driveForce=null,d
   const decrement=dampedOmega===null?null:gamma*2*Math.PI/dampedOmega;
   const bandwidth=damping/mass;
   const resonanceOmega=omega0**2>2*gamma**2?Math.sqrt(omega0**2-2*gamma**2):null;
-  let forced=null;
+  let forced=null,resonance=null;
   if (driveForce!==null||driveOmega!==null) {
-    positive(driveForce,'Fuerza motriz');nonnegative(driveOmega,'Frecuencia motriz');
-    const denominator=Math.hypot(springConstant-mass*driveOmega**2,damping*driveOmega);
-    if (denominator===0) throw new RangeError('Resonancia ideal sin amortiguamiento: amplitud estacionaria no finita');
-    const amplitude=driveForce/denominator;
-    forced={amplitude,phaseLag:Math.atan2(damping*driveOmega,springConstant-mass*driveOmega**2),
-      averagePower:0.5*damping*driveOmega**2*amplitude**2};
+    positive(driveForce,'Fuerza motriz');
+    if(driveOmega!==null){
+      nonnegative(driveOmega,'Frecuencia motriz');
+      const denominator=Math.hypot(springConstant-mass*driveOmega**2,damping*driveOmega);
+      if (denominator===0) throw new RangeError('Resonancia ideal sin amortiguamiento: amplitud estacionaria no finita');
+      const amplitude=driveForce/denominator;
+      forced={amplitude,phaseLag:Math.atan2(damping*driveOmega,springConstant-mass*driveOmega**2),
+        averagePower:0.5*damping*driveOmega**2*amplitude**2};
+    }
+    if(damping>0){
+      const peakOmega=resonanceOmega??0;
+      const amplitude=driveForce/Math.hypot(springConstant-mass*peakOmega**2,damping*peakOmega);
+      resonance={omega:peakOmega,amplitude,averagePower:0.5*damping*peakOmega**2*amplitude**2,
+        powerPeakOmega:omega0,powerPeakAmplitude:driveForce/(damping*omega0),powerPeak:driveForce**2/(2*damping),
+        lowerHalfPower:Math.hypot(omega0,gamma)-gamma,upperHalfPower:Math.hypot(omega0,gamma)+gamma,
+        assumption:'Máximo de amplitud estacionaria en ω_res; el máximo de potencia ocurre en ω₀. Ancho entre medias potencias: b/m.'};
+    }
   }
-  return {omega0,gamma,criticalDamping,regime,dampedOmega,roots,quality,decrement,bandwidth,resonanceOmega,forced};
+  const freeSolution=regime==='underdamped'?'x(t)=e^(−γt)[C₁cos(ω′t)+C₂sen(ω′t)]':
+    regime==='critical'?'x(t)=(C₁+C₂t)e^(−γt)':'x(t)=C₁e^(r₁t)+C₂e^(r₂t)';
+  return {omega0,frequency:omega0/(2*Math.PI),period:2*Math.PI/omega0,gamma,criticalDamping,regime,dampedOmega,roots,quality,decrement,bandwidth,resonanceOmega,forced,resonance,freeSolution};
 }
 
 export function pendulumPeriod(length,gravity=9.80665,moment=null,mass=null,distance=null) {
@@ -91,7 +125,11 @@ export function stringWave(tension,linearDensity,length=null) {
   positive(tension,'Tensión');positive(linearDensity,'Densidad lineal');
   const speed=Math.sqrt(tension/linearDensity);
   if (length===null) return {speed};
-  positive(length,'Longitud');
+  return stringHarmonics(speed,length);
+}
+
+export function stringHarmonics(speed,length) {
+  positive(speed,'Velocidad');positive(length,'Longitud');
   return {speed,fundamental:speed/(2*length),harmonics:[1,2,3].map(n=>n*speed/(2*length))};
 }
 
@@ -276,7 +314,11 @@ export function lissajous(amplitudeX,amplitudeY,omegaX,omegaY,phase,time=0,sampl
     const t=i*windowTime/(samples-1);
     return [amplitudeX*Math.sin(omegaX*t+phase),amplitudeY*Math.sin(omegaY*t)];
   });
-  return {x,y,ratio:omegaX/omegaY,points,windowTime,assumption:'trazado paramétrico finito; el cierre exacto requiere razón racional de frecuencias'};
+  const ellipse=omegaX===omegaY&&amplitudeX>0&&amplitudeY>0?{
+    crossCoefficient:-2*Math.cos(phase),rightSide:Math.sin(phase)**2,
+    degenerate:Math.abs(Math.sin(phase))<1e-12,
+  }:null;
+  return {x,y,ratio:omegaX/omegaY,points,windowTime,ellipse,assumption:'trazado paramétrico finito; el cierre exacto requiere razón racional de frecuencias'};
 }
 
 export function multipleSlitInterference(slitCount,separation,wavelength,angleDegrees) {

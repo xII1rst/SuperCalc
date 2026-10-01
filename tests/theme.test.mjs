@@ -18,9 +18,9 @@ test('la paleta oscura se carga antes de los componentes y está disponible offl
   assert.match(html,/<html[^>]+data-theme="dark"/);
   assert.ok(html.indexOf('href="theme.css"')<html.indexOf('href="style.css"'));
   assert.match(worker,/['"]\.\/theme\.css['"]/);
-  assert.match(theme,/--bg:\s*#0a0f1a/);
-  assert.match(theme,/--al:\s*#7c6af7/);
-  assert.match(theme,/--ca:\s*#10b981/);
+  assert.match(theme,/--bg:\s*#182029/);
+  assert.match(theme,/--al:\s*#a5a2ff/);
+  assert.match(theme,/--ca:\s*#2fe0c4/);
 });
 
 test('todos los tokens usados están definidos y los colores literales residen en theme.css',()=>{
@@ -54,7 +54,7 @@ test('tema inicial, selector y canvas leen el tema vigente',()=>{
   const original={document:globalThis.document,localStorage:globalThis.localStorage,getComputedStyle:globalThis.getComputedStyle};
   const attrs={};
   const root={dataset:{theme:'dark'}};
-  const meta={content:'#0a0f1a'};
+  const meta={content:'#182029'};
   const saved=new Map([['sc-theme','light']]);
   const events=[];
   globalThis.document={documentElement:root,getElementById:()=>({setAttribute:(name,value)=>{attrs[name]=value;}}),querySelector:()=>meta,dispatchEvent:event=>events.push(event.type)};
@@ -62,7 +62,7 @@ test('tema inicial, selector y canvas leen el tema vigente',()=>{
   globalThis.getComputedStyle=()=>({getPropertyValue:name=>name==='--canvas-origin'?(root.dataset.theme==='light'?'#d83870':'#c8d8f0'):''});
   try {
     assert.equal(initTheme(),'light');
-    assert.equal(meta.content,'#fffdf7');
+    assert.equal(meta.content,'#fff8f4');
     assert.equal(attrs['aria-checked'],'true');
     assert.equal(readCanvasPalette()('canvas-origin'),'#d83870');
     assert.equal(resolveCanvasColor('var(--canvas-origin)',readCanvasPalette()),'#d83870');
@@ -70,7 +70,7 @@ test('tema inicial, selector y canvas leen el tema vigente',()=>{
     assert.equal(toggleTheme(),'dark');
     assert.equal(saved.get('sc-theme'),'dark');
     assert.equal(attrs['aria-checked'],'false');
-    assert.equal(meta.content,'#0a0f1a');
+    assert.equal(meta.content,'#182029');
     assert.deepEqual(events,['supercalc:themechange']);
     assert.equal(applyTheme('invalid',{persist:false}),'dark');
   } finally {

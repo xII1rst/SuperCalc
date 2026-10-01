@@ -1,5 +1,72 @@
 import { calcParse, collectVariables } from './expression.mjs';
 import { matGauss } from './algebra/matrix.mjs';
+import { integrate, definiteIntegral } from './integration.mjs';
+import { tokenize, parseExpr, substAST, evalAST, symbolicDeriv } from './calculus.mjs';
+import { taylorSeries } from './series.mjs';
+
+function expressionFunction(expression,variable) {
+  if(collectVariables(expression).some(name=>name!==variable))throw new RangeError(`Usa solo ${variable} en esta expresión.`);
+  const fn=calcParse(expression,variable);if(!fn)throw new RangeError('Expresión inválida.');return x=>safe(fn(x,0),'Expresión');
+}
+export function antiderivativeInitialValue(expression,x0,y0,x) {
+  [x0,y0,x].forEach(value=>finite(value,'Dato del PVI'));
+  const source=expressionFunction(expression,'x');source(x0);source(x);
+  const primitive=integrate(expression);
+  if(!primitive.ast)throw new RangeError('Antiderivada simbólica fuera de las familias disponibles.');
+  if(x!==x0) {
+    const between=definiteIntegral(expression,Math.min(x0,x),Math.max(x0,x));
+    if(between.error)throw new RangeError(between.error);
+  }
+  const evaluate=point=>safe(evalAST(substAST(primitive.ast,'x',{type:'num',val:point})),'Primitiva');
+  const constantValue=safe(y0-evaluate(x0),'Constante'),value=safe(evaluate(x)+constantValue,'Solución');
+  return {solution:`y(x) = ${primitive.result} + (${constantValue})`,constantValue,value,initialValue:evaluate(x0)+constantValue,
+    derivative:expression,steps:[...primitive.steps,`C = y₀−F(x₀) = ${constantValue}`],domain:primitive.domain,
+    assumption:'Solución en una componente del dominio real que contiene x₀; y′=f(x).'};
+}
+export function fundamentalIntegralDerivative(integrand,lower,upper,x) {
+  finite(x,'Punto x');const f=expressionFunction(integrand,'t'),a=expressionFunction(lower,'x'),b=expressionFunction(upper,'x');
+  const lowerDerivative=symbolicDeriv(lower),upperDerivative=symbolicDeriv(upper);
+  if(!lowerDerivative||!upperDerivative)throw new RangeError('Derivadas de límites fuera de alcance.');
+  const da=expressionFunction(lowerDerivative,'x'),db=expressionFunction(upperDerivative,'x');
+  const lo=a(x),hi=b(x),lowerTerm=safe(f(lo)*da(x),'Término inferior'),upperTerm=safe(f(hi)*db(x),'Término superior');
+  if(lo!==hi) {
+    const check=definiteIntegral(integrand,Math.min(lo,hi),Math.max(lo,hi),'t');
+    if(check.error||check.improper)throw new RangeError('El TFC requiere integrando continuo cerca de los límites y en el intervalo; revisa el dominio.');
+  }
+  return {derivativeFormula:`(${integrand.replace(/\bt\b/g,`(${upper})`)})*(${upperDerivative}) − (${integrand.replace(/\bt\b/g,`(${lower})`)})*(${lowerDerivative})`,
+    derivative:safe(upperTerm-lowerTerm,'Derivada'),upperTerm,lowerTerm,formula:'d/dx ∫[a(x),b(x)] f(t)dt = f(b(x))b′(x)−f(a(x))a′(x)',
+    assumption:'Integrando continuo en el intervalo y cerca de ambos límites; límites diferenciables en el punto. El muestreo no prueba continuidad global.'};
+}
+export function sineIntegralLimit(amplitude,rate,power) {
+  finite(amplitude,'Amplitud');finite(rate,'Coeficiente');if(!Number.isInteger(power)||power<1||power>12)throw new RangeError('Potencia entera entre 1 y 12 requerida.');
+  const limit=safe(amplitude*rate/(power+1),'Límite');
+  return {limit,formula:`lim x→0 [∫₀ˣ ${amplitude} sen(${rate}t^${power})dt]/x^${power+1} = ${limit}`,
+    steps:[`TFC y L’Hôpital: numerador′=${amplitude}sen(${rate}x^${power}); denominador′=${power+1}x^${power}.`,
+      `sen u/u→1; resultado A·B/(m+1). Si B=0 o A=0 la integral es idénticamente 0.`],
+    assumption:'Familia A·sen(Bt^m), m entero positivo; límite bilateral real. No se deduce de muestras.'};
+}
+export function rationalSeriesComparison(a,b,power) {
+  finite(a,'A');finite(b,'B');if(a<0||b<0||!Number.isInteger(power)||power<2||power>12)throw new RangeError('A,B no negativos y potencia entera entre 2 y 12.');
+  safe(a+b,'Coeficiente de comparación');
+  const exponent=a===0?power:power-1,converges=a===0||power>2;
+  return {status:converges?'converge':'diverge',comparisonPower:exponent,
+    bound:`0 ≤ (A n+B)/(n^${power}+n) ≤ ${a+b}/n^${power-1} para n≥1`,
+    steps:a===0?[`A=0: 0≤aₙ≤${b}/n^${power}; p=${power}>1; serie convergente.`]:power>2?
+      [`A n+B≤(A+B)n; n^${power}+n≥n^${power}.`, `Comparación con ${a+b}/n^${power-1}; p=${power-1}>1, converge.`]:
+      [`n²+n≤2n²; aₙ≥${a}/(2n). La armónica diverge, por comparación también esta serie.`],
+    assumption:'Serie desde n=1 de términos no negativos; no se calcula su suma mediante este criterio.'};
+}
+export function firstTaylorTerms(expression,center,termCount,point) {
+  finite(center,'Centro');finite(point,'Punto');if(!Number.isInteger(termCount)||termCount<1||termCount>8)throw new RangeError('Solicita de 1 a 8 términos no nulos.');
+  const f=expressionFunction(expression,'x');f(center);const reference=f(point);
+  const expansion=taylorSeries(expression,center,16,'x',{nonzeroTerms:termCount});
+  if(!expansion||expansion.terms.length<termCount)throw new RangeError('No hay suficientes términos no nulos hasta orden 16; cambia la cantidad o la expresión.');
+  const terms=expansion.terms.slice(0,termCount),value=safe(terms.reduce((sum,{k,coef})=>sum+coef*(point-center)**k,0),'Polinomio en el punto');
+  const symbol=center===0?'x':`(x−(${center}))`;
+  return {polynomial:terms.map(({k,coef})=>`(${coef})${k?`·${symbol}${k===1?'':`^${k}`}`:''}`).join(' + '),terms,value,reference,absoluteError:Math.abs(reference-value),
+    formula:'P(x)=Σ f⁽ᵏ⁾(c)(x−c)^k/k!; retener los primeros términos no nulos.',
+    assumption:'Coeficientes evaluados numéricamente por derivación simbólica. Error mostrado contra f en el punto; no es cota de resto ni prueba de convergencia.'};
+}
 
 function finite(value,label) {if(!Number.isFinite(value)) throw new RangeError(`${label}: valor finito requerido`);return value;}
 function interval(a,b) {finite(a,'Límite inferior');finite(b,'Límite superior');if(!(a<b)) throw new RangeError('Los límites deben cumplir a < b');}
@@ -64,7 +131,7 @@ function simpson(fn,a,b,n) {
   const h=(b-a)/n;
   let sum=safe(fn(a),'Extremo izquierdo')+safe(fn(b),'Extremo derecho');
   for(let i=1;i<n;i++) sum+=(i%2?4:2)*safe(fn(a+i*h),`Punto ${i}`);
-  return sum*h/3;
+  return safe(sum*h/3,'Integral');
 }
 export function polarAreaBetween(outerRadius,innerRadius,start,end,subintervals=400) {
   if(typeof outerRadius!=='function'||typeof innerRadius!=='function') throw new RangeError('Radios funcionales requeridos');
@@ -82,6 +149,21 @@ export function curveArcLength(functionY,start,end,subintervals=400) {
   const slope=x=>x<=start+h?(functionY(x+h)-functionY(x))/h:x>=end-h?(functionY(x)-functionY(x-h))/h:derivative(functionY,x,h);
   const length=simpson(x=>Math.hypot(1,safe(slope(x),'Pendiente')),start,end,subintervals);
   return {length,subintervals,formula:'L = ∫√(1+f′(x)²) dx',assumption:'derivada por diferencia finita; verificar refinamiento cerca de singularidades'};
+}
+export function curveMeasureExpression(expression,start,end,kind='arc',axis='x',subintervals=400) {
+  interval(start,end);count(subintervals);if(subintervals%4)throw new RangeError('Usa n múltiplo de 4 para comparar mallas.');
+  if(!['arc','surface'].includes(kind)||!['x','y'].includes(axis))throw new RangeError('Medida o eje inválido.');
+  const f=expressionFunction(expression,'x'),slope=symbolicDeriv(expression);
+  if(!slope)throw new RangeError('Derivada simbólica no disponible.');
+  const d=expressionFunction(slope,'x');
+  const integrand=x=>{
+    const y=f(x),ds=Math.hypot(1,d(x)),radius=axis==='x'?Math.abs(y):Math.abs(x);
+    return kind==='arc'?ds:2*Math.PI*radius*ds;
+  };
+  const value=simpson(integrand,start,end,subintervals),coarse=simpson(integrand,start,end,Math.max(4,subintervals/2));
+  return {[kind==='arc'?'length':'area']:value,coarse,refinementDifference:Math.abs(value-coarse),derivative:slope,subintervals,
+    formula:kind==='arc'?'L=∫√(1+f′²)dx':axis==='x'?'S=2π∫|f(x)|√(1+f′²)dx':'S=2π∫|x|√(1+f′²)dx',
+    assumption:'Derivada simbólica; cuadratura Simpson en dominio real. Diferencia entre mallas no es cota de error; superficie sin autointersecciones.'};
 }
 export function surfaceOfRevolution(functionY,start,end,axis='x',subintervals=400) {
   if(typeof functionY!=='function'||!['x','y'].includes(axis)) throw new RangeError('Función o eje inválido');
@@ -148,8 +230,9 @@ export function integrateTripleRegion(integrand,coordinates,outerStart,outerEnd,
     !Number.isInteger(subintervals)||subintervals<8||subintervals>60||subintervals%4!==0)
     throw new RangeError('Coordenadas, límites o malla inválidos (n múltiplo de 4 entre 8 y 60)');
   const integrate1d=(fn,a,b,n,label)=>{
-    if(!Number.isFinite(a)||!Number.isFinite(b)||b<a) throw new RangeError(`${label}: límites inválidos`);
-    if(a===b) return 0;
+    if(!Number.isFinite(a)||!Number.isFinite(b)||b<a-1e-14*Math.max(1,Math.abs(a),Math.abs(b))) throw new RangeError(`${label}: límites inválidos`);
+    // Collapsed boundary intervals can differ by floating point roundoff.
+    if(b<=a) return 0;
     const h=(b-a)/n;let sum=0;
     for(let i=0;i<=n;i++) {
       const value=fn(a+i*h);

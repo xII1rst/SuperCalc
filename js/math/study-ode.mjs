@@ -3,23 +3,29 @@ function positive(value,label) {finite(value,label);if(value<=0) throw new Range
 function integralPower(power,from,to) {
   finite(power,'Exponente');finite(from,'x inicial');finite(to,'x final');
   if(power===-1) {if(from===0||to===0||Math.sign(from)!==Math.sign(to)) throw new RangeError('∫1/x cruza una singularidad');return Math.log(Math.abs(to/from));}
+  if(power<0&&(from===0||to===0||Math.sign(from)!==Math.sign(to)))throw new RangeError('Potencia negativa cruza una singularidad');
   if((from<0||to<0)&&!Number.isInteger(power+1)) throw new RangeError('Potencia no entera sobre x negativo fuera del dominio real');
   return (to**(power+1)-from**(power+1))/(power+1);
 }
 export function separablePower(coefficient,xPower,yPower,x0,y0,x) {
-  finite(coefficient,'Coeficiente');finite(yPower,'Exponente de y');finite(x0,'x inicial');positive(y0,'y inicial');finite(x,'x final');
+  finite(coefficient,'Coeficiente');finite(yPower,'Exponente de y');finite(x0,'x inicial');finite(y0,'y inicial');finite(x,'x final');
+  if(yPower!==0&&yPower!==1)positive(y0,'y inicial de la rama positiva');
   const area=integralPower(xPower,x0,x);
   let value;
-  if(yPower===1) value=y0*Math.exp(coefficient*area);
+  if(yPower===0)value=y0+coefficient*area;
+  else if(yPower===1) value=y0*Math.exp(coefficient*area);
   else {
     const transformed=y0**(1-yPower)+(1-yPower)*coefficient*area;
     if(transformed<=0) throw new RangeError('La rama positiva termina antes de x final');
     value=transformed**(1/(1-yPower));
   }
   if(!Number.isFinite(value)) throw new RangeError('Solución fuera de rango');
+  const primitive=xPower===-1?`ln|x|`:`x^(${xPower+1})/(${xPower+1})`;
   return {value,derivative:coefficient*x**xPower*value**yPower,integralXPower:area,
+    generalSolution:yPower===1?`y=C exp[(${coefficient})${primitive}]`:yPower===0?`y=(${coefficient})${primitive}+C`:`y^(${1-yPower})=(${(1-yPower)*coefficient})${primitive}+C`,
+    equilibrium:yPower>0?'y≡0 (si está definida la potencia)':'no corresponde',
     formula:yPower===1?'y = y₀ exp[a∫xᵖdx]':'y^(1−q) = y₀^(1−q)+(1−q)a∫xᵖdx',
-    assumption:'se sigue la rama positiva desde y₀>0; no se cruza una singularidad'};
+    assumption:yPower===0||yPower===1?'y₀ arbitrario para q=0 o q=1; conservar el signo y las soluciones cero. No cruzar singularidades de x.':'se sigue la rama positiva desde y₀>0; no se cruza una singularidad'};
 }
 export function linearFirstOrder(p,q,x0,y0,x) {
   finite(p,'p');finite(q,'q');finite(x0,'x inicial');finite(y0,'y inicial');finite(x,'x final');
@@ -29,22 +35,24 @@ export function linearFirstOrder(p,q,x0,y0,x) {
 }
 export function linearPowerCoefficient(powerCoefficient,forcingCoefficient,forcingPower,x0,y0,x) {
   [powerCoefficient,forcingCoefficient,forcingPower,y0].forEach((value,i)=>finite(value,`Dato ${i+1}`));
-  positive(x0,'x inicial');positive(x,'x final');
+  finite(x0,'x inicial');finite(x,'x final');
+  if(x0===0||x===0||Math.sign(x0)!==Math.sign(x))throw new RangeError('x inicial y final no nulos en la misma rama');
+  if(x<0&&(!Number.isInteger(powerCoefficient)||!Number.isInteger(forcingPower)))throw new RangeError('Para x<0 usar exponentes enteros');
   const exponent=powerCoefficient+forcingPower,gamma=exponent+1;
   const integral=gamma===0?Math.log(x/x0):x0**gamma*Math.expm1(gamma*Math.log(x/x0))/gamma;
   const factor0=x0**powerCoefficient,factor=x**powerCoefficient;
   const value=(factor0*y0+forcingCoefficient*integral)/factor;
   const derivative=forcingCoefficient*x**forcingPower-powerCoefficient*value/x;
   if(!Number.isFinite(value)||!Number.isFinite(derivative)) throw new RangeError('Solución fuera del rango numérico');
-  const constantValue=gamma===0?factor0*y0-forcingCoefficient*Math.log(x0):
+  const constantValue=gamma===0?factor0*y0-forcingCoefficient*Math.log(Math.abs(x0)):
     factor0*y0-forcingCoefficient*x0**gamma/gamma;
   return {value,derivative,integratingFactor:`x^${powerCoefficient}`,integral,
-    generalSolution:gamma===0?`y=x^(−${powerCoefficient})[${forcingCoefficient} ln x+C]`:
+    generalSolution:gamma===0?`y=x^(−${powerCoefficient})[${forcingCoefficient} ln|x|+C]`:
       `y=(${forcingCoefficient}/${gamma})x^${forcingPower+1}+C x^(−${powerCoefficient})`,
     constantValue:Number.isFinite(constantValue)?constantValue:null,
     solution:`y(x)=x^(−${powerCoefficient})[${factor0*y0}+${forcingCoefficient}·${gamma===0?`ln(x/${x0})`:`(x^${gamma}−${x0}^${gamma})/${gamma}`}]`,
     formula:'(x^a y)′=b x^(a+m); integrar desde x₀ hasta x y dividir por x^a',
-    assumption:'y′+(a/x)y=b x^m, x₀>0 y x>0 en la misma rama; condición y(x₀)=y₀'};
+    assumption:'y′+(a/x)y=b x^m; x₀ y x no nulos en la misma rama; x<0 admite exponentes enteros. Condición y(x₀)=y₀'};
 }
 export function bernoulliLinearForcing(p,q,constant,x) {
   [p,q,constant,x].forEach((value,i)=>finite(value,`Dato ${i+1}`));
@@ -117,7 +125,7 @@ export function exactPolynomialForm(mTerms,nTerms,factorXPower=0,factorYPower=0)
   }).join('')||'0';
   return {potentialTerms:terms,implicitSolution:`${expression} = C`,factor:factorXPower||factorYPower?`x^${factorXPower} y^${factorYPower}`:'1',
     formula:'μM dx + μN dy = dΨ = 0; comprobar ∂(μM)/∂y = ∂(μN)/∂x; Ψ se obtiene integrando μM en x y completando g(y)',
-    assumption:'M y N son polinomios dados como términos; el factor monomial elegido se aplica en un dominio donde está definido; C es constante'};
+    assumption:'M y N son polinomios dados como términos; el factor monomial elegido requiere un dominio donde μ≠0 para conservar equivalencia; el potencial multiplicado puede añadir puntos sobre μ=0; C es constante'};
 }
 export function logisticGrowth(rate,capacity,x0,y0,x) {
   positive(rate,'Tasa');positive(capacity,'Capacidad');finite(x0,'x inicial');positive(y0,'y inicial');finite(x,'x final');
@@ -178,6 +186,12 @@ export function thirdOrderRepeatedRoot(root,amplitude,c0,c1,c2,x) {
     formula:'(D−r)³[e^(rx)u]=e^(rx)u‴; si (D−r)³y=Ae^(rx), entonces u‴=A',
     assumption:'coeficientes constantes, fuerza A e^(rx), tres constantes libres; C₀,C₁,C₂ de entrada solo evalúan un miembro'};
 }
+function homogeneousGeneral(damping,stiffness) {
+  const disc=damping*damping-4*stiffness;
+  if(disc>1e-12)return `C₁e^(${(-damping+Math.sqrt(disc))/2}t)+C₂e^(${(-damping-Math.sqrt(disc))/2}t)`;
+  if(disc>=-1e-12)return `(C₁+C₂t)e^(${-damping/2}t)`;
+  return `e^(${-damping/2}t)[C₁cos(${Math.sqrt(-disc)/2}t)+C₂sen(${Math.sqrt(-disc)/2}t)]`;
+}
 function homogeneousSecondOrder(damping,stiffness,y0,v0,time) {
   const discriminant=damping**2-4*stiffness;
   let value,derivative,regime,constants,expression;
@@ -215,7 +229,9 @@ export function forcedSecondOrder(damping,stiffness,forcing,omega,y0,v0,time) {
   const {value:homogeneous,derivative:homogeneousDerivative,constants,regime}=solved;
   const value=homogeneous+particular,derivative=homogeneousDerivative+particularDerivative;
   if(!Number.isFinite(value)||!Number.isFinite(derivative)) throw new RangeError('Solución no finita');
+  const particularExpression=resonant?`${forcing}/(2·${omega})·t·sen(${omega}t)`:`${A}cos(${omega}t)+${B}sen(${omega}t)`;
   return {value,derivative,homogeneous,particular,constants,regime,resonant,
+    generalSolution:'y='+homogeneousGeneral(damping,stiffness)+' + '+particularExpression,particularExpression,expression:solved.expression+' + '+particularExpression,
     formula:'y″+a y′+b y=F cos(ωt); y=yh+yp con constantes fijadas por y(0), y′(0)',
     assumption:'coeficientes constantes, forzamiento sinusoidal'};
 }
@@ -245,6 +261,7 @@ export function laplaceSecondOrderHarmonic(damping,stiffness,cosineForce,sineFor
   const value=solved.value+particular,derivative=solved.derivative+particularDerivative;
   if(!Number.isFinite(value)||!Number.isFinite(derivative)) throw new RangeError('Solución no finita');
   return {value,derivative,homogeneous:solved.value,particular,constants:solved.constants,regime:solved.regime,resonant,
+    generalSolution:'y='+homogeneousGeneral(damping,stiffness)+' + '+particularExpression,
     expression:`${solved.expression} + ${particularExpression}`,
     transform:`Y(s) = [(${y0})s + (${v0+damping*y0}) + (${cosineForce})s/(s²+${omega**2}) + (${sineForce})${omega}/(s²+${omega**2})]/(s²+(${damping})s+(${stiffness}))`,
     formula:'L{y″+ay′+by}=(s²+as+b)Y−sy₀−v₀−ay₀; forzamiento Fc cos(ωt)+Fs sen(ωt)',
@@ -262,6 +279,7 @@ export function laplaceRepeatedRootForcing(root,amplitude,power,y0,v0,time) {
   let factorial=1;for(let i=2;i<=power;i++) factorial*=i;
   return {value,derivative,particular:exp*amplitude*time**(power+2)/denominator,
     transform:`Y(s) = (${y0})/(s−(${root})) + (${linear})/(s−(${root}))² + (${amplitude*factorial})/(s−(${root}))^${power+3}`,
+    generalSolution:`y=e^(${root}t)[C₁+C₂t+(${amplitude}/${denominator})t^${power+2}]`,
     expression:`e^(${root}t)[${y0} + (${linear})t + (${amplitude}/${denominator})t^${power+2}]`,
     formula:'(D−r)²y=A t^m e^(rt); y=e^(rt)[y₀+(v₀−ry₀)t+A t^(m+2)/((m+1)(m+2))]',
     assumption:'raíz doble r, potencia m entera de 0 a 3, condiciones iniciales en t=0'};
@@ -279,7 +297,9 @@ export function linearSystem2D(matrix,initial,time) {
   const value=matrixExponential.map(row=>row[0]*initial[0]+row[1]*initial[1]);
   if(value.some(item=>!Number.isFinite(item))) throw new RangeError('Solución no finita');
   const derivative=matrix.map(row=>row[0]*value[0]+row[1]*value[1]);
-  return {value,derivative,matrixExponential,regime,formula:'u(t)=e^(At)u(0)',assumption:'sistema lineal homogéneo 2×2 de coeficientes constantes'};
+  const shape=disc>1e-14?`cosh(${Math.sqrt(disc)}t)I + senh(${Math.sqrt(disc)}t)/${Math.sqrt(disc)} B`:disc< -1e-14?`cos(${Math.sqrt(-disc)}t)I + sen(${Math.sqrt(-disc)}t)/${Math.sqrt(-disc)} B`:'I+tB';
+  return {value,derivative,matrixExponential,regime,generalSolution:`X(t)=e^(${mu}t)[${shape}]C; B=[[${delta},${b}],[${c},${-delta}]], C=[C₁,C₂]ᵀ`,
+    elimination:`y″−(${a+d})y′+(${a*d-b*c})y=0; x″−(${a+d})x′+(${a*d-b*c})x=0. ${c!==0?`x=(y′−(${d})y)/(${c})`:b!==0?`y=(x′−(${a})x)/(${b})`:'Ambas ecuaciones de primer orden están desacopladas.'}`,formula:'u(t)=e^(At)u(0)',assumption:'sistema lineal homogéneo 2×2 de coeficientes constantes'};
 }
 export function laplaceSystem2D(matrix,initial,time) {
   const solved=linearSystem2D(matrix,initial,time);
@@ -376,4 +396,13 @@ export function firstOrderExponentialForcing(p,amplitude,rate,initialValue,time)
       `e^(−${p}t)[${initialValue} + ${amplitude}(e^(${gap}t)−1)/(${gap})]`,
     formula:'L{y′+py}= (s+p)Y−y₀; L{A e^(at)}=A/(s−a)',
     assumption:'y′+py=Ae^(at), y(0)=y₀, t≥0; coeficientes constantes'};
+}
+
+export function inferMonomialFactor(mTerms,nTerms){
+ const candidates=[];
+ // Validate the term format before treating a non-exact form as a search miss.
+ if(![mTerms,nTerms].every(terms=>Array.isArray(terms)&&terms.length>0&&terms.length<=30&&terms.every(t=>Array.isArray(t)&&t.length===3&&Number.isFinite(t[0])&&t.slice(1).every(p=>Number.isInteger(p)&&p>=0&&p<=6))))throw new RangeError('Términos polinómicos: coeficiente finito, exponentes enteros 0–6.');
+ for(let sum=0;sum<=8;sum++)for(let a=0;a<=4;a++){const b=sum-a;if(b<0||b>4)continue;try{const result=exactPolynomialForm(mTerms,nTerms,a,b);candidates.push({a,b,result});}catch(error){if(!error.message.includes('no es exacta'))throw error;}}
+ if(!candidates.length)return {status:'unsupported',candidates:[],assumption:'No se obtuvo factor x^a y^b con a,b enteros 0–4. No descarta otros factores integrantes.'};
+ return {...candidates[0].result,status:'found',candidates:candidates.map(({a,b})=>({a,b})),formula:'Buscar 25 monomios x^a y^b, a,b=0–4, verificar cada igualdad de coeficientes y elegir el menor grado total. '+candidates[0].result.formula};
 }

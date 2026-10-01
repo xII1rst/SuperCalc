@@ -3,7 +3,11 @@
 export function bindActions(root,actions){
   const dispatch=event=>{
     const element=event.target?.closest?.('[data-action]');
-    if(!element || (element.dataset.event||'click')!==event.type) return;
+    if(!element) return;
+    const expected=element.dataset.event||'click';
+    // Un clic sin puntero (detail 0) viene del teclado: activa también los controles de pointerdown.
+    const keyboardClick=event.type==='click'&&expected==='pointerdown'&&event.detail===0;
+    if(expected!==event.type&&!keyboardClick) return;
     const name=element.dataset.action;
     const action=actions[name];
     if(typeof action!=='function') return;
@@ -27,6 +31,14 @@ export function bindActions(root,actions){
     }
   };
   for(const type of ['click','change','input','pointerdown']) root.addEventListener(type,dispatch);
+  // Controles no nativos (role="button") responden a Enter y Espacio como un botón.
+  root.addEventListener('keydown',event=>{
+    if(event.key!=='Enter'&&event.key!==' ') return;
+    const element=event.target;
+    if(element?.getAttribute?.('role')!=='button'||!element.dataset?.action) return;
+    event.preventDefault();
+    element.click();
+  });
   root.addEventListener('focusin',event=>{
     const input=event.target;
     if(input?.tagName==='INPUT'&&['number','text'].includes(input.type)&&!Object.hasOwn(input.dataset||{},'noSelect')){

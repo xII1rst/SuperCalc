@@ -1,4 +1,5 @@
-import { truthTable, argumentValidity, minimizeBoolean } from './logic.mjs';
+import { truthTable, argumentValidity, minimizeBoolean, parseProposition, evaluateProposition } from './logic.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
 
 export function normalForms(expression) {
   const {variables,rows,status}=truthTable(expression);
@@ -73,7 +74,9 @@ export function finiteCounting(domainSize,codomainSize) {
     for(let i=1;i<=k;i++) choose=choose*BigInt(m-i+1)/BigInt(i);
     surjective+=(k%2?-1n:1n)*choose*BigInt(m-k)**BigInt(n);
   }
-  return {functions,relations,subsets,injective,surjective,assumption:'funciones A→B; 0⁰=1 para la función vacía'};
+  const bell=[1n];for(let size=1;size<=n;size++){let choose=1n,value=0n;for(let k=0;k<size;k++){value+=choose*bell[k];choose=choose*BigInt(size-1-k)/BigInt(k+1);}bell.push(value);}
+  return {functions,relations,subsets,injective,surjective,cartesianSize:n*m,binaryRelations:2n**BigInt(n*n),reflexiveRelations:2n**BigInt(n*(n-1)),symmetricRelations:2n**BigInt(n*(n+1)/2),equivalenceRelations:bell[n],
+    assumption:'funciones A→B; 0⁰=1 para la función vacía; relaciones binarias en A: 2^(n²), reflexivas 2^(n(n−1)), simétricas 2^(n(n+1)/2), equivalencias Bₙ por particiones (número de Bell)'};
 }
 
 export function karnaughMap(names,minterms,dontCares=[]) {
@@ -85,8 +88,10 @@ export function karnaughMap(names,minterms,dontCares=[]) {
     const index=(row<<colWidth)|column;
     return {index,value:minterms.includes(index)?'1':dontCares.includes(index)?'X':'0'};
   }));
+  const groups=minimized.implicants.map((item,i)=>({name:`G${i+1}`,pattern:item.pattern,indices:cells.flat().filter(cell=>[...item.pattern].every((bit,j)=>bit==='-'||Number(bit)===Number(rowBit(cell.index,width,j)))).map(cell=>cell.index)}));
+  cells.flat().forEach(cell=>cell.groups=groups.filter(group=>group.indices.includes(cell.index)).map(group=>group.name));
   return {rows:rows.map(row=>row.toString(2).padStart(rowWidth,'0')),columns:columns.map(column=>column.toString(2).padStart(colWidth,'0')),
-    cells,expression:minimized.expression,implicants:minimized.implicants};
+    cells,expression:minimized.expression,implicants:minimized.implicants,groups};
 }
 
 export function nandNetwork(names,minterms,dontCares=[]) {
@@ -156,4 +161,60 @@ export function guidedInduction(kind,n) {
     base:'n=4: 4!=24 > 16=2⁴.',
     step:'Si k! > 2ᵏ y k≥4, entonces (k+1)!=(k+1)k! > (k+1)2ᵏ > 2·2ᵏ=2^(k+1), porque k+1≥5>2. Por inducción, vale para todo n≥4.',
     example:`n=${n}: n! > 2ⁿ es ${factorial>2n**BigInt(n)?'verdadero':'falso'}.`};
+}
+
+export function setCardinality(sizes,pairIntersections,triple=0,universe=null){
+  if(!Array.isArray(sizes)||![2,3].includes(sizes.length)||!Array.isArray(pairIntersections)||pairIntersections.length!==(sizes.length===2?1:3)||[...sizes,...pairIntersections,triple,...(universe===null?[]:[universe])].some(v=>!Number.isSafeInteger(v)||v<0))throw new RangeError('Cardinalidades enteras no negativas para dos o tres conjuntos');
+  if(sizes.length===2&&triple!==0)throw new RangeError('Dos conjuntos no tienen intersección triple');
+  const atoms=sizes.length===2?[sizes[0]-pairIntersections[0],sizes[1]-pairIntersections[0],pairIntersections[0]]:
+    [sizes[0]-pairIntersections[0]-pairIntersections[1]+triple,sizes[1]-pairIntersections[0]-pairIntersections[2]+triple,sizes[2]-pairIntersections[1]-pairIntersections[2]+triple,...pairIntersections.map(v=>v-triple),triple];
+  if(atoms.some(v=>v<0))throw new RangeError('Intersecciones incompatibles: alguna región disjunta tiene cardinalidad negativa');
+  const union=sizes.reduce((s,v)=>s+v,0)-pairIntersections.reduce((s,v)=>s+v,0)+triple;
+  if(universe!==null&&union>universe)throw new RangeError('La unión supera el universo');
+  return {union,complement:universe===null?null:universe-union,atoms,formula:sizes.length===2?'|A∪B|=|A|+|B|−|A∩B|':'|A∪B∪C|=|A|+|B|+|C|−|AB|−|AC|−|BC|+|ABC|'};
+}
+export function quantifiedPredicate(domain,expression){
+  if(!Array.isArray(domain)||!domain.length||domain.length>40||new Set(domain).size!==domain.length||domain.some(v=>!Number.isFinite(v))||typeof expression!=='string'||expression.length>200)throw new RangeError('Universo finito no vacío y predicado simple');
+  const match=/^(.+?)\s*(<=|>=|!=|=|<|>|≤|≥|≠)\s*(.+)$/.exec(expression);
+  if(!match||[...collectVariables(match[1]),...collectVariables(match[3])].some(v=>v!=='x'))throw new RangeError('Predicado: dos expresiones en x separadas por <,≤,=,≠,≥,>');
+  const left=calcParse(match[1]),right=calcParse(match[3]);if(!left||!right)throw new RangeError('Predicado no evaluable');
+  const op=match[2],rows=domain.map(x=>{const a=left(x),b=right(x);if(![a,b].every(Number.isFinite))throw new RangeError('Predicado fuera de dominio');const truth=op==='<'?a<b:op==='>'?a>b:['<=','≤'].includes(op)?a<=b:['>=','≥'].includes(op)?a>=b:['!=','≠'].includes(op)?a!==b:a===b;return {x,left:a,right:b,truth};});
+  return {rows,universal:rows.every(r=>r.truth),existential:rows.some(r=>r.truth),witness:rows.find(r=>r.truth)?.x??null,counterexample:rows.find(r=>!r.truth)?.x??null,
+    negations:'¬∀x P(x) ⇔ ∃x ¬P(x); ¬∃x P(x) ⇔ ∀x ¬P(x). El alcance es exclusivamente el universo finito indicado.'};
+}
+export function affinePowerComposition(a,b,power){
+  if(![a,b].every(Number.isFinite)||a===0||!Number.isInteger(power)||power<1||power>6)throw new RangeError('f(x)=ax+b con a≠0 y g(x)=xⁿ, n=1–6');
+  return {gAfterF:`((${a})x+(${b}))^${power}`,fAfterG:`(${a})x^${power}+(${b})`,inverse:`(x−(${b}))/(${a})`,
+    proof:'g∘f=g(f(x)); f∘g=f(g(x)). y=ax+b ⇒ x=(y−b)/a; ambos lados de f⁻¹∘f y f∘f⁻¹ son la identidad en ℝ.'};
+}
+export function guidedNegations(){
+  return {deMorgan:'¬(p∧q) ⇔ ¬p∨¬q; ¬(p∨q) ⇔ ¬p∧¬q.',negationOfNegatedConjunction:'La negación de toda la fórmula ¬(p∧q) es p∧q (doble negación).',
+    quantified:'¬∀x(x>2) ⇔ ∃x(x≤2), sobre el mismo universo.',proof:'De Morgan se comprueba en las cuatro asignaciones; negar ∀ exige un contraejemplo. El universo y alcance del cuantificador se conservan.'};
+}
+export function norNetwork(names,minterms,dontCares=[]){
+  minimizeBoolean(names,minterms,dontCares); // Validate before enumerating.
+  // Minimize the complement, then apply De Morgan to get a product of sums.
+  const complement=Array.from({length:2**names.length},(_,i)=>i).filter(i=>!minterms.includes(i)&&!dontCares.includes(i));
+  const result=minimizeBoolean(names,complement,dontCares);
+  if(result.expression==='0'||result.expression==='1')return {output:result.expression==='0'?'1':'0',gates:[],expression:result.expression==='0'?'1':'0'};
+  const gates=[],inverted=new Map(),products=[];
+  const gate=inputs=>{const output=`n${gates.length+1}`;gates.push({output,inputs,operation:'NOR'});return output;};
+  const invert=name=>{if(!inverted.has(name))inverted.set(name,gate([name,name]));return inverted.get(name);};
+  const clauses=[];
+  for(const item of result.implicants){
+    const literals=[...item.pattern].flatMap((bit,i)=>bit==='-'?[]:[bit==='0'?names[i]:invert(names[i])]);
+    clauses.push(`(${[...item.pattern].flatMap((bit,i)=>bit==='-'?[]:[bit==='0'?names[i]:`¬${names[i]}`]).join('∨')})`);
+    if(result.implicants.length===1&&literals.length===1)return {output:literals[0],gates,expression:clauses[0]};
+    if(literals.length===1)products.push(invert(literals[0]));else products.push(gate(literals));
+  }
+  const output=products.length===1?invert(products[0]):gate(products);
+  return {output,gates,expression:clauses.join('∧'),assumption:'Compuertas NOR con tantas entradas como muestra la tabla; se comparten inversores. Constantes 0/1 y cables no cuentan como compuertas.'};
+}
+export function booleanMinterms(names,kind,indices=[],expression=''){
+  minimizeBoolean(names,indices,[]);
+  if(kind==='minterms')return indices;
+  if(kind==='maxterms')return Array.from({length:2**names.length},(_,i)=>i).filter(i=>!indices.includes(i));
+  if(kind!=='formula'||truthTable(expression).variables.some(v=>!names.includes(v)))throw new RangeError('Fórmula usa variables fuera del orden declarado');
+  const tree=parseProposition(expression);
+  return Array.from({length:2**names.length},(_,i)=>i).filter(i=>evaluateProposition(tree,Object.fromEntries(names.map((name,j)=>[name,rowBit(i,names.length,j)]))));
 }

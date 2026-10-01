@@ -124,7 +124,7 @@ export function renderPreview(cv, points, opts = {}) {
 
   // Etiquetas numéricas
   ctx.fillStyle = color('graph-text');
-  ctx.font = '10px Space Mono, monospace';
+  ctx.font = '11px JetBrains Mono, ui-monospace, monospace';
   if (showY) {
     for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax + 1e-9; y += yStep) {
       if (Math.abs(y) < yStep * 0.01) continue;
@@ -139,7 +139,7 @@ export function renderPreview(cv, points, opts = {}) {
   }
 
   if(secondPoints.length){
-    ctx.fillStyle = color('ca2');
+    ctx.fillStyle = color('graph-curve2');
     ctx.globalAlpha = 0.16;
     for(let i=1;i<Math.min(points.length,secondPoints.length);i++){
       const f0=points[i-1], f1=points[i], g0=secondPoints[i-1], g1=secondPoints[i];
@@ -172,7 +172,7 @@ export function renderPreview(cv, points, opts = {}) {
     ctx.stroke();
   };
   drawCurve(points,color('graph-curve'));
-  if(secondPoints.length) drawCurve(secondPoints,color('ca2'));
+  if(secondPoints.length) drawCurve(secondPoints,color('graph-curve2'));
 
   if(markers.length){
     ctx.fillStyle = color('graph-point');

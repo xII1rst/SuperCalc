@@ -43,7 +43,7 @@ function buildIneqForm(type) {
   if(type==='libre') {
     body.innerHTML = `
       <div class="mat-sec">Inecuación — expresión libre</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:10px">
+      <div style="font-size:12px;font-family:var(--font-math);color:var(--text-muted);margin-bottom:10px">
         Escribe ambos lados como expresiones en x. Ej: (x+3)(x-1) &lt; (x-1)^2+3x
       </div>
       <div class="ineq-libre-row">
@@ -64,7 +64,7 @@ function buildIneqForm(type) {
   } else if(type==='quad') {
     body.innerHTML = `
       <div class="mat-sec">Inecuación Cuadrática</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:10px">ax² + bx + c ⊳ 0</div>
+      <div style="font-size:12px;font-family:var(--font-math);color:var(--text-muted);margin-bottom:10px">ax² + bx + c ⊳ 0</div>
       <div class="ineq-row">
         <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="1" type="number" step="any"></div>
         <span class="ineq-lbl-mid">x² +</span>
@@ -80,7 +80,7 @@ function buildIneqForm(type) {
   } else if(type==='rational') {
     body.innerHTML = `
       <div class="mat-sec">Inecuación Racional</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:10px">
+      <div style="font-size:12px;font-family:var(--font-math);color:var(--text-muted);margin-bottom:10px">
         P(x)/Q(x) ⊳ 0 — tabla de signos automática
       </div>
       <div class="ineq-libre-row">
@@ -103,7 +103,7 @@ function buildIneqForm(type) {
   } else if(type==='system') {
     body.innerHTML = `
       <div class="mat-sec">Sistema de Inecuaciones</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:10px">Dos inecuaciones lineales — se calcula la intersección</div>
+      <div style="font-size:12px;font-family:var(--font-math);color:var(--text-muted);margin-bottom:10px">Dos inecuaciones lineales — se calcula la intersección</div>
       <div class="ineq-row" style="margin-bottom:6px">
         <div class="ineq-inp-grp"><label>a₁</label><input class="ineq-inp" id="iq-a1" value="1" type="number" step="any"></div>
         <span class="ineq-lbl-mid">x +</span>
@@ -124,7 +124,7 @@ function buildIneqForm(type) {
   } else if(type==='abs') {
     body.innerHTML = `
       <div class="mat-sec">Valor Absoluto</div>
-      <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--text-muted);margin-bottom:10px">|ax + b| ⊳ c</div>
+      <div style="font-size:12px;font-family:var(--font-math);color:var(--text-muted);margin-bottom:10px">|ax + b| ⊳ c</div>
       <div class="ineq-row">
         <span class="ineq-lbl-mid" style="font-size:16px">|</span>
         <div class="ineq-inp-grp"><label>a</label><input class="ineq-inp" id="iq-a" value="2" type="number" step="any"></div>

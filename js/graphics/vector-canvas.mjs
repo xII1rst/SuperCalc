@@ -29,14 +29,14 @@ function drawAxis3(o,pp,pl,pn,nl,col,lbl,lw,axLen,s,cx,cy){
   // Negative dashed
   ctx.beginPath();ctx.moveTo(o.sx,o.sy);ctx.lineTo(pn.sx,pn.sy);
   ctx.strokeStyle=col;ctx.lineWidth=lw*.5;ctx.globalAlpha=.2;ctx.setLineDash([5,7]);ctx.lineCap='round';ctx.stroke();ctx.setLineDash([]);
-  ctx.globalAlpha=.2;ctx.fillStyle=col;ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('-'+lbl,nl.sx,nl.sy);
+  ctx.globalAlpha=.2;ctx.fillStyle=col;ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('-'+lbl,nl.sx,nl.sy);
   // Positive solid
   ctx.beginPath();ctx.moveTo(o.sx,o.sy);ctx.lineTo(pp.sx,pp.sy);
   ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.globalAlpha=.9;ctx.setLineDash([]);ctx.stroke();
   const dx=pp.sx-o.sx,dy=pp.sy-o.sy,l=Math.sqrt(dx*dx+dy*dy);
   if(l>4){const ux=dx/l,uy=dy/l,hw=5,hl=11,bx=pp.sx-ux*hl,by=pp.sy-uy*hl;ctx.beginPath();ctx.moveTo(pp.sx,pp.sy);ctx.lineTo(bx+uy*hw,by-ux*hw);ctx.lineTo(bx-uy*hw,by+ux*hw);ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=.9;ctx.fill();}
   // Axis label
-  ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.font='bold 13px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,pl.sx,pl.sy);
+  ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.font='bold 13px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,pl.sx,pl.sy);
   ctx.globalAlpha=1;
 }
 
@@ -50,7 +50,7 @@ function drawAxisTicks3(o,dir,col,axLen,s,cx,cy,fn3){
     ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(pn.sx,pn.sy,2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
     const lbl=String(v);
     const nx=pp.sx+11,ny=pp.sy+11;
-    ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.globalAlpha=.6;ctx.fillStyle=color('canvas-bg1');ctx.fillRect(nx-9,ny-7,18,14);
     ctx.globalAlpha=1;ctx.fillStyle=col;ctx.fillText(lbl,nx,ny);
     const nnx=pn.sx+11,nny=pn.sy+11;
@@ -69,7 +69,7 @@ function drawAxisTicks2(o,isX,col,axLen,s,cx,cy){
     ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(pn.sx,pn.sy,2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
     const lbl=String(v);
     const nx=pp.sx+(isX?0:-16), ny=pp.sy+(isX?14:0);
-    ctx.font='bold 12px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='bold 12px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.globalAlpha=.6;ctx.fillStyle=color('canvas-bg1');ctx.fillRect(nx-10,ny-8,20,16);
     ctx.globalAlpha=1;ctx.fillStyle=col;ctx.fillText(lbl,nx,ny);
     const nnx=pn.sx+(isX?0:-20), nny=pn.sy+(isX?14:0);
@@ -143,7 +143,7 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=color('canvas-o
         ctx.closePath();
         ctx.strokeStyle=color('gold');ctx.lineWidth=1.8;ctx.setLineDash([]);ctx.stroke();
         // Label each tip
-        ctx.globalAlpha=.9;ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.globalAlpha=.9;ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='bottom';
         active.forEach((v,i)=>{
           const c=resolveCanvasColor(v.cl,color);
           ctx.fillStyle=c;ctx.fillText(v.nm,tips[i].sx,tips[i].sy-6);
@@ -157,7 +157,7 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=color('canvas-o
       const po=p3(0,0,0,cx,cy,s),pt=p3(v.vx,v.vy,v.vz,cx,cy,s);
       drawArrow(po.sx,po.sy,pt.sx,pt.sy,col,3.5);
       // Vector name label at tip
-      ctx.save();ctx.font='bold 12px Space Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.save();ctx.font='bold 12px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='bottom';
       ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fillStyle=col;ctx.globalAlpha=.95;
       ctx.fillText(v.nm,pt.sx,pt.sy-10);ctx.restore();
       // Projection shadows
@@ -192,11 +192,11 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=color('canvas-o
       const pp=p2(...pos,cx,cy,s),pl=p2(pos[0]*1.15,pos[1]*1.15,cx,cy,s);
       const pn=p2(...neg,cx,cy,s),nl=p2(neg[0]*1.15,neg[1]*1.15,cx,cy,s);
       ctx.beginPath();ctx.moveTo(o.sx,o.sy);ctx.lineTo(pn.sx,pn.sy);ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.globalAlpha=.2;ctx.setLineDash([5,7]);ctx.stroke();ctx.setLineDash([]);
-      ctx.globalAlpha=.2;ctx.fillStyle=col;ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('-'+lbl,nl.sx,nl.sy);
+      ctx.globalAlpha=.2;ctx.fillStyle=col;ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('-'+lbl,nl.sx,nl.sy);
       ctx.beginPath();ctx.moveTo(o.sx,o.sy);ctx.lineTo(pp.sx,pp.sy);ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.globalAlpha=.9;ctx.setLineDash([]);ctx.stroke();
       const dx=pp.sx-o.sx,dy=pp.sy-o.sy,l=Math.sqrt(dx*dx+dy*dy);
       if(l>4){const ux=dx/l,uy=dy/l,hw=5,hl=11,bx=pp.sx-ux*hl,by=pp.sy-uy*hl;ctx.beginPath();ctx.moveTo(pp.sx,pp.sy);ctx.lineTo(bx+uy*hw,by-ux*hw);ctx.lineTo(bx-uy*hw,by+ux*hw);ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=.9;ctx.fill();}
-      ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.font='bold 13px Space Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,pl.sx,pl.sy);ctx.globalAlpha=1;
+      ctx.globalAlpha=.9;ctx.fillStyle=col;ctx.font='bold 13px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,pl.sx,pl.sy);ctx.globalAlpha=1;
       drawAxisTicks2(o,isX,col,axLen,s,cx,cy);
     });
 
@@ -213,7 +213,7 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=color('canvas-o
         ctx.beginPath();
         tips.forEach((pt,i)=>i===0?ctx.moveTo(pt.sx,pt.sy):ctx.lineTo(pt.sx,pt.sy));
         ctx.closePath();ctx.strokeStyle=color('gold');ctx.lineWidth=1.8;ctx.setLineDash([]);ctx.stroke();
-        ctx.globalAlpha=.9;ctx.font='bold 11px Space Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.globalAlpha=.9;ctx.font='bold 11px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='bottom';
         active.forEach((v,i)=>{
           const c=resolveCanvasColor(v.cl,color);
           ctx.fillStyle=c;ctx.fillText(v.nm,tips[i].sx,tips[i].sy-6);
@@ -227,7 +227,7 @@ ctx.beginPath();ctx.arc(o.sx,o.sy,2.5,0,Math.PI*2);ctx.fillStyle=color('canvas-o
       const po=p2(0,0,cx,cy,s),pt=p2(v.vx,v.vy,cx,cy,s);
       drawArrow(po.sx,po.sy,pt.sx,pt.sy,col,3.5);
       // Vector name label
-      ctx.save();ctx.font='bold 12px Space Mono';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.save();ctx.font='bold 12px JetBrains Mono, ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='bottom';
       ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fillStyle=col;ctx.globalAlpha=.95;
       ctx.fillText(v.nm,pt.sx,pt.sy-10);ctx.restore();
       // Orthogonal projections to X and Y axes

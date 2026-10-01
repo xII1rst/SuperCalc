@@ -5,7 +5,7 @@
 
 import {
   tokenize, parseExpr, simplify, collectTerms, astToStr, diffAST,
-  substAST, evalAST, toExact, calcParse, simpsonIntegral, fmtNum,
+  substAST, evalAST, toExact, calcParse, collectVariables, derivativeDetails, simpsonIntegral, fmtNum,
 } from './calculus.mjs';
 
 // ── Constructores de AST ──
@@ -30,7 +30,7 @@ function prettyCoeff(c) {
     const n = Math.round(a * d);
     if (Math.abs(n / d - a) < 1e-9) return (negative ? '-' : '') + n + '/' + d;
   }
-  return String(parseFloat(c.toFixed(6)));
+  return String(Number(c.toPrecision(12)));
 }
 
 function pretty(node, v) {
@@ -158,14 +158,17 @@ function astToPoly(node, v) {
     case '-': { const a = astToPoly(node.left, v), b = astToPoly(node.right, v); return (a && b) ? polySub(a, b) : null; }
     case '*': {
       const a = astToPoly(node.left, v), b = astToPoly(node.right, v);
-      if (a && b) return polyMul(a, b);
+      if (a && b && a.length+b.length-1<=33) return polyMul(a, b);
       return null;
     }
     case '^': {
       const a = astToPoly(node.left, v);
-      if (a && node.right.type === 'num' && Number.isInteger(node.right.val) && node.right.val >= 0) {
+      if (a && node.right.type === 'num' && Number.isInteger(node.right.val) && node.right.val >= 0 && node.right.val<=32) {
         let out = [1];
-        for (let i = 0; i < node.right.val; i++) out = polyMul(out, a);
+        for (let i = 0; i < node.right.val; i++) {
+          if(out.length+a.length-1>33)return null;
+          out = polyMul(out, a);
+        }
         return out;
       }
       return null;
@@ -356,6 +359,7 @@ function astEqual(a, b) {
   if (a.type === 'num') return Math.abs(a.val - b.val) < 1e-12;
   if (a.type === 'var') return a.val === b.val;
   if (a.type === 'fn') return a.fn === b.fn && astEqual(a.arg, b.arg);
+  if (a.type === 'neg') return astEqual(a.arg,b.arg);
   return astEqual(a.left, b.left) && astEqual(a.right, b.right);
 }
 function replaceSubtree(ast, target, repl) {
@@ -417,6 +421,11 @@ function constOf(node) {
 function tryBasic(node, v) {
   const step = (txt) => ['Tabla: ' + txt];
   if (node.type === 'fn') {
+    if(node.fn==='exp'&&node.arg.type==='fn'&&node.arg.fn==='sqrt') {
+      const linear=linearOf(node.arg.arg,v);
+      if(linear&&linear.a!==0)return {ast:mul(num(2/linear.a),mul(sub(node.arg,num(1)),node)),technique:'sustitución y partes',
+        steps:[`u = ${pretty(node.arg,v)}, dx = 2u/${linear.a} du`, '∫ 2u e^u du = 2(u−1)e^u; regresar a x']};
+    }
     const lin = linearOf(node.arg, v);
     if (lin && lin.a !== 0) {
       const u = node.arg, a = lin.a;
@@ -440,6 +449,11 @@ function tryBasic(node, v) {
   if (node.type === '^') {
     const lin = linearOf(node.left, v);
     const e = node.right;
+    if(node.left.type==='fn'&&node.left.fn==='sec'&&e.type==='num'&&e.val===3) {
+      const linear=linearOf(node.left.arg,v),u=node.left.arg;
+      if(linear&&linear.a!==0)return {ast:div(add(mul(fn('sec',u),fn('tan',u)),lnAbs(add(fn('sec',u),fn('tan',u)))),num(2*linear.a)),
+        technique:'integración por partes',steps:['I=∫sec³u du; por partes: I=sec u tan u−∫sec u tan²u du', 'tan²u=sec²u−1; 2I=sec u tan u+ln|sec u+tan u|']};
+    }
     if (lin && lin.a !== 0 && e.type === 'num' && Number.isFinite(e.val)) {
       const n = e.val, u = node.left;
       if (Math.abs(n + 1) < 1e-12) return { ast: div(lnAbs(u), num(lin.a)), technique: 'tabla', steps: step('∫ u⁻¹ du = ln|u|') };
@@ -469,7 +483,7 @@ function tryBasic(node, v) {
     if (factors.length === 2 && fns.length === 2) {
       const names = fns.map(f => f.fn).sort().join(',');
       const lin = linearOf(fns[0].arg, v);
-      if (lin && lin.a !== 0) {
+      if (lin && lin.a !== 0 && astEqual(fns[0].arg,fns[1].arg)) {
         if (names === 'sec,tan') return { ast: div(fn('sec', fns[0].arg), num(lin.a)), technique: 'tabla', steps: step('∫ sec(u)tan(u) du = sec(u)') };
         if (names === 'csc,cot') return { ast: div(neg(fn('csc', fns[0].arg)), num(lin.a)), technique: 'tabla', steps: step('∫ csc(u)cot(u) du = −csc(u)') };
       }
@@ -477,6 +491,15 @@ function tryBasic(node, v) {
     return null;
   }
   if (node.type === '/') {
+    // Familia c/[u²√(u²+a²)], u lineal, a²>0.
+    const factors=flattenFactors(node.right),square=factors.find(f=>squareOfLinear(f,v));
+    const radical=factors.find(f=>f.type==='fn'&&f.fn==='sqrt');
+    if(factors.length===2&&square&&radical&&constOf(node.left)!==null) {
+      const q=matchQuadratic(radical,v),s=squareOfLinear(square,v);
+      if(q?.kind==='sqrt_u2_plus_a2'&&s.m!==0&&astEqual(q.uAst,s.uAst))return {
+        ast:div(neg(mul(node.left,radical)),mul(num(q.a*q.a*s.m),s.uAst)),technique:'sustitución trigonométrica',
+        steps:[`u = ${pretty(s.uAst,v)}; u = ${q.a} tan θ`, '∫ du/[u²√(u²+a²)] = −√(u²+a²)/(a²u); u≠0']};
+    }
     // 1/u, c/u
     const lin = linearOf(node.right, v);
     if (lin && lin.a !== 0) {
@@ -775,8 +798,8 @@ function integrateNode(node, v, depth) {
   }
   const basic = tryBasic(node, v);
   if (basic) return basic;
-  const sub = trySubstitution(node, v, depth);
-  if (sub) return sub;
+  const substitution = trySubstitution(node, v, depth);
+  if (substitution) return substitution;
   const trig = tryTrigIntegral(node, v, depth);
   if (trig) return trig;
   const parts = tryByParts(node, v, depth);
@@ -787,15 +810,23 @@ function integrateNode(node, v, depth) {
 }
 
 export function integrate(exprStr, varName = 'x') {
-  const out = { result: null, ast: null, technique: 'ninguna', steps: [] };
+  const out = { result: null, ast: null, technique: 'ninguna', steps: [], domain: [] };
   if (!exprStr || !exprStr.trim()) return out;
   try {
+    if(exprStr.length>500||collectVariables(exprStr).some(name=>name!==varName))throw new RangeError('Usa una expresión de hasta 500 caracteres y una sola variable.');
     const ast = parseExpr(tokenize(exprStr));
+    out.domain=derivativeDetails(exprStr,1,varName)?.conditions||[];
     const res = integrateNode(ast, varName, 0);
     if (res && res.ast) {
       let o = simplify(res.ast);
       o = collectTerms(o);
       o = simplify(o);
+      const stack=[o];let nodes=0;
+      while(stack.length) {
+        const node=stack.pop();
+        if(++nodes>5000||node.type==='num'&&!Number.isFinite(node.val))throw new RangeError('Primitiva fuera del rango numérico o del límite de complejidad.');
+        for(const key of ['left','right','arg'])if(node[key])stack.push(node[key]);
+      }
       out.result = pretty(o, varName);
       out.ast = o;
       out.technique = res.technique;
@@ -829,18 +860,8 @@ function midpointTransform(g, n) {
   return s * h;
 }
 
-// Heurística: si |f(x)·x| no decae en el infinito, la cola diverge (comparación con 1/x).
-function tailDiverges(fn, lo) {
-  for (const x of [1e4, 1e6, 1e8]) {
-    if (x <= lo) continue;
-    const v = Math.abs(fn(x, 0));
-    if (!isFinite(v) || v * x > 0.5) return true;
-  }
-  return false;
-}
-
 // Integral impropia numérica por transformación x = a + t/(1−t).
-// Devuelve un número finito o null si diverge.
+// Devuelve una estimación o null si no es finita; no demuestra convergencia.
 export function improperIntegral(fn, a, b, opts = {}) {
   const n = opts.n || 10000;
   if (!isFinite(a) && !isFinite(b)) {
@@ -850,11 +871,9 @@ export function improperIntegral(fn, a, b, opts = {}) {
     return l + r;
   }
   if (b === Infinity) {
-    if (tailDiverges(fn, Math.max(a, 0))) return null;
     return midpointTransform(t => fn(a + t / (1 - t), 0) / ((1 - t) * (1 - t)), n);
   }
   if (a === -Infinity) {
-    if (tailDiverges(t => fn(-t, 0), Math.max(-b, 0))) return null;
     return midpointTransform(t => fn(b - t / (1 - t), 0) / ((1 - t) * (1 - t)), n);
   }
   return simpsonIntegral(fn, a, b, n);
@@ -862,27 +881,121 @@ export function improperIntegral(fn, a, b, opts = {}) {
 
 // Integral definida: antiderivada simbólica F(b)−F(a); impropia si algún límite es ∞;
 // en último caso, Simpson numérico.
+function monomial(node,v) {
+  if(node.type==='num')return {c:node.val,p:0};
+  if(node.type==='var'&&node.val===v)return {c:1,p:1};
+  if(node.type==='neg'){const r=monomial(node.arg,v);return r?{c:-r.c,p:r.p}:null;}
+  if(node.type==='fn'&&node.fn==='sqrt'){const r=monomial(node.arg,v);return r&&r.c>0?{c:Math.sqrt(r.c),p:r.p/2}:null;}
+  if(node.type==='^'&&node.right.type==='num'){const r=monomial(node.left,v);return r&&r.c>0?{c:r.c**node.right.val,p:r.p*node.right.val}:null;}
+  if(node.type==='*'||node.type==='/'){
+    const l=monomial(node.left,v),r=monomial(node.right,v);if(!l||!r||r.c===0)return null;
+    return node.type==='*'?{c:l.c*r.c,p:l.p+r.p}:{c:l.c/r.c,p:l.p-r.p};
+  }
+  return null;
+}
+// Demostraciones de familias, no inferidas de muestras de la cola.
+function analyticImproper(source,a,b,v) {
+  const m=monomial(source,v);
+  if(m&&a>=0&&(b===Infinity||a===0&&m.p<0)) {
+    const converges=b===Infinity?a>0&&m.p<-1:m.p>-1;
+    if(m.c===0)return {value:0,steps:['Integrando nulo en el intervalo abierto.']};
+    if(!converges)return {diverges:true,steps:[`Criterio potencia: p=${m.p}; infinito exige p<−1 y origen exige p>−1.`]};
+    return {value:b===Infinity?-m.c*a**(m.p+1)/(m.p+1):m.c*b**(m.p+1)/(m.p+1),
+      steps:[`Criterio potencia: p=${m.p}; evaluar C·x^(p+1)/(p+1) mediante el límite lateral.`]};
+  }
+  if(b===Infinity&&a>=0) {
+    const {c,core}=splitConst(source),factors=flattenFactors(core);
+    const exponential=factors.find(f=>f.type==='fn'&&f.fn==='exp');
+    if(exponential) {
+      const linear=linearOf(exponential.arg,v),others=factors.filter(f=>f!==exponential);
+      const power=monomial(others.length?buildProduct(others):num(1),v);
+      if(linear&&linear.a<0&&power&&(power.p===0||power.p===1)) {
+        const rate=-linear.a,scale=c*power.c*Math.exp(linear.b),value=scale*Math.exp(-rate*a)*(power.p===0?1/rate:a/rate+1/rate**2);
+        return {value,steps:[`Integración por partes: e^(−${rate}x) y x·e^(−${rate}x) tienden a 0 en +∞; evaluar la primitiva desde x=${a}.`]};
+      }
+    }
+    if(a>0&&core.type==='/'&&core.left.type==='fn'&&core.left.fn==='ln'&&core.left.arg.type==='var'&&core.left.arg.val===v) {
+      const denominator=monomial(core.right,v);
+      if(denominator&&denominator.p>1)return {value:c/denominator.c*a**(1-denominator.p)*(Math.log(a)/(denominator.p-1)+1/(denominator.p-1)**2),
+        steps:[`Por partes: u=ln x, dv=x^(−${denominator.p})dx; ln(x)/x^(${denominator.p-1})→0 en +∞.`]};
+    }
+  }
+  return null;
+}
+// Conserva singularidades de la expresión original aunque su primitiva cancele factores.
+function interiorSingularities(source,a,b,v) {
+  const points=[];
+  const addRoots=node=>{
+    if(node.type==='*'){addRoots(node.left);addRoots(node.right);return;}
+    if(node.type==='^'){addRoots(node.left);return;}
+    const p=astToPoly(node,v);
+    if(p&&p.length<=3)for(const x of polyRealRoots(p))if(x>a&&x<b)points.push(x);
+  };
+  const walk=node=>{
+    if(node.type==='/')addRoots(node.right);
+    if(node.type==='^'&&node.right.type==='num'&&node.right.val<0)addRoots(node.left);
+    if(node.type==='fn'&&['ln','sqrt'].includes(node.fn))addRoots(node.arg);
+    if(node.type==='fn'&&['tan','sec','cot','csc'].includes(node.fn)) {
+      const l=linearOf(node.arg,v);
+      if(l&&l.a!==0) {
+        const lo=Math.min(l.a*a+l.b,l.a*b+l.b),hi=Math.max(l.a*a+l.b,l.a*b+l.b);
+        const offset=['tan','sec'].includes(node.fn)?Math.PI/2:0;
+        const first=Math.ceil((lo-offset)/Math.PI),last=Math.floor((hi-offset)/Math.PI);
+        if(last-first>1000)throw new RangeError('Demasiados polos trigonométricos en el intervalo.');
+        for(let k=first;k<=last;k++){const x=(offset+k*Math.PI-l.b)/l.a;if(x>a&&x<b)points.push(x);}
+      }
+    }
+    for(const key of ['left','right','arg'])if(node[key])walk(node[key]);
+  };walk(source);return [...new Set(points)];
+}
 export function definiteIntegral(fxStr, a, b, varName = 'x') {
   const out = {
     value: null, valueNum: null, exact: null, antiderivative: null,
-    technique: null, steps: [], improper: false, diverges: false,
+    technique: null, steps: [], improper: false, diverges: false, proof:'none', refinementDifference:null,
   };
   if (!fxStr || !fxStr.trim()) { out.error = 'Ingresa una función'; return out; }
   a = Number(a); b = Number(b);
+  if(Number.isNaN(a)||Number.isNaN(b)||a>=b){out.error='Se requieren límites reales con a < b';return out;}
+  let source;
+  try {
+    if(fxStr.length>500||collectVariables(fxStr).some(name=>name!==varName))throw new RangeError('Una sola variable y máximo 500 caracteres.');
+    source=parseExpr(tokenize(fxStr));
+    const poles=interiorSingularities(source,a,b,varName);
+    if(poles.length){out.error=`Singularidad interior en ${poles.join(', ')}: separa el intervalo y analiza los límites laterales; no se usa valor principal.`;return out;}
+  }catch(error){out.error=error.message;return out;}
+  const parsed=calcParse(fxStr,varName);
+  if(!parsed){out.error='Función inválida';return out;}
+  const singularA=Number.isFinite(a)&&!Number.isFinite(parsed(a,0)),singularB=Number.isFinite(b)&&!Number.isFinite(parsed(b,0));
+  const improper=!Number.isFinite(a)||!Number.isFinite(b)||singularA||singularB;
+  if(improper) {
+    out.improper=true;
+    const analytic=analyticImproper(source,a,b,varName);
+    if(analytic) {
+      out.proof='analytic';out.steps=analytic.steps;out.technique='límite analítico';
+      if(analytic.diverges){out.diverges=true;out.value='Diverge';return out;}
+      if(!Number.isFinite(analytic.value)){out.error='Resultado fuera del rango numérico';return out;}
+      out.valueNum=analytic.value;out.exact=toExact(analytic.value);out.value=out.exact||fmtNum(analytic.value,8);return out;
+    }
+    if(singularA||singularB){out.error='Integral impropia en un extremo: esta familia requiere análisis lateral no disponible.';return out;}
+  }
 
   if (!isFinite(a) || !isFinite(b)) {
     out.improper = true;
     const fn = calcParse(fxStr, varName);
     if (!fn) { out.error = 'Función inválida'; return out; }
     const v = improperIntegral(fn, a, b);
-    if (v === null) { out.diverges = true; out.value = 'Diverge'; return out; }
+    if (v === null) { out.error='Transformación numérica no finita; convergencia no demostrada'; return out; }
     out.valueNum = v;
-    out.exact = toExact(v);
-    out.value = out.exact || fmtNum(v, 8);
+    out.value = fmtNum(v, 8);
+    const coarse=improperIntegral(fn,a,b,{n:5000});
+    out.refinementDifference=coarse===null?null:Math.abs(v-coarse);
+    out.proof='numerical';out.steps.push('Transformación numérica en intervalo infinito; la diferencia entre mallas no demuestra convergencia ni es cota de error.');
     return out;
   }
 
   const ia = integrate(fxStr, varName);
+  // Control del dominio muestreado, también antes de F(b)−F(a).
+  for(let i=1;i<1000;i++)if(!Number.isFinite(parsed(a+(b-a)*i/1000,0))) {out.error='La función original sale del dominio real dentro del intervalo';return out;}
   if (ia.ast) {
     out.antiderivative = ia.result;
     out.technique = ia.technique;
@@ -892,6 +1005,7 @@ export function definiteIntegral(fxStr, a, b, varName = 'x') {
     if (Fb !== null && Fa !== null && isFinite(Fb) && isFinite(Fa)) {
       const v = Fb - Fa;
       out.valueNum = v;
+      out.proof='antiderivative';
       out.exact = toExact(v);
       out.value = out.exact || fmtNum(v, 8);
       return out;
@@ -901,8 +1015,42 @@ export function definiteIntegral(fxStr, a, b, varName = 'x') {
   const fn = calcParse(fxStr, varName);
   if (!fn) { out.error = 'Función inválida'; return out; }
   const v = simpsonIntegral(fn, a, b);
+  if(!Number.isFinite(v)){out.error='La integral numérica no es finita; revisa dominio y singularidades';return out;}
   out.valueNum = v;
-  out.exact = toExact(v);
-  out.value = out.exact || fmtNum(v, 8);
+  out.proof='numerical';out.refinementDifference=Math.abs(v-simpsonIntegral(fn,a,b,500));
+  out.value = fmtNum(v, 8);
+  out.steps.push('Simpson numérico; comprobar el dominio completo. La diferencia entre mallas no certifica el error.');
   return out;
+}
+
+// Certifica el signo de cuadráticas con extremos y vértice; evita inferir la
+// sección simbólica del giro a partir de muestras.
+export function polynomialRevolutionEvaluation(first,second,a,b,axis='x',offset=0) {
+  if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b||!Number.isFinite(offset)||!['x','y'].includes(axis))return null;
+  let f,g;
+  try {f=astToPoly(parseExpr(tokenize(first)),'x');g=astToPoly(parseExpr(tokenize(second||'0')),'x');}catch{return null;}
+  if(!f||!g||f.length>3||g.length>3)return null;
+  const sign=p=>{
+    const points=[a,b];if(p.length===3&&p[2]!==0){const vertex=-p[1]/(2*p[2]);if(vertex>a&&vertex<b)points.push(vertex);}
+    const values=points.map(x=>polyEval(p,x));
+    if(values.some(value=>!Number.isFinite(value)))return 0;
+    return Math.min(...values)>=0?1:Math.max(...values)<=0?-1:0;
+  };
+  let section;
+  if(axis==='y') {
+    const radius=[-offset,1],height=polySub(f,g),sr=sign(radius),sh=sign(height);
+    if(!sr||!sh)return null;
+    section=polyScale(polyMul(radius,height),2*sr*sh);
+  }else {
+    const F=polySub(f,[offset]),G=polySub(g,[offset]),sF=sign(F),sG=sign(G);
+    const differenceSign=sign(polySub(F,G)),sumSign=sign(polyAdd(F,G));
+    if(!sF||!sG||!differenceSign||!sumSign)return null;
+    const fOuter=differenceSign*sumSign>=0,outer=fOuter?F:G,inner=fOuter?G:F;
+    section=sF*sG<0?polyMul(outer,outer):polySub(polyMul(outer,outer),polyMul(inner,inner));
+  }
+  const expression=pretty(polyToAst(section,'x'),'x'),result=definiteIntegral(expression,a,b);
+  if(!result.antiderivative||!Number.isFinite(result.valueNum))return null;
+  return {section:`π·(${expression})`,antiderivative:`π·(${result.antiderivative})`,value:Math.PI*result.valueNum,
+    evaluation:`π·[F(${b})−F(${a})] = π·(${result.value})`,
+    assumption:'Funciones polinómicas hasta grado 2; signos de radios/altura verificados en extremos y vértices del intervalo.'};
 }

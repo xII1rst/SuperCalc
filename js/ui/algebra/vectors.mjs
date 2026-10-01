@@ -121,7 +121,7 @@ function renderVecs(){
   vecs.forEach((v,i)=>{
     const c=v.cl;
     const mag2=Math.sqrt(v.vx**2+v.vy**2+(mode===3?v.vz**2:0));
-    const zeroWarn=mag2<1e-9?'<span style="font-size:9px;color:var(--red);font-family:Space Mono,monospace;margin-left:auto">|v|=0</span>':'';
+    const zeroWarn=mag2<1e-9?'<span style="font-size:12px;color:var(--red);font-family:var(--font-math);margin-left:auto">|v|=0</span>':'';
     const zf=(l,val,k)=>mode===3?`<div class="inp-group"><label style="color:${c}">${l}</label><input type="number" value="${val}" data-action="uV" data-event="input" data-id="${v.id}" data-key="${k}"/></div>`:'';
     h+=`<div class="vec-card" style="border-left-color:${c}">
       <div class="vec-card-header">
@@ -171,7 +171,7 @@ function rLeg(){
 function rM(){
   const mc=document.getElementById('pM');
   const act=vecs.filter(v=>v.on);
-  if(!act.length){mc.innerHTML='<p style="color:var(--text3);font-size:12px;padding:4px 0">Sin vectores activos.</p>';return;}
+  if(!act.length){mc.innerHTML='<p style="color:var(--text3);font-size:14px;padding:4px 0">Sin vectores activos.</p>';return;}
   let h='';
   h+=`<div class="section-title">Magnitudes · Ángulos directores</div><div class="math-grid">`;
   act.forEach(v=>{
@@ -262,7 +262,7 @@ function rM(){
     h+=`<div class="collapsible-header" data-action="toggleSection">
       <div class="section-title" style="margin-bottom:0;border-bottom:none;flex:1">
         <span style="color:${ci}">${a.nm}</span>&nbsp;—&nbsp;<span style="color:${cj}">${b.nm}</span>
-        ${hint?`<span style="font-size:9px;color:var(--green);font-style:italic;font-weight:400;margin-left:6px">${hint}</span>`:''}
+        ${hint?`<span style="font-size:12px;color:var(--green);font-style:italic;font-weight:400;margin-left:6px">${hint}</span>`:''}
       </div>
       <span class="collapsible-arrow open"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></span>
     </div>
@@ -300,7 +300,7 @@ function rO(){
       else if(opS==='−') expr=selNames.join(' − ');
       else if(opS==='×') expr=selNames.join(' × ');
       else if(opS==='·') expr=selNames.join(' · ');
-      expr = '<div style="font-family:Space Mono,monospace;font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px;text-align:center">'+expr+' = ?</div>';
+      expr = '<div style="font-family:var(--font-math);font-size:14px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px;text-align:center">'+expr+' = ?</div>';
     }
     return expr;
   })()+`<button class="action-btn" data-action="compute">Calcular y graficar</button>${rh}`;
@@ -367,8 +367,8 @@ function rI(){
     const canDel=unkVecs.length>1;
     vecRows+=`<div class="unk-vec-item">
       <div class="unk-vec-name" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <input style="background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-family:'Space Mono',monospace;font-size:14px;font-weight:700;width:44px;outline:none;text-align:center;padding:1px 2px" value="${v.nm}" data-action="updUnkName" data-event="input" data-index="${i}"/>
-        <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">vector ${i+1}</span>
+        <input style="background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);font-family:var(--font-math);font-size:16px;font-weight:700;width:44px;outline:none;text-align:center;padding:1px 2px" value="${v.nm}" data-action="updUnkName" data-event="input" data-index="${i}"/>
+        <span style="font-size:12px;color:var(--text3);font-family:var(--font-math)">vector ${i+1}</span>
         ${canDel?`<button class="badge badge-del" data-action="delUnkVec" data-arg="${i}" data-arg-type="number" style="margin-left:auto" aria-label="Eliminar vector ${v.nm}"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-close"></use></svg></button>`:''}
       </div>
       <div class="unk-comp-row">${compInputs}</div>
@@ -395,7 +395,7 @@ function rI(){
     <button class="add-vec-btn" style="margin-bottom:10px" data-action="addUnkVec">+ Agregar vector</button>
     <div class="section-title">Operación y resultado esperado</div>
     <div class="unk-op-row">${opBtns}
-      <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">=</span>
+      <span style="font-size:13px;color:var(--text3);font-family:var(--font-math)">=</span>
       <input class="unk-result-input" id="unk-target" value="${unkTarget}" placeholder="0" data-action="setUnkTarget" data-event="input"/>
     </div>
     <button class="action-btn blue" data-action="runUnkSolve">Resolver incógnita</button>
@@ -485,14 +485,14 @@ function triCalc(){
   // ── Construir HTML de resultados ──
   const mkStepCard=(title,color,steps)=>`
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:${color};margin-bottom:8px;letter-spacing:.04em">${title}</div>
-      ${steps.map(s=>`<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-soft);line-height:1.9;padding:1px 0">${s}</div>`).join('')}
+      <div style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:${color};margin-bottom:8px;">${title}</div>
+      ${steps.map(s=>`<div style="font-family:var(--font-math);font-size:12px;color:var(--text-soft);line-height:1.9;padding:1px 0">${s}</div>`).join('')}
     </div>`;
 
   const mkResult=(label,value,color='var(--accent)')=>`
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;flex:1;min-width:0">
-      <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">${label}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:13px;color:${color};font-weight:700">${value}</div>
+      <div style="font-family:var(--font-math);font-size:12px;color:var(--text3);margin-bottom:3px">${label}</div>
+      <div style="font-family:var(--font-math);font-size:15px;color:${color};font-weight:700">${value}</div>
     </div>`;
 
   // Pasos lado PQ
@@ -575,7 +575,7 @@ function triCalc(){
       ${mkResult('Perímetro', fMag(dPQ+dQR+dPR))}
       ${mkResult('Área', fMag(area))}
     </div>
-    <div style="font-family:'Space Mono',monospace;font-size:9px;margin-bottom:14px;padding:7px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">${verif}</div>
+    <div style="font-family:var(--font-math);font-size:12px;margin-bottom:14px;padding:7px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">${verif}</div>
 
     <!-- Pasos colapsables -->
     <div class="section-title" style="margin-bottom:8px">A) Lados del triángulo</div>
@@ -623,7 +623,7 @@ function triDrawCanvas(P, Q, R){
       const btn = document.createElement('button');
       btn.id = 'tri-restore-btn';
       btn.innerHTML = '<svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Restaurar mis vectores';
-      btn.style.cssText = 'margin:8px 14px;padding:7px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:Space Mono,monospace;font-size:10px;cursor:pointer;display:block;width:calc(100% - 28px)';
+      btn.style.cssText = 'margin:8px 14px;padding:7px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--font-math);font-size:12px;cursor:pointer;display:block;width:calc(100% - 28px)';
       btn.onclick = ()=>{
         vecs = triVecsBackup || vecs;
         triVecsBackup = null;

@@ -1,5 +1,6 @@
 import * as matrixUI from './algebra/matrix.mjs';
 import * as ineqUI from './algebra/inequalities.mjs';
+import { parseRoute, routeHash } from './routes.mjs';
 
 export function createNavigation({ initVectorsApp, emInit, emResizeCanvas, emPlusOpenPanel, calcInit, studyOpenPanel, geomInit, linearInit, numOpenPanel, logicOpenPanel, wavesOpenPanel, fnBack, seqSetMode, mechOpenPanel, mechPlusOpenPanel, probOpenPanel, expOpenPanel }) {
 // ═══════════════════════════════════════════════════════
@@ -21,14 +22,17 @@ const SUBMOD_CONFIG = {
   num: {
     title: '<span class="math-c">Análisis numérico</span>',
     cards: [
-      { icon:'analysis', name:'Errores y cifras', desc:'Error absoluto/relativo y cifras significativas', id:'num-errors', cls:'math-sub' },
-      { icon:'analysis', name:'Precisión finita', desc:'Redondeo o corte tras cada operación', id:'num-precision', cls:'math-sub' },
+      { icon:'error', name:'Errores y cifras', desc:'Error absoluto/relativo y cifras significativas', id:'num-errors', cls:'math-sub' },
+      { icon:'taylor', name:'Taylor y error', desc:'Polinomio y resto de Lagrange con cota', id:'num-taylor', cls:'math-sub' },
+      { icon:'precision', name:'Precisión finita', desc:'Redondeo o corte tras cada operación', id:'num-precision', cls:'math-sub' },
       { icon:'root', name:'Raíces', desc:'Bisección y Newton con historial', id:'num-roots', cls:'math-sub' },
       { icon:'matrix', name:'Sistemas iterativos', desc:'Jacobi y Gauss-Seidel', id:'num-linear', cls:'math-sub' },
-      { icon:'root', name:'Newton 2×2', desc:'Sistema no lineal con jacobiano y residuo', id:'num-system2d', cls:'math-sub' },
+      { icon:'jacobian', name:'Newton 2–6 variables', desc:'Jacobiano simbólico y residuo', id:'num-system', cls:'math-sub' },
+      { icon:'stability', name:'Estabilidad de sistemas', desc:'Amplificación en X′=AX', id:'num-stability', cls:'math-sub' },
+      { icon:'tangent', name:'Newton 2×2', desc:'Sistema no lineal con jacobiano y residuo', id:'num-system2d', cls:'math-sub' },
       { icon:'curve', name:'Interpolación y ajuste', desc:'Newton, Lagrange y mínimos cuadrados', id:'num-interpolation', cls:'math-sub' },
-      { icon:'tangent', name:'Derivación numérica', desc:'Diferencias finitas y refinamiento', id:'num-derivative', cls:'math-sub' },
-      { icon:'analysis', name:'Cuadratura con cota', desc:'Trapecio y Simpson con hipótesis de derivada', id:'num-quadrature', cls:'math-sub' },
+      { icon:'differential', name:'Derivación numérica', desc:'Diferencias finitas y refinamiento', id:'num-derivative', cls:'math-sub' },
+      { icon:'quadrature', name:'Cuadratura con cota', desc:'Trapecio y Simpson con hipótesis de derivada', id:'num-quadrature', cls:'math-sub' },
       { icon:'ode', name:'PVI numérico', desc:'Euler, RK2, RK4 y Adams-Bashforth', id:'num-ode', cls:'math-sub' },
     ]
   },
@@ -88,7 +92,7 @@ const SUBMOD_CONFIG = {
     title: '<span class="fi-c">Electromagnetismo</span>',
     cards: [
       { icon:'bolt', name:'Campos y fórmulas básicas', desc:'Coulomb, Gauss, Lorentz, Faraday y Maxwell', id:'em-basics', cls:'fi-sub' },
-      { icon:'physics', name:'Electrostática', desc:'Superposición, dieléctricos y Poisson 1D', id:'emplus-electrostatics', cls:'fi-sub' },
+      { icon:'physics', name:'Electrostática', desc:'Superposición, dieléctricos y Poisson 1D/2D', id:'emplus-electrostatics', cls:'fi-sub' },
       { icon:'system', name:'Circuitos', desc:'Equivalentes, nodos, RL y RLC en AC', id:'emplus-circuits', cls:'fi-sub' },
       { icon:'motion', name:'Magnetismo e inducción', desc:'Espira, solenoide, Hall y FEM', id:'emplus-magnetism', cls:'fi-sub' },
     ]
@@ -108,8 +112,8 @@ const SUBMOD_CONFIG = {
       { icon:'mechanics', name:'Tiro parabólico', desc:'Lanzamiento, destino y trayectoria', id:'mech-projectile', cls:'fi-sub' },
       { icon:'bolt', name:'Fuerza y energía', desc:'F = ma, energía cinética y potencial', id:'mech-dynamics', cls:'fi-sub' },
       { icon:'vector', name:'Fuerzas y equilibrio', desc:'Torque, cables, vigas, planos y poleas', id:'mechplus-forces', cls:'fi-sub' },
-      { icon:'motion', name:'Movimiento y marcos', desc:'Circular, corriente, peralte, rizo y marcos', id:'mechplus-motion', cls:'fi-sub' },
-      { icon:'mechanics', name:'Colisiones y centro de masa', desc:'Impulso, energía y sistemas de partículas', id:'mechplus-collisions', cls:'fi-sub' },
+      { icon:'circular', name:'Movimiento y marcos', desc:'Circular, corriente, peralte, rizo y marcos', id:'mechplus-motion', cls:'fi-sub' },
+      { icon:'collision', name:'Colisiones y centro de masa', desc:'Impulso, energía y sistemas de partículas', id:'mechplus-collisions', cls:'fi-sub' },
       { icon:'physics', name:'Rotación y gravitación', desc:'Inercia y órbita circular', id:'mechplus-rotation', cls:'fi-sub' },
     ]
   },
@@ -120,14 +124,14 @@ const SUBMOD_CONFIG = {
         { icon:'differential', name:'Cálculo diferencial', desc:'Límites, derivadas y análisis de función', id:'calc-dif', cls:'ca-sub' },
         { icon:'tangent', name:'Aplicaciones diferenciales', desc:'Continuidad por tramos y derivadas de curvas', id:'study-differential', cls:'ca-sub' },
         { icon:'calculus', name:'Cálculo integral', desc:'Antiderivadas, integrales, volúmenes y Taylor', id:'calc-int', cls:'ca-sub' },
-        { icon:'analysis', name:'Aplicaciones integrales', desc:'Áreas polares, arco, superficie y series', id:'study-integral', cls:'ca-sub' },
+        { icon:'area', name:'Aplicaciones integrales', desc:'Áreas polares, arco, superficie y series', id:'study-integral', cls:'ca-sub' },
         { icon:'curve', name:'Curvas', desc:'Paramétricas, polares y cónicas', id:'calc-cur', cls:'ca-sub' },
       ]},
       { title:'Varias variables y modelos', cls:'ca-sub', cards:[
         { icon:'multivariable', name:'Cálculo multivariable', desc:'Derivadas parciales, gradiente e integral doble', id:'calc-mul', cls:'ca-sub' },
-        { icon:'curve', name:'Regiones y superficies', desc:'Integral doble variable y plano tangente', id:'study-multivariable', cls:'ca-sub' },
+        { icon:'region', name:'Regiones y superficies', desc:'Integral doble variable y plano tangente', id:'study-multivariable', cls:'ca-sub' },
         { icon:'ode', name:'Ecuaciones diferenciales', desc:'Primer y segundo orden', id:'calc-edo', cls:'ca-sub' },
-        { icon:'analysis', name:'Métodos de EDO', desc:'Separable, Bernoulli, logística, forzada, sistemas y Laplace', id:'study-ode', cls:'ca-sub' },
+        { icon:'field', name:'Métodos de EDO', desc:'Separable, Bernoulli, logística, forzada, sistemas y Laplace', id:'study-ode', cls:'ca-sub' },
       ]},
       { title:'Visualización', cls:'ca-sub', cards:[
         { icon:'plot', name:'Graficador', desc:'Siete familias de funciones y tabla de valores', id:'calc-graf', cls:'ca-sub' },
@@ -147,8 +151,41 @@ let launcherRevealTimer = null;
 let submodRevealTimer = null;
 let moduleLaunchTimer = null;
 
+function baseUrl(){
+  const location = globalThis.location || {};
+  return `${location.pathname || ''}${location.search || ''}`;
+}
+
 function navPush(state){
-  history.pushState(state, '');
+  history.pushState(state, '', routeHash(state) || baseUrl());
+}
+
+function cardsOf(parent){
+  const cfg = SUBMOD_CONFIG[parent];
+  return cfg ? (cfg.groups ? cfg.groups.flatMap(group => group.cards) : cfg.cards) : [];
+}
+
+// Abre el menú o la herramienta del enlace; un destino desconocido deja la portada.
+function openRoute(route){
+  if (!route) return false;
+  const parent = route.parent && Object.hasOwn(SUBMOD_CONFIG, route.parent) ? route.parent : null;
+  if (!route.id) {
+    if (!parent) return false;
+    openSubmod(parent);
+    return true;
+  }
+  const owner = parent || Object.keys(SUBMOD_CONFIG).find(key => cardsOf(key).some(card => card.id === route.id));
+  const card = owner && cardsOf(owner).find(item => item.id === route.id);
+  if (!card) return false;
+  if (card.action === 'openSubmod') {
+    openSubmod(card.id);
+    return true;
+  }
+  hideLauncherImmediately();
+  renderSubmod(owner);
+  navPush({sc:'submod', parent:owner});
+  launchSubmod(card.id);
+  return true;
 }
 
 function activeModuleId() {
@@ -164,6 +201,14 @@ window.addEventListener('popstate', (event) => {
   clearTimeout(submodRevealTimer);
   clearTimeout(moduleLaunchTimer);
   const state = event.state;
+  if (!state) {
+    // Cambio manual del fragmento: se reconstruye la ruta desde la portada.
+    const active = activeModuleId();
+    if (active) _closeModuleNoHistory(active);
+    showLauncher();
+    openRoute(parseRoute(globalThis.location?.hash));
+    return;
+  }
   if (state?.sc === 'exit') {
     _confirmExit();
     return;
@@ -186,9 +231,11 @@ window.addEventListener('popstate', (event) => {
 });
 
 window.addEventListener('load', () => {
-  history.replaceState({sc:'exit'}, '');
-  history.pushState({sc:'launcher'}, '');
+  const route = parseRoute(globalThis.location?.hash);
+  history.replaceState({sc:'exit'}, '', baseUrl());
+  history.pushState({sc:'launcher'}, '', baseUrl());
   setAuthorVisible(true);
+  openRoute(route);
 });
 
 function hideLauncherImmediately() {
@@ -386,7 +433,7 @@ function launchSubmod(id, recordHistory = true) {
       screen.classList.add('visible');
       linearInit();
     });
-  } else if (id.startsWith('num-') && ['errors','precision','roots','linear','system2d','interpolation','derivative','quadrature','ode'].includes(id.slice(4))) {
+  } else if (id.startsWith('num-') && ['errors','taylor','precision','roots','linear','system','stability','system2d','interpolation','derivative','quadrature','ode'].includes(id.slice(4))) {
     document.getElementById('submod-screen').classList.remove('visible');
     scheduleModuleLaunch(() => {
       const screen = document.getElementById('num-app');

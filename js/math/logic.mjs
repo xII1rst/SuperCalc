@@ -214,7 +214,12 @@ export function relationProperties(domain,pairs) {
     if (!output.some(group=>group.includes(value))) output.push(values.filter(other=>related(value,other)));
     return output;
   },[]):[];
-  return {domain:values,range:[...new Set(pairs.map(pair=>pair[1]))],reflexive,symmetric,transitive,equivalence,classes,
+  const missingReflexive=values.find(value=>!related(value,value));
+  const missingSymmetric=pairs.find(([a,b])=>!related(b,a));
+  let missingTransitive=null;
+  for(const [a,b] of pairs)for(const [c,d] of pairs)if(b===c&&!related(a,d)&&!missingTransitive)missingTransitive=[a,b,d];
+  return {domain:values,observedDomain:[...new Set(pairs.map(pair=>pair[0]))],range:[...new Set(pairs.map(pair=>pair[1]))],reflexive,symmetric,transitive,equivalence,classes,
+    counterexamples:{reflexive:reflexive?null:[missingReflexive,missingReflexive],symmetric:missingSymmetric||null,transitive:missingTransitive},
     matrix:values.map(a=>values.map(b=>related(a,b)?1:0))};
 }
 
