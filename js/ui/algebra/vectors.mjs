@@ -1,14 +1,15 @@
-import { vmag, vdot, vcross, vangle, vproj, combineVectors } from '../../math/algebra/vector.mjs';
-import { triangleGeometry } from '../../math/algebra/triangle.mjs';
-import { solveVectorEquation, solveUnknownComponents } from '../../math/algebra/vector-equations.mjs';
+import { combineVectors, vangle, vcross, vdot, vmag, vproj } from '../../math/algebra/vector.mjs';
 import { createVectorCanvas } from '../../graphics/vector-canvas.mjs';
-import { fDMS, fN as formatDecimal, formatResult, toFrac, formatMagnitude } from '../../utils/format.mjs';
+import { fDMS, fN as formatDecimal, formatMagnitude, formatResult, toFrac } from '../../utils/format.mjs';
+import { observeContainerSize, resizeCanvasToContainer } from '../canvas-size.mjs';
 import { showToast } from '../toast.mjs';
-import { resizeCanvasToContainer, observeContainerSize } from '../canvas-size.mjs';
+import { solveUnknownComponents, solveVectorEquation } from '../../math/algebra/vector-equations.mjs';
+import { createTriangleTools } from './vectors/triangle.mjs';
+export { toggleSection, mathTogSteps } from './vectors/sections.mjs';
 
 let figureControls;
 export function attachFigureControls(controls) { figureControls = controls; }
-function setUnkTarget(value) { unkTarget = value; }
+export function setUnkTarget(value) { unkTarget = value; }
 
 // ── PALETTE ───────────────────────────────────────────
 const PAL=['var(--gold)','var(--pink)','var(--blue)','var(--orange)','var(--green)','var(--red)','var(--purple)','var(--teal)','var(--al2)','var(--ca2)'];
@@ -42,30 +43,7 @@ function fMag(x){
 }
 
 
-function toggleSection(el){
-  const body=el.nextElementSibling;
-  const arrow=el.querySelector('.collapsible-arrow');
-  const isOpen=body.style.maxHeight&&body.style.maxHeight!=='0px';
-  body.style.maxHeight=isOpen?'0px':(body.scrollHeight+20)+'px';
-  if(arrow) arrow.classList.toggle('open',!isOpen);
-}
-function mathTogSteps(sid,tog){
-  const body=document.getElementById(sid);
-  if(!body) return;
-  const on=!body.classList.contains('on');
-  body.classList.toggle('on',on);
-  tog.classList.toggle('on',on);
-  tog.querySelector('span:last-child').textContent=on?'ocultar pasos':'ver pasos';
-  // Expandir el collapsible-body padre si está colapsado
-  const cb=body.closest('.collapsible-body');
-  if(cb&&on) cb.style.maxHeight=(cb.scrollHeight+body.scrollHeight+40)+'px';
-}
-function openAllSections(){
-  document.querySelectorAll('.collapsible-body').forEach(b=>{b.style.maxHeight=(b.scrollHeight+20)+'px';});
-  document.querySelectorAll('.collapsible-arrow').forEach(a=>a.classList.add('open'));
-}
-
-function togglePanel(){
+export function togglePanel(){
   if(window.innerWidth>=700) return; // en desktop el panel siempre visible
   const bot=document.getElementById('bottom');
   const btn=document.getElementById('panel-tog-btn');
@@ -73,7 +51,7 @@ function togglePanel(){
   btn.classList.toggle('on',!collapsed);
   setTimeout(()=>resize(),50);
 }
-function toggleFrac(){
+export function toggleFrac(){
   fracMode=!fracMode;
   document.getElementById('frac-tog').classList.toggle('on',fracMode);
   document.getElementById('frac-lbl').textContent=fracMode?'FRAC':'DEC';
@@ -83,7 +61,7 @@ function toggleFrac(){
   if(document.getElementById('pO').classList.contains('on')) rO();
   rLeg();
 }
-function toggleFigure(){
+export function toggleFigure(){
   showFigure=!showFigure;
   document.getElementById('fig-tog').classList.toggle('on',showFigure);
   draw();
@@ -98,15 +76,15 @@ function eduHint(t,v){
 }
 
 // ── MODE ──────────────────────────────────────────────
-function setMode(m){
+export function setMode(m){
   mode=m;
   document.getElementById('br2').classList.toggle('on',m===2);
   document.getElementById('br3').classList.toggle('on',m===3);
   rV=null;sR=null;unkR=null;opI=[];
   renderVecs();rM();rO();rE();rI();draw();
 }
-function resetView(){rotX=22;rotY=-38;scl=1;draw();}
-function showTab(t){
+export function resetView(){rotX=22;rotY=-38;scl=1;draw();}
+export function showTab(t){
   ['V','M','O','E','I','T','F'].forEach((x,i)=>{
     document.querySelectorAll('.tab')[i].classList.toggle('on',x===t);
     document.getElementById('p'+x).classList.toggle('on',x===t);
@@ -142,11 +120,11 @@ function renderVecs(){
   document.getElementById('pV').innerHTML=h;
   rLeg();
 }
-function uV(id,k,val){const v=vecs.find(v=>v.id===id);if(v)v[k]=parseFloat(val)||0;draw();rLeg();if(document.getElementById('pM').classList.contains('on'))rM();}
-function uN(id,val){const v=vecs.find(v=>v.id===id);if(v)v.nm=val||'v';rLeg();if(document.getElementById('pO').classList.contains('on'))rO();if(document.getElementById('pE').classList.contains('on'))rE();if(document.getElementById('pI').classList.contains('on'))rI();}
-function togV(id){const v=vecs.find(v=>v.id===id);if(v)v.on=!v.on;renderVecs();draw();if(document.getElementById('pM').classList.contains('on'))rM();}
-function delV(id){if(vecs.length<=1){showToast('Al menos 1 vector.','warn');return;}vecs=vecs.filter(v=>v.id!==id);opI=opI.filter(i=>i!==id);renderVecs();draw();rO();rE();rI();}
-function addV(){
+export function uV(id,k,val){const v=vecs.find(v=>v.id===id);if(v)v[k]=parseFloat(val)||0;draw();rLeg();if(document.getElementById('pM').classList.contains('on'))rM();}
+export function uN(id,val){const v=vecs.find(v=>v.id===id);if(v)v.nm=val||'v';rLeg();if(document.getElementById('pO').classList.contains('on'))rO();if(document.getElementById('pE').classList.contains('on'))rE();if(document.getElementById('pI').classList.contains('on'))rI();}
+export function togV(id){const v=vecs.find(v=>v.id===id);if(v)v.on=!v.on;renderVecs();draw();if(document.getElementById('pM').classList.contains('on'))rM();}
+export function delV(id){if(vecs.length<=1){showToast('Al menos 1 vector.','warn');return;}vecs=vecs.filter(v=>v.id!==id);opI=opI.filter(i=>i!==id);renderVecs();draw();rO();rE();rI();}
+export function addV(){
   const used=vecs.map(v=>v.nm);
   const pool=['C','D','E','F','G','H','P','Q','R','S','T','U','W'];
   const nm=pool.find(n=>!used.includes(n))||'V'+nid;
@@ -305,9 +283,9 @@ function rO(){
     return expr;
   })()+`<button class="action-btn" data-action="compute">Calcular y graficar</button>${rh}`;
 }
-function tO(id){const i=opI.indexOf(id);i>=0?opI.splice(i,1):opI.push(id);rO();}
-function sO(o){opS=o;rO();}
-function compute(){
+export function tO(id){const i=opI.indexOf(id);i>=0?opI.splice(i,1):opI.push(id);rO();}
+export function sO(o){opS=o;rO();}
+export function compute(){
   if(opI.length<2){showToast('Selecciona al menos 2 vectores.','warn');return;}
   const sel=opI.map(id=>vecs.find(v=>v.id===id)).filter(Boolean);
   if(opS==='×'&&mode===2){showToast('Cruz solo en R³.','warn');return;}
@@ -315,7 +293,7 @@ function compute(){
   rV=combineVectors(sel,opS,mode);
   rO();rLeg();draw();
 }
-function saveR(){if(!rV||rV.scalar)return;const used=vecs.map(v=>v.nm);const nm=['R','S','T','P','Q'].find(n=>!used.includes(n))||'R'+nid;vecs.push({id:nid++,on:true,nm,...rV,cl:PAL[palIdx++%PAL.length]});rV=null;renderVecs();rO();draw();}
+export function saveR(){if(!rV||rV.scalar)return;const used=vecs.map(v=>v.nm);const nm=['R','S','T','P','Q'].find(n=>!used.includes(n))||'R'+nid;vecs.push({id:nid++,on:true,nm,...rV,cl:PAL[palIdx++%PAL.length]});rV=null;renderVecs();rO();draw();}
 
 // ── ECUACIÓN SOLVER ───────────────────────────────────
 function rE(){
@@ -337,8 +315,8 @@ function rE(){
     <input class="eq-input" id="ie" placeholder="${ex}" style="width:100%;margin-bottom:8px"/>
     <button class="action-btn" data-action="runSolve">Resolver y graficar</button>${sh}`;
 }
-function runSolve(){const eq=document.getElementById('ie').value.trim();const unk=document.getElementById('iu').value.trim();if(!eq||!unk){showToast('Completa ecuación e incógnita.','warn');return;}const r=solveVectorEquation(eq,unk,vecs,mode,fN);if(r.err){sR={err:r.err};rE();return;}sR={nm:unk,steps:r.steps,vx:r.res.vx,vy:r.res.vy,vz:r.res.vz||0};rE();rLeg();draw();}
-function saveSol(){if(!sR||sR.err)return;const used=vecs.map(v=>v.nm);const nm=!used.includes(sR.nm)?sR.nm:(['R','S','T'].find(n=>!used.includes(n))||'S'+nid);vecs.push({id:nid++,on:true,nm,vx:sR.vx,vy:sR.vy,vz:sR.vz||0,cl:PAL[palIdx++%PAL.length]});sR=null;renderVecs();rE();draw();}
+export function runSolve(){const eq=document.getElementById('ie').value.trim();const unk=document.getElementById('iu').value.trim();if(!eq||!unk){showToast('Completa ecuación e incógnita.','warn');return;}const r=solveVectorEquation(eq,unk,vecs,mode,fN);if(r.err){sR={err:r.err};rE();return;}sR={nm:unk,steps:r.steps,vx:r.res.vx,vy:r.res.vy,vz:r.res.vz||0};rE();rLeg();draw();}
+export function saveSol(){if(!sR||sR.err)return;const used=vecs.map(v=>v.nm);const nm=!used.includes(sR.nm)?sR.nm:(['R','S','T'].find(n=>!used.includes(n))||'S'+nid);vecs.push({id:nid++,on:true,nm,vx:sR.vx,vy:sR.vy,vz:sR.vz||0,cl:PAL[palIdx++%PAL.length]});sR=null;renderVecs();rE();draw();}
 
 // ── INCÓGNITA (componente desconocida) ────────────────
 // Resuelve: operación(A,B) = target  donde A o B tienen componentes con variables
@@ -401,20 +379,20 @@ function rI(){
     <button class="action-btn blue" data-action="runUnkSolve">Resolver incógnita</button>
     ${resHtml}`;
 }
-function setUnkOp(o){unkOp=o;rI();}
-function updUnkVec(i,c,val){unkVecs[i].comps[c]=val;unkR=null;}
-function updUnkName(i,val){unkVecs[i].nm=val||'A';}
-function addUnkVec(){unkVecs.push({nm:String.fromCharCode(65+unkVecs.length),comps:['0','0','0']});unkR=null;rI();}
-function delUnkVec(i){if(unkVecs.length<=1)return;unkVecs.splice(i,1);unkR=null;rI();}
+export function setUnkOp(o){unkOp=o;rI();}
+export function updUnkVec(i,c,val){unkVecs[i].comps[c]=val;unkR=null;}
+export function updUnkName(i,val){unkVecs[i].nm=val||'A';}
+export function addUnkVec(){unkVecs.push({nm:String.fromCharCode(65+unkVecs.length),comps:['0','0','0']});unkR=null;rI();}
+export function delUnkVec(i){if(unkVecs.length<=1)return;unkVecs.splice(i,1);unkR=null;rI();}
 
-function runUnkSolve(){
+export function runUnkSolve(){
   unkR=solveUnknownComponents(unkVecs,unkOp,unkTarget,mode,fN);
   rI();
 }
 
 // ── CANVAS ────────────────────────────────────────────
 const cv=document.getElementById('c');
-const {draw}=createVectorCanvas(cv,()=>({vecs,mode,rV,sR,scl,showFigure,rotX,rotY}));
+export const {draw}=createVectorCanvas(cv,()=>({vecs,mode,rV,sR,scl,showFigure,rotX,rotY}));
 // ── RESIZE & INPUT ────────────────────────────────────
 function resize(){
   const w=document.getElementById('cw');
@@ -441,7 +419,7 @@ cv.addEventListener('wheel',e=>{
 },{passive:false});
 
 // AL vectors init — called when module opens
-function initVectorsApp(){
+export function initVectorsApp(){
   if(!alInitDone){
     alInitDone=true;
     vecs=[]; palIdx=0; nid=0;
@@ -459,143 +437,8 @@ function initVectorsApp(){
 // TRIÁNGULO 3D
 // ═══════════════════════════════════════════════════════
 
-function triGet(id){ return parseFloat(document.getElementById(id).value)||0; }
-
-// ══════════════════════════════════════════════════════
-function triClear(){
-  document.getElementById('tri-res').innerHTML='';
-  ['px','py','pz','qx','qy','qz','rx','ry','rz'].forEach(k=>{
-    const el=document.getElementById('tri-'+k);
-    if(el) el.value='0';
-  });
-}
-
-function triCalc(){
-  const P={x:triGet('tri-px'),y:triGet('tri-py'),z:triGet('tri-pz')};
-  const Q={x:triGet('tri-qx'),y:triGet('tri-qy'),z:triGet('tri-qz')};
-  const R={x:triGet('tri-rx'),y:triGet('tri-ry'),z:triGet('tri-rz')};
-
-  const {
-    PQ, QR, PR, QP, RP, RQ, dPQ, dQR, dPR,
-    angP, angQ, angR, sumAng,
-    cr, crossMag, area, dotPQPR, dotQPQR, dotRPRQ,
-  }=triangleGeometry(P,Q,R);
-  const fmt=v=>fN(v,4);
-
-  // ── Construir HTML de resultados ──
-  const mkStepCard=(title,color,steps)=>`
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px">
-      <div style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:${color};margin-bottom:8px;">${title}</div>
-      ${steps.map(s=>`<div style="font-family:var(--font-math);font-size:12px;color:var(--text-soft);line-height:1.9;padding:1px 0">${s}</div>`).join('')}
-    </div>`;
-
-  const mkResult=(label,value,color='var(--accent)')=>`
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;flex:1;min-width:0">
-      <div style="font-family:var(--font-math);font-size:12px;color:var(--text3);margin-bottom:3px">${label}</div>
-      <div style="font-family:var(--font-math);font-size:15px;color:${color};font-weight:700">${value}</div>
-    </div>`;
-
-  // Pasos lado PQ
-  const stepsPQ=[
-    `<b style="color:var(--gold)">PQ</b> = Q − P`,
-    `= (${Q.x}−${P.x}, ${Q.y}−${P.y}, ${Q.z}−${P.z})`,
-    `= <b>(${fmt(PQ.x)}, ${fmt(PQ.y)}, ${fmt(PQ.z)})</b>`,
-    `|<b>PQ</b>| = √(${fmt(PQ.x)}² + ${fmt(PQ.y)}² + ${fmt(PQ.z)}²)`,
-    `= √(${fmt(PQ.x**2)} + ${fmt(PQ.y**2)} + ${fmt(PQ.z**2)})`,
-    `= √${fmt(PQ.x**2+PQ.y**2+PQ.z**2)} = <b>${fMag(dPQ)}</b>`,
-  ];
-  const stepsQR=[
-    `<b style="color:var(--blue)">QR</b> = R − Q`,
-    `= (${R.x}−${Q.x}, ${R.y}−${Q.y}, ${R.z}−${Q.z})`,
-    `= <b>(${fmt(QR.x)}, ${fmt(QR.y)}, ${fmt(QR.z)})</b>`,
-    `|<b>QR</b>| = √(${fmt(QR.x)}² + ${fmt(QR.y)}² + ${fmt(QR.z)}²)`,
-    `= √${fmt(QR.x**2+QR.y**2+QR.z**2)} = <b>${fMag(dQR)}</b>`,
-  ];
-  const stepsPR=[
-    `<b style="color:var(--green)">PR</b> = R − P`,
-    `= (${R.x}−${P.x}, ${R.y}−${P.y}, ${R.z}−${P.z})`,
-    `= <b>(${fmt(PR.x)}, ${fmt(PR.y)}, ${fmt(PR.z)})</b>`,
-    `|<b>PR</b>| = √(${fmt(PR.x)}² + ${fmt(PR.y)}² + ${fmt(PR.z)}²)`,
-    `= √${fmt(PR.x**2+PR.y**2+PR.z**2)} = <b>${fMag(dPR)}</b>`,
-  ];
-
-  // Pasos ángulo P
-  const stepsAngP=[
-    `cos P = (<b>PQ · PR</b>) / (|PQ|·|PR|)`,
-    `<b>PQ · PR</b> = (${fmt(PQ.x)})(${fmt(PR.x)}) + (${fmt(PQ.y)})(${fmt(PR.y)}) + (${fmt(PQ.z)})(${fmt(PR.z)})`,
-    `= ${fmt(PQ.x*PR.x)} + ${fmt(PQ.y*PR.y)} + ${fmt(PQ.z*PR.z)} = <b>${fmt(dotPQPR)}</b>`,
-    `cos P = ${fmt(dotPQPR)} / (${fmt(dPQ)} × ${fmt(dPR)})`,
-    `cos P = ${fmt(dotPQPR)} / ${fmt(dPQ*dPR)} = ${fmt(dotPQPR/(dPQ*dPR))}`,
-    `P = cos⁻¹(${fmt(dotPQPR/(dPQ*dPR))}) = <b>${fDMS(angP)}</b>`,
-  ];
-  const stepsAngQ=[
-    `cos Q = (<b>QP · QR</b>) / (|QP|·|QR|)`,
-    `<b>QP · QR</b> = (${fmt(QP.x)})(${fmt(QR.x)}) + (${fmt(QP.y)})(${fmt(QR.y)}) + (${fmt(QP.z)})(${fmt(QR.z)})`,
-    `= ${fmt(QP.x*QR.x)} + ${fmt(QP.y*QR.y)} + ${fmt(QP.z*QR.z)} = <b>${fmt(dotQPQR)}</b>`,
-    `cos Q = ${fmt(dotQPQR)} / (${fmt(dPQ)} × ${fmt(dQR)})`,
-    `cos Q = ${fmt(dotQPQR)} / ${fmt(dPQ*dQR)} = ${fmt(dotQPQR/(dPQ*dQR))}`,
-    `Q = cos⁻¹(${fmt(dotQPQR/(dPQ*dQR))}) = <b>${fDMS(angQ)}</b>`,
-  ];
-  const stepsAngR=[
-    `cos R = (<b>RP · RQ</b>) / (|RP|·|RQ|)`,
-    `<b>RP · RQ</b> = (${fmt(RP.x)})(${fmt(RQ.x)}) + (${fmt(RP.y)})(${fmt(RQ.y)}) + (${fmt(RP.z)})(${fmt(RQ.z)})`,
-    `= ${fmt(RP.x*RQ.x)} + ${fmt(RP.y*RQ.y)} + ${fmt(RP.z*RQ.z)} = <b>${fmt(dotRPRQ)}</b>`,
-    `cos R = ${fmt(dotRPRQ)} / (${fmt(dPR)} × ${fmt(dQR)})`,
-    `cos R = ${fmt(dotRPRQ)} / ${fmt(dPR*dQR)} = ${fmt(dotRPRQ/(dPR*dQR))}`,
-    `R = cos⁻¹(${fmt(dotRPRQ/(dPR*dQR))}) = <b>${fDMS(angR)}</b>`,
-  ];
-
-  // Pasos área
-  const stepsArea=[
-    `<b>PQ × PR</b> — producto vectorial`,
-    `i: (${fmt(PQ.y)})(${fmt(PR.z)}) − (${fmt(PQ.z)})(${fmt(PR.y)}) = <b>${fmt(cr.x)}</b>`,
-    `j: (${fmt(PQ.z)})(${fmt(PR.x)}) − (${fmt(PQ.x)})(${fmt(PR.z)}) = <b>${fmt(cr.y)}</b>`,
-    `k: (${fmt(PQ.x)})(${fmt(PR.y)}) − (${fmt(PQ.y)})(${fmt(PR.x)}) = <b>${fmt(cr.z)}</b>`,
-    `|<b>PQ × PR</b>| = √(${fmt(cr.x)}² + ${fmt(cr.y)}² + ${fmt(cr.z)}²) = ${fMag(crossMag)}`,
-    `Área = |PQ × PR| / 2 = ${fmt(crossMag)} / 2 = <b>${fMag(area)}</b>`,
-  ];
-
-  const verif=Math.abs(sumAng-180)<0.01
-    ?`<span style="color:var(--green)">${fDMS(angP)} + ${fDMS(angQ)} + ${fDMS(angR)} = ${fmt(sumAng)}° ≈ 180°</span>`
-    :`<span style="color:var(--red)">Suma = ${fmt(sumAng)}° (revisar datos)</span>`;
-
-  document.getElementById('tri-res').innerHTML=`
-    <!-- Resumen superior -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      ${mkResult('Lado PQ', fMag(dPQ), 'var(--gold)')}
-      ${mkResult('Lado QR', fMag(dQR), 'var(--blue)')}
-      ${mkResult('Lado PR', fMag(dPR), 'var(--green)')}
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      ${mkResult('Ángulo P', fDMS(angP), 'var(--gold)')}
-      ${mkResult('Ángulo Q', fDMS(angQ), 'var(--blue)')}
-      ${mkResult('Ángulo R', fDMS(angR), 'var(--green)')}
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
-      ${mkResult('Perímetro', fMag(dPQ+dQR+dPR))}
-      ${mkResult('Área', fMag(area))}
-    </div>
-    <div style="font-family:var(--font-math);font-size:12px;margin-bottom:14px;padding:7px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">${verif}</div>
-
-    <!-- Pasos colapsables -->
-    <div class="section-title" style="margin-bottom:8px">A) Lados del triángulo</div>
-    ${mkStepCard('Lado PQ = Q − P', 'var(--gold)', stepsPQ)}
-    ${mkStepCard('Lado QR = R − Q', 'var(--blue)', stepsQR)}
-    ${mkStepCard('Lado PR = R − P', 'var(--green)', stepsPR)}
-
-    <div class="section-title" style="margin-top:14px;margin-bottom:8px">C) Ángulos internos</div>
-    ${mkStepCard('Ángulo en P', 'var(--gold)', stepsAngP)}
-    ${mkStepCard('Ángulo en Q', 'var(--blue)', stepsAngQ)}
-    ${mkStepCard('Ángulo en R', 'var(--green)', stepsAngR)}
-
-    <div class="section-title" style="margin-top:14px;margin-bottom:8px">Área del triángulo</div>
-    ${mkStepCard('Producto vectorial PQ × PR', 'var(--al2)', stepsArea)}
-  `;
-
-  // ── Graficar en el canvas 3D ──
-  // Añadir los 3 puntos como vectores temporales y dibujar
-  triDrawCanvas(P, Q, R);
-}
+const { triGet, triClear, triCalc } = createTriangleTools({ fN, fMag, triDrawCanvas });
+export { triClear, triCalc };
 
 function triDrawCanvas(P, Q, R){
   // Guardar vecs del usuario para poder restaurarlos
@@ -637,12 +480,3 @@ function triDrawCanvas(P, Q, R){
     setTimeout(()=>showTab('T'), 80);
   }, 60);
 }
-
-export {
-  initVectorsApp, draw, addUnkVec, addV, delUnkVec, delV,
-  resetView, runSolve, runUnkSolve, sO, saveR, saveSol,
-  setMode, setUnkOp, setUnkTarget, showTab, tO, togV,
-  toggleFigure, toggleFrac, togglePanel, toggleSection,
-  uN, uV, updUnkName, updUnkVec, triCalc, triClear,
-  compute, mathTogSteps,
-};
