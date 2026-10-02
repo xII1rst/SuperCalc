@@ -1,0 +1,21 @@
+<!-- ONDAS -->
+<section id="study-app" class="tool-app focused" aria-label="Aplicaciones de cálculo" inert>
+  <div class="mod-header">
+    <button class="mod-back ca" data-action="closeModule" data-arg="study"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Cálculo</button>
+    <div class="mod-logo-text"><span class="ca-c" id="study-title">Aplicaciones de cálculo</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="study-heading">Aplicaciones de cálculo</h1>
+      <p>Introduce expresiones con x, y o t según el problema. Usa * en productos y revisa el dominio y las hipótesis del resultado.</p>
+    </div>
+    <div class="tool-card">
+      <label for="study-mode">Problema</label>
+      <select id="study-mode" class="tool-input geom-mode" data-action="studySelect" data-event="change"></select>
+      <div id="study-fields" class="linear-fields" data-action="studyPreviewInputs" data-event="input"></div>
+      <div id="study-preview" class="calc-res-hint" aria-live="polite"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="studyCalculate">Calcular</button></div>
+      <div id="study-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

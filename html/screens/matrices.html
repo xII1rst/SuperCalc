@@ -1,0 +1,101 @@
+<!-- MATRICES & ECUACIONES LINEALES -->
+<div id="mat-app">
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="mat"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="u-grow">
+      <div class="mod-logo-text"><span class="al-c">Matrices</span> & Ec. Lineales</div>
+    </div>
+  </div>
+  <div class="mat-tabs">
+    <button class="mat-tab on"  data-action="matTab" data-arg="ops">Operaciones</button>
+    <button class="mat-tab"     data-action="matTab" data-arg="det">Det &amp; Inv</button>
+    <button class="mat-tab"     data-action="matTab" data-arg="sis">Sistemas</button>
+    <button class="mat-tab"     data-action="matTab" data-arg="eig">Eigenvalores</button>
+    <button class="mat-tab"     data-action="matTab" data-arg="space">Espacios</button>
+  </div>
+  <div class="mat-body">
+    <!-- OPERACIONES -->
+    <div id="mat-pOps" class="mat-panel on">
+      <div class="mat-sec">Operaciones entre matrices</div>
+      <div class="mat-row" style="flex-wrap:wrap;gap:6px">
+        <label>Operación:</label>
+        <select class="mat-sel" id="mat-op" data-action="matOpsRebuild" data-event="change">
+          <option value="add">Suma A+B+...</option>
+          <option value="sub">Resta A−B−...</option>
+          <option value="mul">Producto A×B×...</option>
+          <option value="sca">Escalar k×A</option>
+          <option value="tra">Transpuesta Aᵀ</option>
+        </select>
+      </div>
+      <div id="mat-ops-controls"></div>
+      <div id="mat-ops-grids"></div>
+      <button class="mat-btn" data-action="matCalcOps">Calcular</button>
+      <button class="mat-btn sec" data-action="matOpsReset">Reset</button>
+      <div id="mat-res-ops"></div>
+    </div>
+    <!-- DETERMINANTE E INVERSA -->
+    <div id="mat-pDet" class="mat-panel">
+      <div class="mat-sec">Determinante e Inversa</div>
+      <div class="mat-row">
+        <label>Tamaño n×n:</label>
+        <input class="mat-inp" id="mat-dn" value="2" min="1" max="5" type="number" data-action="matBuildDet" data-event="change">
+      </div>
+      <div id="mat-det-grid"></div>
+      <button class="mat-btn" data-action="matCalcDet">Calcular Det</button>
+      <button class="mat-btn" data-action="matCalcInv">Calcular Inv</button>
+      <button class="mat-btn sec" data-action="matClearDet">Limpiar</button>
+      <div id="mat-res-det"></div>
+    </div>
+    <!-- SISTEMAS -->
+    <div id="mat-pSis" class="mat-panel">
+      <div class="mat-sec">Sistemas de Ecuaciones — Ax = b</div>
+      <div class="mat-row">
+        <label>Ecuaciones:</label>
+        <input class="mat-inp" id="mat-sm" value="2" min="1" max="6" type="number" data-action="matBuildSis" data-event="change">
+        <label>Incógnitas:</label>
+        <input class="mat-inp" id="mat-sn" value="2" min="1" max="6" type="number" data-action="matBuildSis" data-event="change">
+        <label>Método:</label>
+        <select class="mat-sel" id="mat-smet">
+          <option value="gauss">Gauss-Jordan</option>
+          <option value="cramer">Cramer</option>
+        </select>
+      </div>
+      <div id="mat-sis-grid"></div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="mat-btn" data-action="matCalcSis">Resolver</button>
+        <button class="mat-btn sec" data-action="matClearSis">Limpiar</button>
+        <div class="icon-tog" id="sis-frac-tog" data-action="matSisToggleFrac" style="margin-left:auto" role="button" tabindex="0">
+          <span class="tog-lbl" id="sis-frac-lbl">DEC</span>
+          <div class="sw"><div class="sw-track"></div><div class="sw-knob"></div></div>
+        </div>
+      </div>
+      <div id="mat-res-sis"></div>
+    </div>
+    <!-- EIGENVALORES -->
+    <div id="mat-pEig" class="mat-panel">
+      <div class="mat-sec">Valores &amp; Vectores Propios</div>
+      <div class="mat-row">
+        <label>Tamaño n×n:</label>
+        <input class="mat-inp" id="mat-en" value="2" min="2" max="4" type="number" data-action="matBuildEig" data-event="change">
+      </div>
+      <div id="mat-eig-grid"></div>
+      <button class="mat-btn" data-action="matCalcEig">Calcular</button>
+      <button class="mat-btn sec" data-action="matClearEig">Limpiar</button>
+      <div id="mat-res-eig"></div>
+    </div>
+    <!-- ESPACIOS VECTORIALES -->
+    <div id="mat-pSpace" class="mat-panel">
+      <div class="mat-sec">Imagen, núcleo y rango–nulidad</div>
+      <p class="tool-note">Introduce la matriz de una transformación lineal A: ℝⁿ → ℝᵐ. Las columnas son las imágenes de los vectores canónicos.</p>
+      <div class="mat-row">
+        <label for="mat-space-m">Filas m:</label>
+        <input class="mat-inp" id="mat-space-m" value="3" min="1" max="6" type="number" data-action="matBuildSpace" data-event="change">
+        <label for="mat-space-n">Columnas n:</label>
+        <input class="mat-inp" id="mat-space-n" value="4" min="1" max="6" type="number" data-action="matBuildSpace" data-event="change">
+      </div>
+      <div id="mat-space-grid"></div>
+      <button class="mat-btn" data-action="matCalcSpace">Analizar</button>
+      <div id="mat-res-space"></div>
+    </div>
+  </div>
+</div>

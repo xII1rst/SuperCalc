@@ -1,0 +1,68 @@
+<div id="em-app">
+  <div class="em-header">
+    <button class="em-back" data-action="closeModule" data-arg="em"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Electromagnetismo</button>
+    <div class="em-logo">
+      <div class="em-logo-text">Electro<span>Mag</span></div>
+    </div>
+    <div class="em-coord-pill">
+      <button id="em-cart" class="on" data-action="emSetCoord" data-arg="cart">XYZ</button>
+      <button id="em-cyl" data-action="emSetCoord" data-arg="cyl">CIL</button>
+      <button id="em-sph" data-action="emSetCoord" data-arg="sph">ESF</button>
+    </div>
+    <button id="em-fig-btn" data-action="emFigToggle" style="background:rgba(var(--fi-rgb),.1);border:1px solid rgba(var(--fi-rgb),.25);border-radius:8px;color:var(--fi);font-size:12px;font-family:var(--font-math);padding:5px 10px;cursor:pointer;transition:all .2s"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-conic"></use></svg> Figura</button>
+  </div>
+
+  <!-- Panel flotante de figuras EM -->
+  <div id="em-fig-panel" style="display:none;position:absolute;top:52px;right:10px;z-index:30;background:var(--chrome);border:1px solid var(--line-subtle);border-radius:12px;padding:14px;width:210px;box-shadow:0 8px 32px var(--panel-shadow)">
+    <div style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:var(--al2);margin-bottom:8px">Figura Geométrica</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="em-fig-type-btn on" data-action="emFigSetType" data-arg="sphere">Esfera</button>
+      <button class="em-fig-type-btn" data-action="emFigSetType" data-arg="cylinder">Cilindro</button>
+      <button class="em-fig-type-btn" data-action="emFigSetType" data-arg="cone">Cono</button>
+      <button class="em-fig-type-btn" data-action="emFigSetType" data-arg="plane">Plano</button>
+      <button class="em-fig-type-btn" data-action="emFigSetType" data-arg="torus">Toro</button>
+    </div>
+    <div id="em-fig-params" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <input type="color" id="em-fig-color" value="#22d3ee" style="width:36px;height:26px;padding:2px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer"/>
+      <input type="range" id="em-fig-opacity" min="5" max="60" value="20" style="flex:1;accent-color:var(--fi)"/>
+      <span id="em-fig-opacity-val" style="font-family:var(--font-math);font-size:12px;color:var(--text3);min-width:26px">20%</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="action-btn" style="flex:1;font-size:12px;padding:7px" data-action="emFigDraw">Graficar</button>
+      <button class="action-btn" style="flex:1;font-size:12px;padding:7px;background:none;border:1px solid var(--border);color:var(--text3)" data-action="emFigClear">Limpiar</button>
+    </div>
+  </div>
+
+  <div id="em-cw">
+    <canvas id="em-canvas"></canvas>
+    <div id="em-legend-canvas"></div>
+    <button id="btn-em-reset" data-action="emResetView"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-reset"></use></svg> Reset</button>
+  </div>
+
+  <div class="em-panel-tog-wrap">
+    <div id="em-panel-tog-btn" class="on" data-action="emTogglePanel" role="button" tabindex="0">
+      <span class="tog-lbl">Panel</span>
+      <div class="sw"><div class="sw-track"></div><div class="sw-knob"></div></div>
+    </div>
+  </div>
+
+  <div id="em-bottom">
+    <div class="em-tabs">
+      <button class="em-tab on"  data-action="emShowTab" data-arg="coulomb">Coulomb</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="gauss">Gauss</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="potential">Potencial</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="lorentz">Lorentz</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="faraday">Faraday</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="maxwell">Maxwell</button>
+      <button class="em-tab"     data-action="emShowTab" data-arg="extra">Aplicaciones</button>
+    </div>
+    <div id="em-pCoulomb"   class="em-panel on"></div>
+    <div id="em-pGauss"     class="em-panel"></div>
+    <div id="em-pPotential" class="em-panel"></div>
+    <div id="em-pLorentz"   class="em-panel"></div>
+    <div id="em-pFaraday"   class="em-panel"></div>
+    <div id="em-pMaxwell"   class="em-panel"></div>
+    <div id="em-pExtra"     class="em-panel"></div>
+  </div>
+</div>

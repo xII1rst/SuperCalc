@@ -1,0 +1,115 @@
+<!-- ══ EDO ══ -->
+<div class="calc-panel" id="calc-pEdo">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-edo"></div>
+
+    <div class="calc-card" id="card-sep">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="sep" role="button" tabindex="0" aria-expanded="false" aria-controls="body-sep">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-ode"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">1er Orden — PVI numérico</div>
+          <div class="calc-card-desc">dy/dx = f(x,y) con condición inicial; RK4</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-sep"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-sep">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>dy/dx =</label>
+            <input class="calc-inp" id="edo-sep-rhs" placeholder="ej: x*y" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-sep"/>
+          </div>
+          <div class="calc-res-hint" id="preview-edo-sep"></div>
+          <div class="calc-field-row">
+            <label>y(</label>
+            <input class="calc-inp calc-inp-sm" id="edo-sep-x0" placeholder="x₀"/>
+            <label>) =</label>
+            <input class="calc-inp calc-inp-sm" id="edo-sep-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x final:</label><input class="calc-inp calc-inp-sm" id="edo-sep-xfinal" placeholder="x₀ + 5"/>
+            <label>Pasos:</label><input class="calc-inp calc-inp-sm" id="edo-sep-steps" type="number" min="1" max="1000" value="50"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcEDOSep">Resolver (RK4)</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="sep">Limpiar</button>
+          </div>
+          <div id="res-sep" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-edolin">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="edolin" role="button" tabindex="0" aria-expanded="false" aria-controls="body-edolin">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-ode"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">1er Orden — ED Lineal</div>
+          <div class="calc-card-desc">y' + P(x)y = Q(x) — solución numérica RK4</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-edolin"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-edolin">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>P(x) =</label>
+            <input class="calc-inp" id="edo-lin-px" placeholder="ej: 2, 1/x" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-lin-p"/>
+          </div>
+          <div class="calc-res-hint" id="preview-edo-lin-p"></div>
+          <div class="calc-field-row">
+            <label>Q(x) =</label>
+            <input class="calc-inp" id="edo-lin-qx" placeholder="ej: x^2, e^x" data-action="previewCalcExpression" data-event="input" data-preview="preview-edo-lin-q"/>
+          </div>
+          <div class="calc-res-hint" id="preview-edo-lin-q"></div>
+          <div class="calc-field-row">
+            <label>y(</label>
+            <input class="calc-inp calc-inp-sm" id="edo-lin-x0" placeholder="x₀"/>
+            <label>) =</label>
+            <input class="calc-inp calc-inp-sm" id="edo-lin-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x final:</label><input class="calc-inp calc-inp-sm" id="edo-lin-xfinal" placeholder="x₀ + 5"/>
+            <label>Pasos:</label><input class="calc-inp calc-inp-sm" id="edo-lin-steps" type="number" min="1" max="1000" value="50"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcEDOLinear">Resolver (RK4)</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="edolin">Limpiar</button>
+          </div>
+          <div id="res-edolin" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-edo2">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="edo2" role="button" tabindex="0" aria-expanded="false" aria-controls="body-edo2">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-ode"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">2do Orden — Coef. Constantes</div>
+          <div class="calc-card-desc">ay'' + by' + cy = 0 — ecuación característica</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-edo2"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-edo2">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>a=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-a" placeholder="1"/>
+            <label>b=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-b" placeholder="0"/>
+            <label>c=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-c" placeholder="0"/>
+          </div>
+          <div class="calc-field-row">
+            <label>y(0)=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-y0" placeholder="1"/>
+            <label>y'(0)=</label>
+            <input class="calc-inp calc-inp-sm" id="edo-2do-dy0" placeholder="0"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcEDO2nd">Resolver</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="edo2">Limpiar</button>
+          </div>
+          <div id="res-edo2" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

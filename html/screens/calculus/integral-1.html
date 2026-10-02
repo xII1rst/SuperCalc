@@ -1,0 +1,142 @@
+<!-- ══ INTEGRAL ══ -->
+<div class="calc-panel" id="calc-pInt">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-int"></div>
+
+    <div class="calc-card" id="card-indef">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="indef" role="button" tabindex="0" aria-expanded="false" aria-controls="body-indef">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-calculus"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral Indefinida</div>
+          <div class="calc-card-desc">∫ f(x) dx — reglas básicas + verificación</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-indef"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-indef">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-indef-fx" placeholder="ej: 3*x^2 + cos(x)" data-action="previewCalcExpression" data-event="input" data-preview="preview-int-indef"/>
+          </div>
+          <div class="calc-res-hint" id="preview-int-indef"></div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcIntegralIndef">∫ f(x) dx</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="indef">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-indef-fx"></canvas></div>
+          <div id="res-indef" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-def">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="def" role="button" tabindex="0" aria-expanded="false" aria-controls="body-def">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-area"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral Definida</div>
+          <div class="calc-card-desc">Resultado exacto cuando procede y aproximaciones con malla ajustable</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-def"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-def">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-def-fx" placeholder="ej: x^2" data-action="previewCalcExpression" data-event="input" data-preview="preview-int-def"/>
+          </div>
+          <div class="calc-res-hint" id="preview-int-def"></div>
+          <div class="calc-field-row">
+            <label>a =</label>
+            <input class="calc-inp calc-inp-sm" id="int-def-a" placeholder="0"/>
+            <label>b =</label>
+            <input class="calc-inp calc-inp-sm" id="int-def-b" placeholder="1"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcIntegralDef">∫ₐᵇ f(x) dx</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="def">Limpiar</button>
+          </div>
+          <div class="calc-field-row">
+            <label>Método numérico:</label>
+            <select class="mat-sel" id="int-num-method">
+              <option value="right">Riemann derecha</option>
+              <option value="left">Riemann izquierda</option>
+              <option value="midpoint">Riemann punto medio</option>
+              <option value="trapezoid">Trapecio</option>
+              <option value="simpson">Simpson</option>
+            </select>
+            <label>n:</label><input class="calc-inp calc-inp-sm" id="int-num-n" type="number" min="1" max="1000" value="4"/>
+          </div>
+          <div class="calc-btn-row"><button class="calc-btn sec" data-action="calcIntegralNumeric">Calcular aproximación</button></div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-def-fx" data-a="int-def-a" data-b="int-def-b"></canvas></div>
+          <div id="res-def" class="calc-res"></div>
+          <div id="res-def-num" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-rev">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="rev" role="button" tabindex="0" aria-expanded="false" aria-controls="body-rev">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-revolution"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Volumen de revolución</div>
+          <div class="calc-card-desc">Región entre dos curvas, o entre f(x) y el eje X</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-rev"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-rev">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label for="int-rev-mode">Modo:</label>
+            <select class="mat-sel" id="int-rev-mode" data-action="calcRevolutionModeChanged" data-event="change">
+              <option value="direct">Directo · una función</option>
+              <option value="add">Agregar función · dos curvas</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label for="int-rev-fx">f(x) =</label>
+            <input class="calc-inp" id="int-rev-fx" placeholder="ej: x², sqrt(x), y=-2x+1"/>
+          </div>
+          <div id="rev-add-fields" hidden>
+            <div class="calc-field-row">
+              <label for="int-rev-gx">g(x) =</label>
+              <input class="calc-inp" id="int-rev-gx" placeholder="ej: y=sqrt(x), y=-mx+b"/>
+            </div>
+            <div class="calc-field-row">
+              <label for="int-rev-m">m =</label>
+              <input class="calc-inp calc-inp-sm" id="int-rev-m" type="number" step="any" value="1"/>
+              <label for="int-rev-offset">b (coeficiente) =</label>
+              <input class="calc-inp calc-inp-sm" id="int-rev-offset" type="number" step="any" value="0"/>
+            </div>
+            <div class="calc-res-hint">Puedes usar m y b en cualquiera de las dos funciones. Por ejemplo: y=-mx+b.</div>
+          </div>
+          <div class="calc-field-row">
+            <label for="int-rev-a">x₀ =</label>
+            <input class="calc-inp calc-inp-sm" id="int-rev-a" type="number" step="any" value="0"/>
+            <label for="int-rev-b">x₁ =</label>
+            <input class="calc-inp calc-inp-sm" id="int-rev-b" type="number" step="any" value="1"/>
+          </div>
+          <div class="calc-field-row">
+            <label for="int-rev-axis">Girar alrededor del</label>
+            <select class="mat-sel" id="int-rev-axis" data-action="calcRevolutionAxisChanged" data-event="change">
+              <option value="x">Eje X · discos/arandelas</option>
+              <option value="y">Eje Y · cascarones</option>
+              <option value="x-shift">Recta horizontal y = c</option>
+              <option value="y-shift">Recta vertical x = c</option>
+            </select>
+          </div>
+          <div class="calc-field-row" id="rev-shift-fields" hidden>
+            <label for="int-rev-shift">c =</label>
+            <input class="calc-inp calc-inp-sm" id="int-rev-shift" type="number" step="any" value="2"/>
+          </div>
+          <div class="calc-res-hint" id="rev-axis-hint">Para el eje X, se usan discos o arandelas según dónde queden las curvas.</div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcRevolutionVolume">Calcular volumen</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="rev">Limpiar</button>
+          </div>
+          <div class="calc-rev-legend"><span><i class="calc-rev-f"></i>f(x)</span><span id="rev-legend-g" hidden><i class="calc-rev-g"></i>g(x)</span><span id="rev-legend-cross" hidden><i class="calc-rev-cross"></i>intersección</span></div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-rev-fx" data-secondary="int-rev-gx" data-a="int-rev-a" data-b="int-rev-b"></canvas></div>
+          <div id="rev-canvas-wrap" style="display:none"><canvas id="rev-solid"></canvas></div>
+          <div id="res-rev" class="calc-res" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>

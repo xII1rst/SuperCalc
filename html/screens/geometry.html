@@ -1,0 +1,30 @@
+<!-- RECTAS Y PLANOS EN R³ -->
+<section id="geom-app" class="tool-app" aria-label="Rectas y planos 3D" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="geom"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="mod-logo-text"><span class="al-c">Rectas y planos 3D</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1>Rectas y planos en R³</h1>
+      <p>Construye ecuaciones y resuelve posiciones relativas. Introduce coordenadas como x, y, z; usa punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="geom-mode">Operación</label>
+      <select id="geom-mode" class="tool-input geom-mode" data-action="geomSelect" data-event="change">
+        <option value="linePoints">Recta por dos puntos</option>
+        <option value="planePoint">Plano por punto y normal</option>
+        <option value="planePoints">Plano por tres puntos</option>
+        <option value="linePlane">Intersección recta–plano</option>
+        <option value="planes">Intersección de dos planos</option>
+        <option value="lines">Intersección de dos rectas</option>
+        <option value="distance">Distancia punto–plano</option>
+        <option value="angle">Ángulo entre dos planos</option>
+      </select>
+      <div id="geom-fields" class="geom-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="geomCalculate">Calcular</button></div>
+      <div id="geom-result" class="tool-result" aria-live="polite"></div>
+      <p class="tool-note">Las intersecciones usan tolerancia numérica. Para planos se emplea n·X = c; el ángulo es el menor entre ambos planos.</p>
+    </div>
+  </div>
+</section>

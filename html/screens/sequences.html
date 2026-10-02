@@ -1,0 +1,66 @@
+<!-- SUCESIONES MODULE -->
+<div id="seq-app">
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="seq"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="u-grow">
+      <div class="mod-logo-text"><span class="al-c">Sucesiones & Prog.</span></div>
+    </div>
+  </div>
+  <div class="calc-tabs">
+    <button class="seq-tab on" id="seq-tab-terminos" data-action="seqSetMode" data-arg="terminos">aₙ Término n-ésimo</button>
+    <button class="seq-tab" id="seq-tab-rec" data-action="seqSetMode" data-arg="rec">Recurrencia y prueba</button>
+    <button class="seq-tab" id="seq-tab-pa" data-action="seqSetMode" data-arg="pa">PA Aritmética</button>
+    <button class="seq-tab" id="seq-tab-pg" data-action="seqSetMode" data-arg="pg">PG Geométrica</button>
+  </div>
+  <div class="u-scroll-pane">
+    <!-- Panel término n-ésimo -->
+    <div id="seq-panel-terminos">
+      <div class="calc-sec">Término aₙ y límite cuando n → ∞</div>
+      <div class="calc-field-row">
+        <label for="seq-expr">aₙ =</label>
+        <input class="calc-inp" id="seq-expr" placeholder="ej: (3n+1)/(n+5), (1+2/n)^n" data-action="seqPreviewExpression" data-event="input"/>
+      </div>
+      <div class="calc-res-hint" id="seq-preview" aria-live="polite">Usa n, sen(n), potencias y paréntesis. El límite solo se afirma para familias demostradas.</div>
+      <div class="calc-field-row">
+        <label>Mostrar</label>
+        <input class="calc-inp calc-inp-sm" id="seq-n" value="5" type="number" min="1" max="20"/>
+        <label>términos</label>
+      </div>
+      <button class="ineq-btn" data-action="seqAnalyzeTerminos">Analizar términos y límite</button>
+    </div>
+    <!-- Recurrencia de raíz con demostración guiada -->
+    <div id="seq-panel-rec" style="display:none">
+      <div class="calc-sec">aₙ₊₁ = √(c + aₙ)</div>
+      <div class="calc-field-row">
+        <label for="seq-rec-c">c &gt; 0</label><input class="calc-inp calc-inp-sm" id="seq-rec-c" value="2" type="number" step="any" min="0"/>
+        <label for="seq-rec-a1">a₁ ≥ 0</label><input class="calc-inp calc-inp-sm" id="seq-rec-a1" value="1" type="number" step="any" min="0"/>
+      </div>
+      <div class="calc-field-row">
+        <label for="seq-rec-n">Mostrar términos</label><input class="calc-inp calc-inp-sm" id="seq-rec-n" value="6" type="number" min="1" max="20"/>
+      </div>
+      <div class="calc-res-hint">La demostración usa monotonía, cota y continuidad para c &gt; 0.</div>
+      <button class="ineq-btn" data-action="seqAnalyzeRadical">Demostrar convergencia</button>
+    </div>
+    <!-- Panel PA -->
+    <div id="seq-panel-pa" style="display:none">
+      <div class="calc-sec">Progresión Aritmética</div>
+      <div class="calc-field-row">
+        <label>a₁ =</label><input class="calc-inp calc-inp-sm" id="pa-a1" value="1" type="number" step="any"/>
+        <label>d =</label><input class="calc-inp calc-inp-sm" id="pa-d" value="2" type="number" step="any"/>
+        <label>n =</label><input class="calc-inp calc-inp-sm" id="pa-n" value="10" type="number" min="1" max="500"/>
+      </div>
+      <button class="ineq-btn" data-action="seqAnalyzePA">Calcular PA</button>
+    </div>
+    <!-- Panel PG -->
+    <div id="seq-panel-pg" style="display:none">
+      <div class="calc-sec">Progresión Geométrica</div>
+      <div class="calc-field-row">
+        <label>a₁ =</label><input class="calc-inp calc-inp-sm" id="pg-a1" value="-4" type="number" step="any"/>
+        <label>r =</label><input class="calc-inp calc-inp-sm" id="pg-r" value="3" type="number" step="any"/>
+        <label>n =</label><input class="calc-inp calc-inp-sm" id="pg-n" value="10" type="number" min="1" max="500"/>
+      </div>
+      <button class="ineq-btn" data-action="seqAnalyzePG">Calcular PG</button>
+    </div>
+    <div class="u-mt-3" id="seq-result" aria-live="polite"></div>
+  </div>
+</div>

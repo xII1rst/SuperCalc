@@ -1,0 +1,28 @@
+<section id="waves-app" class="tool-app physics-tool focused" aria-label="Ondas" inert>
+  <div class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="waves"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Ondas</button>
+    <div class="mod-logo-text"><span class="fi-c" id="waves-title">Ondas</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="waves-heading">Ondas</h1>
+      <p>Selecciona una familia de problemas. Las entradas usan unidades SI y punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="waves-mode">Problema</label>
+      <select id="waves-mode" class="tool-input geom-mode" data-action="wavesSelect" data-event="change"></select>
+      <div id="waves-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="wavesCalculate">Calcular</button></div>
+      <div id="waves-result" class="tool-result" aria-live="polite"></div>
+      <div id="waves-visual" class="waves-visual" hidden>
+        <canvas id="waves-canvas" aria-label="Gráfica de la onda o trayectoria de Lissajous"></canvas>
+        <div id="waves-fallback" class="waves-fallback" hidden></div>
+        <label for="waves-time">Tiempo de la gráfica (s)</label>
+        <input id="waves-time" type="range" min="0" max="2" step="0.005" value="0" data-action="wavesTimeChanged" data-event="input">
+        <div class="tool-actions"><button type="button" class="tool-button" id="waves-play" data-action="wavesToggleAnimation">Reproducir</button></div>
+        <p id="waves-visual-description" class="tool-note">Vista estática de la onda.</p>
+      </div>
+      <p class="tool-note">Modelos ideales indicados en cada resultado. En óptica usa metros: 550 nm = 0.00000055 m.</p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,159 @@
+    <div class="calc-card" id="card-taylor">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="taylor" role="button" tabindex="0" aria-expanded="false" aria-controls="body-taylor">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-sequence"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Serie de Taylor / Maclaurin</div>
+          <div class="calc-card-desc">Expansión en serie de potencias alrededor de a</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-taylor"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-taylor">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-taylor-fx" placeholder="ej: e^x, sin(x)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Centro a =</label>
+            <input class="calc-inp calc-inp-sm" id="int-taylor-a" placeholder="0"/>
+            <label>Términos:</label>
+            <input class="calc-inp calc-inp-sm" id="int-taylor-n" placeholder="5" style="width:50px"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcTaylor">Expandir</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="taylor">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-taylor-fx" data-a="int-taylor-a"></canvas></div>
+          <div id="res-taylor" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integración Simbólica CAS -->
+    <div class="calc-card" id="card-cas">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="cas" role="button" tabindex="0" aria-expanded="false" aria-controls="body-cas">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-area"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integración Simbólica (CAS)</div>
+          <div class="calc-card-desc">Antiderivada con pasos — sustitución, partes, fracciones parciales</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-cas"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-cas">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="int-cas-fx" placeholder="ej: x*sin(x), (x+1)/(x^2+3*x+2), sqrt(1-x^2)"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcIntegrateCAS">∫ f(x) dx</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="cas">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="int-cas-fx"></canvas></div>
+          <div id="res-cas" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Series infinitas -->
+    <div class="calc-card" id="card-series">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="series" role="button" tabindex="0" aria-expanded="false" aria-controls="body-series">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-sequence"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Series Infinitas</div>
+          <div class="calc-card-desc">Convergencia: geométrica, p-serie, razón, raíz, integral, alternantes y Taylor</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-series"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-series">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>Tipo:</label>
+            <select class="mat-sel" id="series-type" data-action="seriesTypeChanged" data-event="change">
+              <option value="geo">Serie geométrica</option>
+              <option value="p">p-serie</option>
+              <option value="ratio">Prueba de la razón</option>
+              <option value="root">Prueba de la raíz</option>
+              <option value="integral">Prueba de la integral</option>
+              <option value="alt">Serie alternante (Leibniz)</option>
+              <option value="nth">Término n-ésimo</option>
+              <option value="taylor">Taylor simbólico</option>
+            </select>
+          </div>
+          <div class="calc-field-row" data-series="geo">
+            <label>a₁ =</label><input class="calc-inp calc-inp-sm" id="series-a1" placeholder="1"/>
+            <label>r =</label><input class="calc-inp calc-inp-sm" id="series-r" placeholder="0.5"/>
+          </div>
+          <div class="calc-field-row" data-series="p" hidden>
+            <label>p =</label><input class="calc-inp calc-inp-sm" id="series-p" placeholder="2"/>
+          </div>
+          <div class="calc-field-row" data-series="ratio root integral alt nth" hidden>
+            <label id="series-term-lbl" for="series-term">aₙ =</label><input class="calc-inp" id="series-term" placeholder="ej: 1/2^n"/>
+          </div>
+          <div class="calc-field-row" data-series="integral alt" hidden>
+            <label id="series-N-lbl" for="series-N">desde n =</label><input class="calc-inp calc-inp-sm" id="series-N" placeholder="1"/>
+          </div>
+          <div class="calc-field-row" data-series="taylor" hidden>
+            <label>f(x) =</label><input class="calc-inp" id="series-fx" placeholder="ej: sin(x)"/>
+          </div>
+          <div class="calc-field-row" data-series="taylor" hidden>
+            <label>a =</label><input class="calc-inp calc-inp-sm" id="series-a" placeholder="0"/>
+            <label>n =</label><input class="calc-inp calc-inp-sm" id="series-n" placeholder="5"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcSeries">Analizar serie</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="series">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap" data-series="taylor" hidden><canvas class="calc-preview" data-gmode="fn" data-src="series-fx"></canvas></div>
+          <div id="res-series" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aplicaciones de la integral -->
+    <div class="calc-card" id="card-intapp">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="intapp" role="button" tabindex="0" aria-expanded="false" aria-controls="body-intapp">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-area"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Aplicaciones de la Integral</div>
+          <div class="calc-card-desc">Área, longitud de arco, superficie, centroide, trabajo, fuerza</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-intapp"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-intapp">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>Tipo:</label>
+            <select class="mat-sel" id="intapp-type">
+              <option value="area">Área entre curvas</option>
+              <option value="arc">Longitud de arco</option>
+              <option value="surface">Superficie de revolución</option>
+              <option value="centroid">Centroide</option>
+              <option value="work">Trabajo</option>
+              <option value="fluid">Fuerza hidrostática</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label>f(x) =</label><input class="calc-inp" id="intapp-fx" placeholder="ej: x, sqrt(x)"/>
+            <label>g(x) =</label><input class="calc-inp" id="intapp-gx" placeholder="para área"/>
+          </div>
+          <div class="calc-field-row">
+            <label>a =</label><input class="calc-inp calc-inp-sm" id="intapp-a" placeholder="0"/>
+            <label>b =</label><input class="calc-inp calc-inp-sm" id="intapp-b" placeholder="1"/>
+          </div>
+          <div class="calc-field-row">
+            <label>ρ =</label><input class="calc-inp calc-inp-sm" id="intapp-rho" placeholder="densidad"/>
+            <label>h(x) =</label><input class="calc-inp" id="intapp-depth" placeholder="profundidad"/>
+            <label>w(x) =</label><input class="calc-inp" id="intapp-width" placeholder="ancho"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcIntegralApp">Calcular</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="intapp">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="intapp-fx" data-a="intapp-a" data-b="intapp-b"></canvas></div>
+          <div id="res-intapp" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

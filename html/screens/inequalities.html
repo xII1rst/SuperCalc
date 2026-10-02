@@ -1,0 +1,48 @@
+<!-- INECUACIONES -->
+<div id="ineq-app">
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="ineq"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="u-grow">
+      <div class="mod-logo-text"><span class="al-c">Inecuaciones</span></div>
+    </div>
+  </div>
+  <!-- TYPE PICKER -->
+  <div id="ineq-pick-screen" class="ineq-pick">
+    <div class="ineq-pick-title">Selecciona el tipo</div>
+    <div class="ineq-type-grid">
+      <div class="ineq-type-card" data-action="ineqSetType" data-arg="libre" role="button" tabindex="0">
+        <div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-pencil"></use></svg></div>
+        <div class="ineq-type-name">Expresión libre</div>
+        <div class="ineq-type-desc">f(x) ⊳ g(x) — escribe directo</div>
+      </div>
+      <div class="ineq-type-card" data-action="ineqSetType" data-arg="quad" role="button" tabindex="0">
+        <div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-quadratic"></use></svg></div>
+        <div class="ineq-type-name">Cuadrática</div>
+        <div class="ineq-type-desc">ax² + bx + c ⊳ 0</div>
+      </div>
+      <div class="ineq-type-card" data-action="ineqSetType" data-arg="rational" role="button" tabindex="0">
+        <div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-rational"></use></svg></div>
+        <div class="ineq-type-name">Racional</div>
+        <div class="ineq-type-desc">P(x)/Q(x) ⊳ 0 — tabla de signos</div>
+      </div>
+      <div class="ineq-type-card" data-action="ineqSetType" data-arg="system" role="button" tabindex="0">
+        <div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-system"></use></svg></div>
+        <div class="ineq-type-name">Sistema</div>
+        <div class="ineq-type-desc">2 inecuaciones lineales</div>
+      </div>
+      <div class="ineq-type-card" data-action="ineqSetType" data-arg="abs" role="button" tabindex="0">
+        <div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-absolute"></use></svg></div>
+        <div class="ineq-type-name">Valor Absoluto</div>
+        <div class="ineq-type-desc">|ax + b| ⊳ c</div>
+      </div>
+    </div>
+  </div>
+  <!-- SOLVER -->
+  <div id="ineq-solver" class="ineq-solver">
+    <div class="mod-header" style="background:var(--surface-result);border-top:1px solid var(--line-subtle);border-bottom:1px solid var(--line-subtle);padding:8px 14px;">
+      <button class="ineq-btn sec" data-action="ineqBack" style="font-size:12px;padding:5px 10px;"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Tipos</button>
+      <span id="ineq-solver-title" style="font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--ineq-accent);margin-left:8px;"></span>
+    </div>
+    <div class="ineq-solver-body" id="ineq-solver-body"></div>
+  </div>
+</div>

@@ -1,0 +1,145 @@
+    <div class="calc-card" id="card-divcurl">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="divcurl" role="button" tabindex="0" aria-expanded="false" aria-controls="body-divcurl">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-multivariable"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Divergencia y Rotacional</div>
+          <div class="calc-card-desc">∇·F y ∇×F de un campo F(x,y,z)</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-divcurl"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-divcurl">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>F = (</label>
+            <input class="calc-inp" id="vec-fx" placeholder="Fx"/>
+            <label>,</label>
+            <input class="calc-inp" id="vec-fy" placeholder="Fy"/>
+            <label>,</label>
+            <input class="calc-inp" id="vec-fz" placeholder="Fz"/>
+            <label>)</label>
+          </div>
+          <div class="calc-field-row">
+            <label>en (x,y,z):</label>
+            <input class="calc-inp calc-inp-sm" id="vec-px" placeholder="x"/>
+            <input class="calc-inp calc-inp-sm" id="vec-py" placeholder="y"/>
+            <input class="calc-inp calc-inp-sm" id="vec-pz" placeholder="z"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcDivCurl">Calcular ∇·F y ∇×F</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="divcurl">Limpiar</button>
+          </div>
+          <div id="res-divcurl" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-conserv">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="conserv" role="button" tabindex="0" aria-expanded="false" aria-controls="body-conserv">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-function"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Campo Conservativo</div>
+          <div class="calc-card-desc">¿∇φ = F? y potencial escalar φ(x,y)</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-conserv"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-conserv">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>F = (</label>
+            <input class="calc-inp" id="cons-fx" placeholder="Fx"/>
+            <label>,</label>
+            <input class="calc-inp" id="cons-fy" placeholder="Fy"/>
+            <label>)</label>
+          </div>
+          <div class="calc-field-row">
+            <label>evalúa φ en (x₀,y₀):</label>
+            <input class="calc-inp calc-inp-sm" id="cons-x0" placeholder="x₀"/>
+            <input class="calc-inp calc-inp-sm" id="cons-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcConservative">Verificar y φ</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="conserv">Limpiar</button>
+          </div>
+          <div id="res-cons" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-lineint">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="lineint" role="button" tabindex="0" aria-expanded="false" aria-controls="body-lineint">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-curve"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integral de Línea y Teoremas</div>
+          <div class="calc-card-desc">∫ f ds, ∫ F·dr, Green, Gauss y Stokes</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-lineint"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-lineint">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="li-s-f" placeholder="ej: x*y"/>
+            <label>C: x(t),y(t) =</label>
+            <input class="calc-inp" id="li-s-x" placeholder="t"/>
+            <input class="calc-inp" id="li-s-y" placeholder="t^2"/>
+          </div>
+          <div class="calc-field-row">
+            <label>t ∈ [</label>
+            <input class="calc-inp calc-inp-sm" id="li-s-t0" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="li-s-t1" placeholder="1"/>
+            <label>]</label>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcLineIntegral">∫ f ds y ∫ F·dr</button>
+          </div>
+          <div class="calc-field-row">
+            <label>F = (</label>
+            <input class="calc-inp" id="li-v-fx" placeholder="Fx"/>
+            <label>,</label>
+            <input class="calc-inp" id="li-v-fy" placeholder="Fy"/>
+            <label>) &nbsp; C:</label>
+            <input class="calc-inp" id="li-v-x" placeholder="x(t)"/>
+            <input class="calc-inp" id="li-v-y" placeholder="y(t)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>t ∈ [</label>
+            <input class="calc-inp calc-inp-sm" id="li-v-t0" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="li-v-t1" placeholder="1"/>
+            <label>]</label>
+          </div>
+          <div id="res-lineint" class="calc-res"></div>
+
+          <div class="u-split">
+            <div class="calc-field-row">
+              <label>Green P,Q:</label>
+              <input class="calc-inp" id="th-p" placeholder="P"/>
+              <input class="calc-inp" id="th-q" placeholder="Q"/>
+            </div>
+            <div class="calc-field-row">
+              <label>región x,y:</label>
+              <input class="calc-inp calc-inp-sm" id="th-x1" placeholder="x1"/>
+              <input class="calc-inp calc-inp-sm" id="th-x2" placeholder="x2"/>
+              <input class="calc-inp calc-inp-sm" id="th-y1" placeholder="y1"/>
+              <input class="calc-inp calc-inp-sm" id="th-y2" placeholder="y2"/>
+            </div>
+            <div class="calc-field-row">
+              <label>Stokes F=(Fx,Fy,Fz), R:</label>
+              <input class="calc-inp" id="th-fx" placeholder="Fx"/>
+              <input class="calc-inp" id="th-fy" placeholder="Fy"/>
+              <input class="calc-inp" id="th-fz" placeholder="Fz"/>
+              <input class="calc-inp calc-inp-sm" id="th-r" placeholder="R"/>
+            </div>
+            <div class="calc-btn-row">
+              <button class="calc-btn" data-action="calcTheorems">Green / Flujo / Stokes</button>
+            </div>
+            <div id="res-theorems" class="calc-res"></div>
+          </div>
+
+          <div class="calc-btn-row">
+            <button class="calc-btn sec" data-action="clearCard" data-arg="lineint">Limpiar</button>
+          </div>
+        </div>
+      </div>
+    </div>

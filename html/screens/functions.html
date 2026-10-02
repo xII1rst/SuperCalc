@@ -1,0 +1,33 @@
+<!-- FUNCIONES MODULE -->
+<div id="fn-app">
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="fn"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="u-grow">
+      <div class="mod-logo-text"><span class="al-c">Funciones</span></div>
+    </div>
+  </div>
+  <div class="u-scroll-pane" id="fn-pick-screen">
+    <div class="ineq-pick-title">Tipo de función</div>
+    <div class="ineq-type-grid">
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="lineal" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-line"></use></svg></div><div class="ineq-type-name">Lineal</div><div class="ineq-type-desc">f(x) = ax + b</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="cuad" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-quadratic"></use></svg></div><div class="ineq-type-name">Cuadrática</div><div class="ineq-type-desc">f(x) = ax² + bx + c</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="raiz" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-root"></use></svg></div><div class="ineq-type-name">Raíz</div><div class="ineq-type-desc">f(x) = √(ax + b)</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="abs" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-absolute"></use></svg></div><div class="ineq-type-name">Valor Absoluto</div><div class="ineq-type-desc">f(x) = a|x + b| + c</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="log" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-logarithm"></use></svg></div><div class="ineq-type-name">Logarítmica</div><div class="ineq-type-desc">f(x) = a·log_b(cx + d)</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="exp" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-exponential"></use></svg></div><div class="ineq-type-name">Exponencial</div><div class="ineq-type-desc">f(x) = a·b^(cx + d)</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="parteEntera" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-floor"></use></svg></div><div class="ineq-type-name">Parte Entera</div><div class="ineq-type-desc">f(x) = a·⌊bx + c⌋</div></div>
+      <div class="ineq-type-card" data-action="fnSetType" data-arg="racional" role="button" tabindex="0"><div class="ineq-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-rational"></use></svg></div><div class="ineq-type-name">Racional</div><div class="ineq-type-desc">f(x) = P(x) / Q(x)</div></div>
+    </div>
+  </div>
+  <div id="fn-solver" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+    <div class="mod-header" style="background:var(--surface-result);border-bottom:1px solid var(--line-subtle);padding:8px 14px">
+      <button class="ineq-btn sec" data-action="fnBack" style="font-size:12px;padding:5px 10px"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Tipos</button>
+      <span id="fn-solver-title" style="font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--ca);margin-left:8px"></span>
+    </div>
+    <div class="u-scroll-pane">
+      <div id="fn-form"></div>
+      <button class="ineq-btn u-mt-2" data-action="fnAnalyze">Analizar función</button>
+      <div class="u-mt-2" id="fn-result"></div>
+    </div>
+  </div>
+</div>

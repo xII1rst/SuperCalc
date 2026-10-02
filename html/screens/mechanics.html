@@ -1,0 +1,44 @@
+<section id="mech-app" class="tool-app physics-tool focused" aria-label="Mecánica" inert>
+  <div class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="mech"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Mecánica</button>
+    <div class="mod-logo-text"><span class="fi-c" id="mech-panel-title">Movimiento rectilíneo</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="mech-panel-heading">Movimiento rectilíneo</h1>
+      <p id="mech-panel-description">Resuelve con los datos que tengas, elige unidades por campo y explora el movimiento en el tiempo.</p>
+    </div>
+    <div class="tool-card" id="mech-motion-card">
+      <h2>Movimiento rectilíneo</h2>
+      <p>MRU o MRUA. Deja en blanco lo que buscas; si una posición se alcanza dos veces, elige el instante.</p>
+      <div class="mech-config">
+        <label for="mech-mode">Modelo</label><select id="mech-mode" class="tool-input" data-action="mechModeChanged" data-event="change"><option value="mru">MRU · velocidad constante</option><option value="mrua" selected>MRUA · aceleración constante</option></select>
+        <label for="mech-motion-target">Calcular</label><select id="mech-motion-target" class="tool-input" data-action="mechTargetChanged" data-event="change" data-arg="motion"><option value="all">Todo lo posible</option><option value="x0">Posición inicial</option><option value="x">Posición final</option><option value="v0">Velocidad inicial</option><option value="v">Velocidad final</option><option value="a">Aceleración</option><option value="t">Tiempo</option></select>
+      </div>
+      <div id="mech-motion-fields" class="mech-fields"></div>
+      <button class="tool-button" data-action="mechCalculateMotion">Resolver movimiento</button>
+      <div id="mech-motion-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="mech-projectile-card" hidden inert>
+      <h2>Tiro parabólico</h2>
+      <p>Sin resistencia del aire. Las alturas inicial y final se miden desde la misma referencia; puedes despejar cualquiera de las dos.</p>
+      <div class="mech-config">
+        <label for="mech-projectile-target">Calcular</label><select id="mech-projectile-target" class="tool-input" data-action="mechTargetChanged" data-event="change" data-arg="projectile"><option value="all">Todo lo posible</option><option value="speed">Rapidez inicial</option><option value="angle">Ángulo</option><option value="vx">Velocidad horizontal</option><option value="vy">Velocidad vertical</option><option value="x">Destino horizontal</option><option value="y0">Altura inicial</option><option value="yEnd">Altura final</option><option value="time">Tiempo de vuelo</option><option value="gravity">Gravedad</option></select>
+      </div>
+      <div id="mech-projectile-fields" class="mech-fields"></div>
+      <button class="tool-button" data-action="mechCalculateProjectile">Resolver tiro</button>
+      <div id="mech-projectile-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="mech-dynamics-card" hidden inert>
+      <h2>Fuerza y energía</h2>
+      <p>F = ma · Ec = ½mv² · Ep = mgh. Despeja cualquier magnitud con datos suficientes.</p>
+      <div class="mech-config">
+        <label for="mech-dynamics-target">Calcular</label><select id="mech-dynamics-target" class="tool-input" data-action="mechTargetChanged" data-event="change" data-arg="dynamics"><option value="all">Todo lo posible</option><option value="force">Fuerza</option><option value="mass">Masa</option><option value="acceleration">Aceleración</option><option value="speed">Rapidez</option><option value="height">Altura</option><option value="gravity">Gravedad</option><option value="kinetic">Energía cinética</option><option value="potential">Energía potencial</option><option value="total">Energía total</option></select>
+      </div>
+      <div id="mech-dynamics-fields" class="mech-fields"></div>
+      <button class="tool-button" data-action="mechCalculateDynamics">Resolver fuerza y energía</button>
+      <div id="mech-dynamics-result" class="tool-result" aria-live="polite"></div>
+      <p class="tool-note">Modelo ideal: aceleración constante y, en el tiro, gravedad constante sin resistencia del aire.</p>
+    </div>
+  </div>
+</section>

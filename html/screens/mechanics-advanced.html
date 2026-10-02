@@ -1,0 +1,19 @@
+<section id="mechplus-app" class="tool-app physics-tool focused" aria-label="Mecánica avanzada" inert>
+  <header class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="mechplus"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Mecánica</button>
+    <div class="mod-logo-text"><span class="fi-c" id="mechplus-title">Mecánica</span></div>
+  </header>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="mechplus-heading">Mecánica</h1>
+      <p>Elige un problema, escribe sus datos en unidades SI y revisa las ecuaciones y resultados. Los modelos indican sus supuestos cuando aplica.</p>
+    </div>
+    <div class="tool-card">
+      <label for="mechplus-mode">Problema</label>
+      <select id="mechplus-mode" class="tool-input geom-mode" data-action="mechPlusSelect" data-event="change"></select>
+      <div id="mechplus-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="mechPlusCalculate">Calcular</button></div>
+      <div id="mechplus-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

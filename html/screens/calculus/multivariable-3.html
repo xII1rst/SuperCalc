@@ -1,0 +1,141 @@
+    <div class="calc-card" id="card-mvlim">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="mvlim" role="button" tabindex="0" aria-expanded="false" aria-controls="body-mvlim">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-limit"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Límite Multivariable</div>
+          <div class="calc-card-desc">lim f(x,y) por distintas trayectorias</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-mvlim"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-mvlim">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="mvlim-fxy" placeholder="ej: (x^2-y^2)/(x^2+y^2)" data-action="previewCalcExpression" data-event="input" data-preview="preview-mvlim"/>
+          </div>
+          <div class="calc-res-hint" id="preview-mvlim"></div>
+          <div class="calc-field-row">
+            <label>(x,y) → (</label>
+            <input class="calc-inp calc-inp-sm" id="mvlim-x0" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="mvlim-y0" placeholder="0"/>
+            <label>)</label>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcMvLimit">Calcular límite</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="mvlim">Limpiar</button>
+          </div>
+          <div id="res-mvlim" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-extr">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="extr" role="button" tabindex="0" aria-expanded="false" aria-controls="body-extr">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-differential"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Extremos y Lagrange</div>
+          <div class="calc-card-desc">Puntos críticos (Hessiano) y ∇f = λ∇g</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-extr"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-extr">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x,y) =</label>
+            <input class="calc-inp" id="extr-fxy" placeholder="ej: x^2+y^2"/>
+          </div>
+          <div class="calc-field-row">
+            <label>región x,y:</label>
+            <input class="calc-inp calc-inp-sm" id="extr-x1" placeholder="x1"/>
+            <input class="calc-inp calc-inp-sm" id="extr-x2" placeholder="x2"/>
+            <input class="calc-inp calc-inp-sm" id="extr-y1" placeholder="y1"/>
+            <input class="calc-inp calc-inp-sm" id="extr-y2" placeholder="y2"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcExtrema">Puntos críticos</button>
+          </div>
+          <div class="calc-field-row">
+            <label>restricción g =</label>
+            <input class="calc-inp" id="extr-g" placeholder="ej: x+y"/>
+            <label>c =</label>
+            <input class="calc-inp calc-inp-sm" id="extr-c" placeholder="1"/>
+          </div>
+          <div id="res-extr" class="calc-res"></div>
+          <div class="calc-btn-row">
+            <button class="calc-btn sec" data-action="clearCard" data-arg="extr">Limpiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card" id="card-mvint">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="mvint" role="button" tabindex="0" aria-expanded="false" aria-controls="body-mvint">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-multivariable"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Integrales Múltiples</div>
+          <div class="calc-card-desc">Doble polar, triple, jacobiano y centro de masa</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-mvint"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-mvint">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>polar f(x,y) =</label>
+            <input class="calc-inp" id="mvint-pf" placeholder="ej: 1"/>
+          </div>
+          <div class="calc-field-row">
+            <label>r ∈ [</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-pr1" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-pr2" placeholder="1"/>
+            <label>] &nbsp; θ ∈ [</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-pt1" placeholder="0"/>
+            <label>,</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-pt2" placeholder="6.283"/>
+            <label>]</label>
+          </div>
+          <div class="calc-field-row">
+            <label>triple f(x,y,z) =</label>
+            <input class="calc-inp" id="mvint-tf" placeholder="ej: 1"/>
+          </div>
+          <div class="calc-field-row">
+            <label>caja:</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-tx1" placeholder="x1"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-tx2" placeholder="x2"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-ty1" placeholder="y1"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-ty2" placeholder="y2"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-tz1" placeholder="z1"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-tz2" placeholder="z2"/>
+          </div>
+          <div class="calc-field-row">
+            <label>jacobiano x(u,v),y(u,v) =</label>
+            <input class="calc-inp" id="mvint-jx" placeholder="u*cos(v)"/>
+            <input class="calc-inp" id="mvint-jy" placeholder="u*sin(v)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>en (u,v):</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-ju" placeholder="u"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-jv" placeholder="v"/>
+          </div>
+          <div class="calc-field-row">
+            <label>centro de masa f(x,y) =</label>
+            <input class="calc-inp" id="mvint-cf" placeholder="ej: 1"/>
+          </div>
+          <div class="calc-field-row">
+            <label>región:</label>
+            <input class="calc-inp calc-inp-sm" id="mvint-cx1" placeholder="x1"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-cx2" placeholder="x2"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-cy1" placeholder="y1"/>
+            <input class="calc-inp calc-inp-sm" id="mvint-cy2" placeholder="y2"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcMvIntegral">Calcular integrales</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="mvint">Limpiar</button>
+          </div>
+          <div id="res-mvint" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

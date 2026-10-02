@@ -1,0 +1,112 @@
+<!DOCTYPE html><!-- SuperCalc v1.0 -->
+<!-- Generado por scripts/assemble-html.mjs desde html/: edita los fragmentos y vuelve a ensamblar. -->
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#182029"/>
+<script>
+  try {
+    if (localStorage.getItem('sc-theme') === 'light') {
+      document.documentElement.dataset.theme = 'light';
+      document.querySelector('meta[name="theme-color"]').content = '#fff8f4';
+    }
+  } catch (_) { /* almacenamiento no disponible: conservar tema oscuro */ }
+</script>
+<title>SuperCalc</title>
+<link rel="preload" href="fonts/ibm-plex-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/vectors.css">
+<link rel="stylesheet" href="styles/electromagnetism.css">
+<link rel="stylesheet" href="styles/launcher.css">
+<link rel="stylesheet" href="styles/tools.css">
+<link rel="stylesheet" href="styles/calculus.css">
+<link rel="stylesheet" href="styles/gradients.css">
+<link rel="stylesheet" href="styles/utilities.css">
+</head>
+<body>
+<!-- include: shared/icons.html -->
+<!-- include: shared/launcher.html -->
+
+<!-- include: shared/submenu.html -->
+
+<!-- include: screens/statistics.html -->
+
+<!-- include: screens/probability.html -->
+
+<!-- include: screens/experiments.html -->
+
+<!-- include: screens/mechanics.html -->
+
+
+<!-- include: screens/vectors.html -->
+
+
+<!-- include: screens/electromagnetism.html -->
+
+<!-- include: screens/geometry.html -->
+
+<!-- include: screens/study.html -->
+
+<!-- include: screens/electromagnetism-advanced.html -->
+
+<!-- include: screens/mechanics-advanced.html -->
+
+<!-- include: screens/waves.html -->
+
+<!-- include: screens/logic.html -->
+
+<!-- include: screens/theory.html -->
+
+<!-- include: screens/numerical.html -->
+
+<!-- include: screens/linear-spaces.html -->
+
+<!-- include: screens/matrices.html -->
+
+
+<!-- include: screens/inequalities.html -->
+
+<!-- include: screens/functions.html -->
+
+<!-- include: screens/sequences.html -->
+
+<!-- include: screens/calculus/header.html -->
+
+<!-- include: screens/calculus/differential.html -->
+
+<!-- include: screens/calculus/integral-1.html -->
+
+<!-- include: screens/calculus/integral-2.html -->
+
+<!-- include: screens/calculus/multivariable-1.html -->
+
+<!-- include: screens/calculus/multivariable-2.html -->
+
+<!-- include: screens/calculus/multivariable-3.html -->
+
+<!-- include: screens/calculus/ode.html -->
+
+<!-- include: screens/calculus/plotter.html -->
+
+<!-- include: screens/calculus/curves.html -->
+
+<div id="sc-author-footer">Rafael Miranda, v1.0</div>
+
+<dialog id="exit-dialog" class="sc-dialog" aria-labelledby="exit-dialog-title" aria-describedby="exit-dialog-text">
+  <h2 id="exit-dialog-title" class="sc-dialog-title">¿Salir de SuperCalc?</h2>
+  <p id="exit-dialog-text" class="sc-dialog-text">Volverás a la página anterior del navegador.</p>
+  <div class="sc-dialog-actions">
+    <button type="button" class="tool-button secondary" data-action="exitStay">Quedarme</button>
+    <button type="button" class="tool-button" data-action="exitLeave">Salir</button>
+  </div>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

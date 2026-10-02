@@ -1,0 +1,19 @@
+<section id="emplus-app" class="tool-app physics-tool focused" aria-label="Electromagnetismo avanzado" inert>
+  <div class="mod-header">
+    <button class="mod-back fi" data-action="closeModule" data-arg="emplus"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Electromagnetismo</button>
+    <div class="mod-logo-text"><span class="fi-c" id="emplus-title">Electromagnetismo</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="emplus-heading">Electromagnetismo</h1>
+      <p>Selecciona un problema y elige unidades donde haya selector; las entradas se convierten a SI y los resultados usan SI. En circuitos indica nodos, conexiones, tierra y polaridades.</p>
+    </div>
+    <div class="tool-card">
+      <label for="emplus-mode">Problema</label>
+      <select id="emplus-mode" class="tool-input geom-mode" data-action="emPlusSelect" data-event="change"></select>
+      <div id="emplus-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="emPlusCalculate">Calcular</button></div>
+      <div id="emplus-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

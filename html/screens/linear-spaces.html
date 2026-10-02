@@ -1,0 +1,41 @@
+<!-- BASES Y TRANSFORMACIONES -->
+<section id="linear-app" class="tool-app" aria-label="Bases y transformaciones" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="linear"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Álgebra</button>
+    <div class="mod-logo-text"><span class="al-c">Bases y transformaciones</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1>Espacios y transformaciones</h1>
+      <p>Trabaja con vectores y matrices de hasta 8 componentes. Escribe un vector o fila por línea; separa coordenadas con comas y usa punto decimal.</p>
+    </div>
+    <div class="tool-card">
+      <label for="linear-mode">Operación</label>
+      <select id="linear-mode" class="tool-input geom-mode" data-action="linearSelect" data-event="change">
+        <option value="representationformulas">Matriz entre bases desde fórmulas</option>
+        <option value="formulas">Matriz desde fórmulas de T(x,…)</option>
+        <option value="images">Matriz desde imágenes de la base</option>
+        <option value="vectors">Operaciones vectoriales, unitario y volumen</option>
+        <option value="span">Independencia, base y generado</option>
+        <option value="subspace">Subespacio por ecuaciones: demostración</option>
+        <option value="detproperties">Identidades del determinante</option>
+        <option value="repeated">Parámetro para valor propio repetido</option>
+        <option value="orthogonal">Diagonalización ortogonal</option>
+        <option value="rotation">Rotación, reflexión y composición</option>
+        <option value="gram">Gram-Schmidt y base ortonormal</option>
+        <option value="coordinates">Coordenadas en una base</option>
+        <option value="change">Cambio de base</option>
+        <option value="projection">Proyección sobre un subespacio</option>
+        <option value="transform">Imagen, núcleo y transformación</option>
+        <option value="representation">Matriz entre bases</option>
+        <option value="diagonal">Diagonalización y potencia</option>
+        <option value="affine">Sistema con parámetros t y u</option>
+        <option value="similarity">Semejanza de matrices</option>
+      </select>
+      <div id="linear-fields" class="linear-fields"></div>
+      <div class="tool-actions"><button class="tool-button" data-action="linearCalculate">Calcular</button></div>
+      <div id="linear-result" class="tool-result" aria-live="polite"></div>
+      <p class="tool-note">Los cálculos usan tolerancia numérica. La diagonalización se ofrece solo cuando se verifican suficientes autovectores reales; para matrices no simétricas 3×3 se usa el polinomio característico y núcleos verificados; 4×4 no simétricas solo ofrecen un candidato dominante.</p>
+    </div>
+  </div>
+</section>

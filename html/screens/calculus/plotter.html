@@ -1,0 +1,50 @@
+<!-- ══ GRAFICAR ══ -->
+<div class="calc-panel" id="calc-pGraf">
+  <div class="calc-scroll">
+    <div class="calc-sec">Graficador de funciones</div>
+    <div class="graf-type-grid">
+      <div class="graf-type-card sel" id="gtype-lin" data-action="grafSetType" data-arg="lin" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-line"></use></svg></div><div class="graf-type-name">Lineal</div>
+      </div>
+      <div class="graf-type-card" id="gtype-quad" data-action="grafSetType" data-arg="quad" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-quadratic"></use></svg></div><div class="graf-type-name">Cuadrática</div>
+      </div>
+      <div class="graf-type-card" id="gtype-abs" data-action="grafSetType" data-arg="abs" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-absolute"></use></svg></div><div class="graf-type-name">Valor Abs.</div>
+      </div>
+      <div class="graf-type-card" id="gtype-exp" data-action="grafSetType" data-arg="exp" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-exponential"></use></svg></div><div class="graf-type-name">Exponencial</div>
+      </div>
+      <div class="graf-type-card" id="gtype-raiz" data-action="grafSetType" data-arg="raiz" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-root"></use></svg></div><div class="graf-type-name">Raíz</div>
+      </div>
+      <div class="graf-type-card" id="gtype-log" data-action="grafSetType" data-arg="log" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-logarithm"></use></svg></div><div class="graf-type-name">Logarítmica</div>
+      </div>
+      <div class="graf-type-card" id="gtype-racional" data-action="grafSetType" data-arg="racional" role="button" tabindex="0">
+        <div class="graf-type-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-rational"></use></svg></div><div class="graf-type-name">Racional</div>
+      </div>
+    </div>
+    <div class="graf-inputs-section">
+      <div class="calc-sec" id="graf-inputs-title">Coeficientes — Lineal</div>
+      <div id="graf-coef-fields"></div>
+      <div class="graf-formula-preview" id="graf-formula-preview">y = x</div>
+      <div class="calc-field-row" style="margin-top:6px">
+        <label>Puntos: x = −N … N, N =</label>
+        <input class="calc-inp calc-inp-sm" id="graf-pts-n" value="3" type="number" min="1" max="10"/>
+      </div>
+      <div class="calc-btn-row">
+        <button class="calc-btn" data-action="grafDraw">Graficar</button>
+        <button class="calc-btn sec" data-action="grafClear">Limpiar</button>
+      </div>
+    </div>
+    <div id="graf-canvas-wrap" style="display:none">
+      <canvas id="graf-cv" style="width:100%;border-radius:8px;display:block"></canvas>
+      <div id="graf-table" class="graf-table"></div>
+    </div>
+    <div id="graf-steps-wrap" style="display:none">
+      <div class="calc-sec">Pasos de cálculo</div>
+      <div id="graf-steps" class="graf-steps"></div>
+    </div>
+  </div>
+</div>

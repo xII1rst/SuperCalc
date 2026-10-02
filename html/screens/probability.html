@@ -1,0 +1,50 @@
+<section id="prob-app" class="tool-app focused" aria-label="Probabilidad" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="prob"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Probabilidad</button>
+    <div class="mod-logo-text"><span class="al-c" id="prob-panel-title">Éxitos en varios ensayos</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="prob-panel-heading">Éxitos en varios ensayos</h1>
+      <p id="prob-panel-description">Calcula probabilidades exactas de ensayos independientes.</p>
+    </div>
+    <div class="tool-card" id="prob-combinations-card" hidden inert>
+      <h2>Combinaciones</h2>
+      <p>Cuenta cuántas maneras hay de elegir k elementos entre n sin importar el orden.</p>
+      <div class="tool-controls">
+        <label for="prob-combinations-n">Elementos n</label>
+        <input id="prob-combinations-n" class="tool-input" type="number" min="0" max="1000" step="1" value="10">
+        <label for="prob-combinations-k">Elegidos k</label>
+        <input id="prob-combinations-k" class="tool-input" type="number" min="0" max="1000" step="1" value="3">
+        <button class="tool-button" data-action="probCalculateCombinations">Calcular</button>
+      </div>
+      <div id="prob-combinations-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="prob-coin-card">
+      <h2>Éxitos en varios ensayos</h2>
+      <p>Distribución binomial: cada ensayo tiene la misma probabilidad de éxito.</p>
+      <div class="tool-controls">
+        <label for="prob-coin-n">Ensayos n</label>
+        <input id="prob-coin-n" class="tool-input" type="number" min="1" max="1000" step="1" value="10">
+        <label for="prob-coin-p">Probabilidad p</label>
+        <input id="prob-coin-p" class="tool-input" type="number" min="0" max="1" step="any" value="0.5">
+        <label for="prob-coin-k">Éxitos k</label>
+        <input id="prob-coin-k" class="tool-input" type="number" min="0" max="1000" step="1" value="5">
+        <button class="tool-button" data-action="probCalculateCoin">Calcular</button>
+      </div>
+      <div id="prob-coin-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="prob-dice-card" hidden inert>
+      <h2>Suma de dados</h2>
+      <p>Todos los dados son de seis caras y cada resultado es equiprobable.</p>
+      <div class="tool-controls">
+        <label for="prob-dice-n">Dados</label>
+        <input id="prob-dice-n" class="tool-input" type="number" min="1" max="12" step="1" value="2">
+        <label for="prob-dice-sum">Suma buscada</label>
+        <input id="prob-dice-sum" class="tool-input" type="number" min="1" max="72" step="1" value="7">
+        <button class="tool-button" data-action="probCalculateDice">Calcular</button>
+      </div>
+      <div id="prob-dice-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

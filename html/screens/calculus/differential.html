@@ -1,0 +1,266 @@
+<!-- ══ DIFERENCIAL ══ -->
+<div class="calc-panel on" id="calc-pDif">
+  <div class="calc-scroll">
+    <div class="calc-keyboard" id="calc-kb-dif"></div>
+
+    <!-- Límites -->
+    <div class="calc-card" id="card-lim">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="lim" role="button" tabindex="0" aria-expanded="false" aria-controls="body-lim">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-limit"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Límites</div>
+          <div class="calc-card-desc">lim f(x) cuando x → a</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-lim"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-lim">
+        <div class="calc-card-inner">
+          <!-- Límite simple -->
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-lim-fx" placeholder="ej: sin(x)/x, (x^2-4)/(x-2)" data-action="previewCalcExpression" data-event="input" data-preview="preview-dif-lim"/>
+          </div>
+          <div class="calc-res-hint" id="preview-dif-lim"></div>
+          <div class="calc-field-row">
+            <label>Variable</label><input class="calc-inp calc-inp-sm" id="dif-lim-var" value="x" aria-label="Variable del límite"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x →</label>
+            <input class="calc-inp calc-inp-sm" id="dif-lim-a" placeholder="ej: 0, π/4, ln(2)"/>
+            <label>Lado:</label>
+            <select class="mat-sel" id="dif-lim-side">
+              <option value="both">Bilateral</option>
+              <option value="right">Derecho (+)</option>
+              <option value="left">Izquierdo (−)</option>
+            </select>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcLimit">Calcular límite</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="lim">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="dif-lim-fx"></canvas></div>
+          <div id="res-lim" class="calc-res"></div>
+
+          <!-- Operación entre dos límites -->
+          <div class="u-split">
+            <button class="calc-btn sec u-full-compact" data-action="toggleLimOp">
+              Operar entre dos límites
+            </button>
+            <div id="lim-op-panel" style="display:none;margin-top:10px">
+              <div class="app-panel">
+                <div class="app-panel-title">Límite A</div>
+                <div class="calc-field-row">
+                  <label>f(x) =</label>
+                  <input class="calc-inp" id="lim-op-fx1" placeholder="ej: x^2"/>
+                </div>
+                <div class="calc-field-row"><label>Variable</label><input class="calc-inp calc-inp-sm" id="lim-op-var1" value="x" aria-label="Variable del límite A"/></div>
+                <div class="calc-field-row">
+                  <label>x →</label>
+                  <input class="calc-inp calc-inp-sm" id="lim-op-a1" placeholder="0"/>
+                  <select class="mat-sel" id="lim-op-side1">
+                    <option value="both">Bilateral</option>
+                    <option value="right">Der (+)</option>
+                    <option value="left">Izq (−)</option>
+                  </select>
+                </div>
+              </div>
+              <div style="text-align:center;margin:6px 0">
+                <select class="mat-sel" id="lim-op-op" style="width:80px;text-align:center">
+                  <option value="+">＋</option>
+                  <option value="−">－</option>
+                  <option value="*">×</option>
+                  <option value="/">÷</option>
+                </select>
+              </div>
+              <div class="app-panel">
+                <div class="app-panel-title">Límite B</div>
+                <div class="calc-field-row">
+                  <label>f(x) =</label>
+                  <input class="calc-inp" id="lim-op-fx2" placeholder="ej: sin(x)/x"/>
+                </div>
+                <div class="calc-field-row"><label>Variable</label><input class="calc-inp calc-inp-sm" id="lim-op-var2" value="x" aria-label="Variable del límite B"/></div>
+                <div class="calc-field-row">
+                  <label>x →</label>
+                  <input class="calc-inp calc-inp-sm" id="lim-op-a2" placeholder="0"/>
+                  <select class="mat-sel" id="lim-op-side2">
+                    <option value="both">Bilateral</option>
+                    <option value="right">Der (+)</option>
+                    <option value="left">Izq (−)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="calc-btn-row u-mt-2">
+                <button class="calc-btn" data-action="calcLimitOp">Calcular operación</button>
+              </div>
+              <div id="res-lim-op" class="calc-res"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derivada explícita -->
+    <div class="calc-card" id="card-der">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="der" role="button" tabindex="0" aria-expanded="false" aria-controls="body-der">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-differential"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Derivada Explícita</div>
+          <div class="calc-card-desc">f'(x) simbólica — reglas de derivación</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-der"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-der">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-der-fx" placeholder="ej: 2*x^25" data-action="previewCalcExpression" data-event="input" data-preview="preview-dif-der"/>
+          </div>
+          <div class="calc-res-hint" id="preview-dif-der"></div>
+          <div class="calc-field-row"><label>Variable</label><input class="calc-inp calc-inp-sm" id="dif-der-var" value="x" aria-label="Variable de derivación"/></div>
+          <div class="calc-field-row">
+            <label>Orden:</label>
+            <select class="mat-sel" id="dif-der-ord">
+              <option value="1">Primera (f')</option>
+              <option value="2">Segunda (f'')</option>
+              <option value="3">Tercera (f''')</option>
+              <option value="4">Cuarta (f⁽⁴⁾)</option>
+            </select>
+            <label>Evaluar en x =</label>
+            <input class="calc-inp calc-inp-sm" id="dif-der-pt" placeholder="opcional"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcDerivative">Derivar</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="der">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="dif-der-fx"></canvas></div>
+          <div id="res-der" class="calc-res"></div>
+
+          <!-- Sub-panel aplicaciones -->
+          <div class="u-split">
+            <button class="calc-btn sec u-full-compact" data-action="toggleApps">
+              <svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-gear"></use></svg> Aplicaciones de Derivadas
+            </button>
+            <div id="apps-panel" style="display:none;margin-top:10px">
+              <div class="app-panel">
+                <div class="app-panel-title">Modo Aplicaciones</div>
+                <div class="app-sel-grid">
+                  <div class="app-sel-btn on" id="app-btn-opt" data-action="setApp" data-arg="opt" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-optimize"></use></svg></div>
+                    <div class="app-sel-name">Optimización</div>
+                    <div class="app-sel-form">max/min de f(x)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-pob" data-action="setApp" data-arg="pob" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-statistics"></use></svg></div>
+                    <div class="app-sel-name">Crecimiento</div>
+                    <div class="app-sel-form">P(t) = P₀·eᵏᵗ</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-vel" data-action="setApp" data-arg="vel" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-motion"></use></svg></div>
+                    <div class="app-sel-name">Movimiento</div>
+                    <div class="app-sel-form">v = s'(t), a = v'(t)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-tan" data-action="setApp" data-arg="tan" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-differential"></use></svg></div>
+                    <div class="app-sel-name">Recta Tangente</div>
+                    <div class="app-sel-form">y = f'(x₀)(x−x₀) + f(x₀)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-rel" data-action="setApp" data-arg="rel" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-system"></use></svg></div>
+                    <div class="app-sel-name">Tasas Relacionadas</div>
+                    <div class="app-sel-form">dV/dt, dA/dt, etc.</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-newton" data-action="setApp" data-arg="newton" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-target"></use></svg></div>
+                    <div class="app-sel-name">Newton-Raphson</div>
+                    <div class="app-sel-form">raíces de f(x) = 0</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-mvt" data-action="setApp" data-arg="mvt" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-tangent"></use></svg></div>
+                    <div class="app-sel-name">Valor Medio</div>
+                    <div class="app-sel-form">f'(c) = (f(b)−f(a))/(b−a)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-cont" data-action="setApp" data-arg="cont" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-search"></use></svg></div>
+                    <div class="app-sel-name">Continuidad</div>
+                    <div class="app-sel-form">límites vs f(a)</div>
+                  </div>
+                  <div class="app-sel-btn" id="app-btn-hip" data-action="setApp" data-arg="hip" role="button" tabindex="0">
+                    <div class="app-sel-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-curve"></use></svg></div>
+                    <div class="app-sel-name">Hiperbólicas</div>
+                    <div class="app-sel-form">sinh, cosh, tanh</div>
+                  </div>
+                </div>
+                <div id="app-form-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derivada implícita -->
+    <div class="calc-card" id="card-imp">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="imp" role="button" tabindex="0" aria-expanded="false" aria-controls="body-imp">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-differential"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Derivada Implícita</div>
+          <div class="calc-card-desc">F(x,y) = 0  →  dy/dx = −Fx/Fy</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-imp"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-imp">
+        <div class="calc-card-inner">
+          <div style="font-size:12px;color:var(--text3);font-family:var(--font-math);margin-bottom:10px;line-height:1.8">
+            Ingresa F(x,y) tal que F(x,y) = 0<br>
+            Ej: x² + y² − 25 &nbsp;→&nbsp; círculo de r=5
+          </div>
+          <div class="calc-field-row">
+            <label>F(x,y) =</label>
+            <input class="calc-inp" id="dif-imp-fxy" placeholder="ej: x^2 + y^2 - 25" data-action="previewCalcExpression" data-event="input" data-preview="preview-dif-imp"/>
+          </div>
+          <div class="calc-res-hint" id="preview-dif-imp"></div>
+          <div class="calc-field-row">
+            <label>en (x₀,y₀):</label>
+            <input class="calc-inp calc-inp-sm" id="dif-imp-x0" placeholder="x₀"/>
+            <input class="calc-inp calc-inp-sm" id="dif-imp-y0" placeholder="y₀"/>
+          </div>
+          <div class="calc-field-row">
+            <label for="dif-imp-dxdt">dx/dt (opcional)</label>
+            <input class="calc-inp calc-inp-sm" id="dif-imp-dxdt" placeholder="tasa para hallar dy/dt"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcImplicit">Calcular dy/dx</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="imp">Limpiar</button>
+          </div>
+          <div id="res-imp" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Análisis -->
+    <div class="calc-card" id="card-ana">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="ana" role="button" tabindex="0" aria-expanded="false" aria-controls="body-ana">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-analysis"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Análisis de Función</div>
+          <div class="calc-card-desc">Polinomios y cocientes N/D de grado ≤4: signos, dominio y gráfica</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-ana"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-ana">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>f(x) =</label>
+            <input class="calc-inp" id="dif-ana-fx" placeholder="ej: x^3 - 3*x"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcAnalysis">Analizar</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="ana">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="fn" data-src="dif-ana-fx"></canvas></div>
+          <div id="res-ana" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+<section id="exp-app" class="tool-app focused" aria-label="Experimentos" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="exp"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Experimentos</button>
+    <div class="mod-logo-text"><span class="al-c" id="exp-panel-title">Tira el dado</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1 id="exp-panel-heading">Tira el dado</h1>
+      <p id="exp-panel-description">Simula lanzamientos de un dado de seis caras.</p>
+    </div>
+    <div class="tool-card" id="exp-dice-card">
+      <h2>Tira el dado</h2>
+      <p>Simula lanzamientos de un dado de seis caras.</p>
+      <div class="tool-controls">
+        <label for="exp-dice-count">Lanzamientos</label>
+        <input id="exp-dice-count" class="tool-input" type="number" min="1" max="10000" step="1" value="10">
+        <button class="tool-button" data-action="expRollDice">Lanzar</button>
+      </div>
+      <div id="exp-dice-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="exp-coin-card" hidden inert>
+      <h2>Cara o sello</h2>
+      <p>Simula lanzamientos de una moneda.</p>
+      <div class="tool-controls">
+        <label for="exp-coin-count">Lanzamientos</label>
+        <input id="exp-coin-count" class="tool-input" type="number" min="1" max="10000" step="1" value="10">
+        <button class="tool-button" data-action="expFlipCoins">Lanzar</button>
+      </div>
+      <div id="exp-coin-result" class="tool-result" aria-live="polite"></div>
+    </div>
+    <div class="tool-card" id="exp-pi-card" hidden inert>
+      <h2>π con Chudnovsky</h2>
+      <p>Calcula cifras decimales de π con precisión arbitraria.</p>
+      <div class="tool-controls">
+        <label for="exp-pi-digits">Cifras decimales</label>
+        <input id="exp-pi-digits" class="tool-input" type="number" min="1" max="100" step="1" value="50">
+        <button class="tool-button" data-action="expCalculatePi">Calcular π</button>
+      </div>
+      <div id="exp-pi-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

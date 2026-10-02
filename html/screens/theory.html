@@ -1,0 +1,20 @@
+<!-- FICHAS TEÓRICAS -->
+<section id="theory-app" class="tool-app" aria-label="Fichas teóricas" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="theory"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> <span id="theory-back">Matemáticas</span></button>
+    <div class="mod-logo-text"><span class="al-c">Fichas teóricas</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1>Fichas teóricas</h1>
+      <p>Definiciones, teoremas, ejemplos y contraejemplos de cada unidad del temario. Cada subtema indica si una herramienta lo calcula y te lleva a ella.</p>
+    </div>
+    <div class="tool-card">
+      <label for="theory-subject">Materia</label>
+      <select id="theory-subject" class="tool-input geom-mode" data-action="theorySelect" data-event="change"></select>
+      <p id="theory-summary" class="tool-note" aria-live="polite"></p>
+      <p class="tool-note theory-legend"><span class="theory-legend-item"><span class="theory-status" data-status="C">Cubierto</span> calcula con pasos</span><span class="theory-legend-item"><span class="theory-status" data-status="P">Parcial</span> familias declaradas</span><span class="theory-legend-item"><span class="theory-status" data-status="F">Ficha</span> explicado aquí</span></p>
+    </div>
+    <div id="theory-units"></div>
+  </div>
+</section>

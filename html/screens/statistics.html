@@ -1,0 +1,26 @@
+<section id="stats-app" class="tool-app" aria-label="Estadística" inert>
+  <div class="mod-header">
+    <button class="mod-back al" data-action="closeModule" data-arg="stats"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-arrow-left"></use></svg> Matemáticas</button>
+    <div class="mod-logo-text"><span class="al-c">Estadística</span></div>
+  </div>
+  <div class="tool-scroll">
+    <div class="tool-intro">
+      <h1>Estadística descriptiva</h1>
+      <p>Resume una lista de datos con medidas de centro, dispersión y gráficos.</p>
+    </div>
+    <div class="tool-card">
+      <label for="stats-values">Datos</label>
+      <textarea id="stats-values" class="tool-textarea" rows="5" placeholder="2, 4, 4, 6, 9"></textarea>
+      <p class="tool-note">Separa los valores con comas, espacios o punto y coma. Usa punto decimal. Máximo 10 000 datos.</p>
+      <div class="tool-controls">
+        <label for="stats-percentile">Percentil personalizado</label>
+        <input id="stats-percentile" class="tool-input" type="number" min="0" max="100" step="1" value="90">
+      </div>
+      <div class="tool-actions">
+        <button class="tool-button" data-action="statsAnalyze">Analizar</button>
+        <button class="tool-button secondary" data-action="statsClear">Limpiar</button>
+      </div>
+      <div id="stats-result" class="tool-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

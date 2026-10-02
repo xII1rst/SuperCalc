@@ -1,0 +1,140 @@
+<!-- ══ CURVAS ══ -->
+<div class="calc-panel" id="calc-pCur">
+  <div class="calc-scroll">
+    <div class="calc-sec">Curvas paramétricas, polares y cónicas</div>
+
+    <!-- Paramétricas -->
+    <div class="calc-card" id="card-param">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="param" role="button" tabindex="0" aria-expanded="false" aria-controls="body-param">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-curve"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Curvas Paramétricas</div>
+          <div class="calc-card-desc">x(t), y(t) — pendiente, longitud de arco, área, superficie</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-param"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-param">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>x(t) =</label><input class="calc-inp" id="par-x" placeholder="ej: cos(t)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>y(t) =</label><input class="calc-inp" id="par-y" placeholder="ej: sin(t)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Operación:</label>
+            <select class="mat-sel" id="par-op">
+              <option value="slope">Pendiente dy/dx</option>
+              <option value="arc">Longitud de arco</option>
+              <option value="area">Área bajo la curva</option>
+              <option value="surface">Superficie de revolución</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label>t₀ =</label><input class="calc-inp calc-inp-sm" id="par-t0" placeholder="para pendiente"/>
+            <label>a =</label><input class="calc-inp calc-inp-sm" id="par-a" placeholder="0"/>
+            <label>b =</label><input class="calc-inp calc-inp-sm" id="par-b" placeholder="2π"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcParametric">Calcular</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="param">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="param" data-src="par-x,par-y" data-a="par-a" data-b="par-b"></canvas></div>
+          <div id="res-param" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Polares -->
+    <div class="calc-card" id="card-polar">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="polar" role="button" tabindex="0" aria-expanded="false" aria-controls="body-polar">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-polar"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Coordenadas Polares</div>
+          <div class="calc-card-desc">r(θ) — área, longitud de arco, pendiente, conversión</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-polar"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-polar">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>r(θ) =</label><input class="calc-inp" id="polar-r" placeholder="ej: 1, 2*cos(t)"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Operación:</label>
+            <select class="mat-sel" id="polar-op">
+              <option value="area">Área polar</option>
+              <option value="arc">Longitud de arco</option>
+              <option value="slope">Pendiente dy/dx</option>
+              <option value="convert">Cartesiana → polar</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label>a =</label><input class="calc-inp calc-inp-sm" id="polar-a" placeholder="0"/>
+            <label>b =</label><input class="calc-inp calc-inp-sm" id="polar-b" placeholder="2π"/>
+            <label>θ =</label><input class="calc-inp calc-inp-sm" id="polar-t0" placeholder="para pendiente"/>
+          </div>
+          <div class="calc-field-row">
+            <label>x =</label><input class="calc-inp calc-inp-sm" id="polar-x" placeholder="conversión"/>
+            <label>y =</label><input class="calc-inp calc-inp-sm" id="polar-y" placeholder="conversión"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcPolar">Calcular</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="polar">Limpiar</button>
+          </div>
+          <div class="calc-preview-wrap"><canvas class="calc-preview" data-gmode="polar" data-src="polar-r" data-a="polar-a" data-b="polar-b"></canvas></div>
+          <div id="res-polar" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cónicas -->
+    <div class="calc-card" id="card-conic">
+      <div class="calc-card-header" data-action="toggleCard" data-arg="conic" role="button" tabindex="0" aria-expanded="false" aria-controls="body-conic">
+        <div class="calc-card-icon"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-conic"></use></svg></div>
+        <div class="calc-card-info">
+          <div class="calc-card-name">Cónicas</div>
+          <div class="calc-card-desc">Parábola, elipse, hipérbola y clasificación</div>
+        </div>
+        <div class="calc-card-arrow" id="arr-conic"><svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-chevron"></use></svg></div>
+      </div>
+      <div class="calc-card-body" id="body-conic">
+        <div class="calc-card-inner">
+          <div class="calc-field-row">
+            <label>Tipo:</label>
+            <select class="mat-sel" id="conic-type">
+              <option value="parabola">Parábola</option>
+              <option value="ellipse">Elipse</option>
+              <option value="hyperbola">Hipérbola</option>
+              <option value="classify">Clasificar Ax²+Bxy+Cy²…</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label>h =</label><input class="calc-inp calc-inp-sm" id="conic-h" placeholder="0"/>
+            <label>k =</label><input class="calc-inp calc-inp-sm" id="conic-k" placeholder="0"/>
+            <label>p/a =</label><input class="calc-inp calc-inp-sm" id="conic-p1" placeholder="1"/>
+            <label>b =</label><input class="calc-inp calc-inp-sm" id="conic-p2" placeholder="elipse/hipérbola"/>
+          </div>
+          <div class="calc-field-row">
+            <label>Eje:</label>
+            <select class="mat-sel" id="conic-axis">
+              <option value="y">Parábola vertical</option>
+              <option value="x">Parábola horizontal</option>
+            </select>
+          </div>
+          <div class="calc-field-row">
+            <label>A =</label><input class="calc-inp calc-inp-sm" id="conic-A" placeholder="clasificar"/>
+            <label>B =</label><input class="calc-inp calc-inp-sm" id="conic-B" placeholder="clasificar"/>
+            <label>C =</label><input class="calc-inp calc-inp-sm" id="conic-C" placeholder="clasificar"/>
+          </div>
+          <div class="calc-btn-row">
+            <button class="calc-btn" data-action="calcConics">Calcular</button>
+            <button class="calc-btn sec" data-action="clearCard" data-arg="conic">Limpiar</button>
+          </div>
+          <div id="res-conic" class="calc-res"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
