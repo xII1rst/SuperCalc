@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-11';
+const CACHE = 'supercalc-v1.0-rework-12';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -67,6 +67,13 @@ const APP_PRECACHE = [
   './js/ui/algebra/geometry.mjs',
   './js/ui/algebra/linear-spaces.mjs',
   './js/ui/numerical-analysis.mjs',
+  './js/ui/numerical/inputs.mjs',
+  './js/ui/numerical/errors.mjs',
+  './js/ui/numerical/roots.mjs',
+  './js/ui/numerical/systems.mjs',
+  './js/ui/numerical/interpolation.mjs',
+  './js/ui/numerical/derivative-quadrature.mjs',
+  './js/ui/numerical/ode.mjs',
   './js/ui/logic.mjs',
   './js/ui/waves.mjs',
   './js/ui/mechanics-advanced.mjs',
