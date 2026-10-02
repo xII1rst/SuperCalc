@@ -1,11 +1,9 @@
-import { EM_EPS0, EM_K, EM_MU0, coulomb, inducedEmf, lorentz, magneticFieldWire, ohmsLaw, parallelPlateCapacitance } from '../math/electromagnetism.mjs';
-import { calcParse, collectVariables } from '../math/expression.mjs';
-import { capacitorState, chargedParticleOrbit, chargedRingAxis, circularDisplacementField, circularLoopAxis, coaxialCapacitor, conductingSphere, dielectricCapacitor, dielectricPlate, dipoleAxis, displacementCurrent, enclosedChargeFlux, equivalentComponents, hallEffect, infiniteChargedPlane, layeredPlateCapacitor, longCurrentCable, loopTorque, magneticForceWire, magneticGeometries, motionalEmf, nodalCircuit, nodalVoltageSources, pointChargeSystem, poissonOneDimensional, polynomialFieldDivergence, polynomialPotential, radialChargedCylinder, railBarCircuit, rcState, resistiveWire, rlTransient, seriesRlcAc, seriesRlcTransient, sinusoidalFluxEmf, solenoidFieldDensity, solenoidSelfInductance, toroidSelfInductance, uniformElectricFlux, uniformSolidSphere, uniformSphereSelfEnergy } from '../math/electromagnetism-advanced.mjs';
+import { EM_EPS0, EM_K, EM_MU0 } from '../math/electromagnetism.mjs';
+import { displacementCurrent, poissonOneDimensional, rcState, rlTransient, seriesRlcTransient } from '../math/electromagnetism-advanced.mjs';
 import { circuitDiagram, impedanceDiagram, potentialMapSvg } from '../graphics/physics-diagrams.mjs';
-import { dimension, list, number, read, rowDimensions, rows, unitFactors, unitSelector } from './electromagnetism/units.mjs';
+import { dimension, number, rowDimensions, rows, unitFactors, unitSelector } from './electromagnetism/units.mjs';
 import { labelledOutputEntries, physicsOutputControls } from './physics-output.mjs';
 import { lcOscillation } from '../math/waves.mjs';
-import { poissonRectangle } from '../math/poisson-rectangle.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
 import * as electrostatics from './electromagnetism/electrostatics.mjs';
 import * as circuits from './electromagnetism/circuits.mjs';
