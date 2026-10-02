@@ -26,90 +26,27 @@ Ambos resultados se aproximan con Simpson 1/3 y se expresan en unidades cúbicas
 
 ```text
 SuperCalc/
-├── index.html                 Pantallas, formularios y acciones declarativas
-├── app.js                     Arranque ES y registro de acciones
-├── theme.css                  Paletas oscura y clara
-├── style.css                  Distribución visual y componentes
-├── sw.js                      Caché y funcionamiento offline
+├── index.html        Archivo generado: se edita en html/ y se ensambla
+├── html/             shell.html y un fragmento por pantalla
+├── app.js            Arranque ES y composición de la tabla de acciones
+├── theme.css         Paletas oscura y clara
+├── styles/           Distribución visual y componentes, en orden de cascada
+├── fonts/            Tipografías locales (OFL)
+├── sw.js             Caché y funcionamiento offline
 ├── js/
-│   ├── math/                 Cálculos sin DOM ni canvas
-│   │   ├── algebra/
-│   │   │   ├── matrix.mjs              Matrices y sistemas
-│   │   │   ├── vector.mjs              Operaciones vectoriales
-│   │   │   ├── vector-equations.mjs    Ecuaciones e incógnitas vectoriales
-│   │   │   ├── triangle.mjs            Geometría de triángulos
-│   │   │   ├── inequalities.mjs        Solución de inecuaciones
-│   │   │   ├── functions.mjs           Análisis de funciones
-│   │   │   ├── polynomial.mjs          Utilidades polinómicas
-│   │   │   └── sequences.mjs           Sucesiones y progresiones
-│   │   ├── calculus.mjs                Límites, derivadas, integrales y volúmenes
-│   │   ├── integration.mjs             Integración simbólica (CAS) con pasos
-│   │   ├── series.mjs                  Series infinitas y polinomio de Taylor
-│   │   ├── numeric.mjs                 Integración numérica e integrales impropias
-│   │   ├── integral-applications.mjs   Aplicaciones de la integral definida
-│   │   ├── parametric.mjs              Curvas paramétricas
-│   │   ├── polar.mjs                   Coordenadas polares
-│   │   ├── conics.mjs                  Secciones cónicas
-│   │   ├── applications.mjs            Aplicaciones de derivadas y EDO
-│   │   ├── electromagnetism.mjs        Fórmulas físicas
-│   │   ├── statistics.mjs              Estadística descriptiva
-│   │   ├── probability.mjs             Binomial, combinaciones y dados
-│   │   ├── mechanics.mjs               Movimiento, fuerza y energía
-│   │   ├── mechanics-solver.mjs        Despejes y pasos de mecánica
-│   │   ├── mechanics-units.mjs         Conversiones de magnitudes físicas
-│   │   ├── experiments.mjs             Dados, moneda y cifras de π
-│   │   ├── expression.mjs              Lectura numérica de expresiones
-│   │   └── graph-types.mjs             Siete tipos del graficador
-│   ├── ui/                   DOM, formularios, navegación y eventos
-│   │   ├── algebra/
-│   │   │   ├── matrix.mjs              Pantalla de matrices
-│   │   │   ├── vectors.mjs             Paneles y controles de vectores
-│   │   │   ├── inequalities.mjs        Pantalla de inecuaciones
-│   │   │   ├── functions.mjs           Pantalla de funciones
-│   │   │   └── sequences.mjs           Pantalla de sucesiones
-│   │   ├── calculus.mjs                Paneles y resultados de Cálculo
-│   │   ├── electromagnetism.mjs        Paneles de electromagnetismo
-│   │   ├── electromagnetism-extra.mjs  Aplicaciones físicas
-│   │   ├── statistics.mjs              Pantalla de estadística
-│   │   ├── probability.mjs             Pantalla de probabilidad
-│   │   ├── mechanics.mjs               Pantalla de mecánica
-│   │   ├── experiments.mjs             Pantalla de experimentos
-│   │   ├── plotter.mjs                 Controles y tabla del graficador
-│   │   ├── navigation.mjs              Launcher, submódulos e historial
-│   │   ├── routes.mjs                  Enlaces directos #/menú/herramienta
-│   │   ├── events.mjs                  Delegación de data-action
-│   │   ├── figure-controls.mjs         Controles de figuras 3D
-│   │   ├── canvas-size.mjs             Ajuste del bitmap al contenedor
-│   │   ├── branding.mjs                Logo y presentación
-│   │   ├── theme.mjs                   Selector y persistencia del tema
-│   │   └── toast.mjs                   Avisos no bloqueantes
-│   ├── graphics/             Dibujo con Canvas 2D
-│   │   ├── vector-canvas.mjs, em-canvas.mjs
-│   │   ├── graph-canvas.mjs, analysis.mjs
-│   │   ├── mechanics-trajectory.mjs, statistics-charts.mjs
-│   │   ├── axes.mjs, figures.mjs
-│   │   └── colors.mjs, formula-background.mjs
-│   ├── state/figures.mjs      Estado de figuras
-│   ├── utils/format.mjs       Formato numérico, fracciones y radicales
-│   └── offline.mjs            Registro PWA, instalación y actualización
-├── tests/                   Pruebas de Node, sin navegador
-│   ├── app-ui.test.mjs, events.test.mjs, interaction.test.mjs, offline.test.mjs
-│   ├── calculus.test.mjs, applications.test.mjs, electromagnetism.test.mjs
-│   ├── statistics.test.mjs, probability.test.mjs, mechanics.test.mjs
-│   ├── mechanics-solver.test.mjs
-│   ├── experiments.test.mjs
-│   ├── integration.test.mjs, series.test.mjs, numeric.test.mjs
-│   ├── integral-applications.test.mjs, parametric.test.mjs
-│   ├── polar.test.mjs, conics.test.mjs
-│   ├── matrix.test.mjs, vector.test.mjs, vector-equations.test.mjs
-│   ├── inequalities.test.mjs, functions.test.mjs, polynomial.test.mjs
-│   ├── sequences.test.mjs, graph-types.test.mjs, format.test.mjs
-│   ├── canvas.test.mjs, canvas-size.test.mjs, analysis-graphics.test.mjs
-│   ├── figures.test.mjs, formula-background.test.mjs
-│   └── theme.test.mjs, contrast.test.mjs, toast.test.mjs
+│   ├── math/         Cálculos sin DOM ni canvas (calculus/ e integration/ por responsabilidad)
+│   ├── ui/           Pantallas, formularios, navegación y eventos (una carpeta por herramienta grande)
+│   ├── graphics/     Dibujo con Canvas 2D y SVG
+│   ├── content/      Fichas teóricas, una por materia
+│   ├── state/        Estado compartido de figuras
+│   ├── utils/        Formato numérico, fracciones y radicales
+│   └── offline.mjs   Registro PWA, instalación y actualización
+├── scripts/          assemble-html.mjs (ensambla index.html) y audit.mjs (informe de tamaño)
+├── docs/             architecture.md: capas, fachadas, registros y pruebas
+└── tests/            Pruebas de Node, sin navegador
 ```
 
-El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. `js/state/` y `js/utils/` sirven a varios dominios; `js/offline.mjs` y `sw.js` gestionan recursos y caché por separado. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable.
+El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable. [docs/architecture.md](docs/architecture.md) explica la división en módulos y cómo se protege el comportamiento.
 
 ## Ejecutar y comprobar
 
@@ -125,6 +62,12 @@ Ejecutar las pruebas automatizadas:
 node --experimental-vm-modules --test tests/*.test.mjs
 ```
 
-La suite comprueba motores matemáticos, acciones de interfaz simuladas, renderizadores con canvas simulado, temas y precarga offline. La interacción, el aspecto visual y el control offline real se comprueban desde el navegador y sus DevTools.
+Después de editar el marcado en `html/`, regenerar `index.html` (la suite falla mientras esté desactualizado):
+
+```sh
+node scripts/assemble-html.mjs
+```
+
+La suite comprueba motores matemáticos, salidas de referencia, acciones de interfaz simuladas con su traza de efectos, la arquitectura de módulos, temas y precarga offline. El aspecto visual y el control offline real se comprueban además desde el navegador.
 
 © Rafael Miranda — SuperCalc
