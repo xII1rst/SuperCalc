@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-7';
+const CACHE = 'supercalc-v1.0-rework-8';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -123,6 +123,19 @@ const APP_PRECACHE = [
   './js/ui/plotter.mjs',
   './js/graphics/graph-canvas.mjs',
   './js/ui/calculus.mjs',
+  './js/ui/calculus/keyboard.mjs',
+  './js/ui/calculus/cards.mjs',
+  './js/ui/calculus/results.mjs',
+  './js/ui/calculus/differential.mjs',
+  './js/ui/calculus/applications.mjs',
+  './js/ui/calculus/integral.mjs',
+  './js/ui/calculus/series.mjs',
+  './js/ui/calculus/multivariable.mjs',
+  './js/ui/calculus/ode.mjs',
+  './js/ui/calculus/curves.mjs',
+  './js/ui/calculus/preview-renderer.mjs',
+  './js/ui/calculus/previews.mjs',
+  './js/ui/calculus/revolution.mjs',
   './js/state/figures.mjs',
   './js/ui/figure-controls.mjs',
   './js/graphics/axes.mjs',
