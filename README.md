@@ -435,28 +435,4 @@ SuperCalc/
     └── waves.test.mjs                              Oscilaciones, propagación, óptica y representación de ondas
 ```
 
-El recorrido principal es `HTML → js/ui/events.mjs → app.js → js/ui/ → js/math/ → js/graphics/`. Los motores de `js/math/` reciben datos y devuelven resultados sin leer la interfaz. Las expresiones introducidas se evalúan localmente y no constituyen un parser seguro para datos de origen no confiable. [docs/architecture.md](docs/architecture.md) explica la división en módulos y cómo se protege el comportamiento.
-
-## Ejecutar y comprobar
-
-Servir la raíz por HTTP y abrir `http://127.0.0.1:8765/` (los módulos ES y el service worker no se prueban desde `file://`):
-
-```sh
-python3 -m http.server 8765 --bind 127.0.0.1
-```
-
-Ejecutar las pruebas automatizadas:
-
-```sh
-node --experimental-vm-modules --test tests/*.test.mjs
-```
-
-Después de editar el marcado en `html/`, regenerar `index.html` (la suite falla mientras esté desactualizado):
-
-```sh
-node scripts/assemble-html.mjs
-```
-
-La suite comprueba motores matemáticos, salidas de referencia, acciones de interfaz simuladas con su traza de efectos, la arquitectura de módulos, temas y precarga offline. El aspecto visual y el control offline real se comprueban además desde el navegador.
-
 © Rafael Miranda — SuperCalc
