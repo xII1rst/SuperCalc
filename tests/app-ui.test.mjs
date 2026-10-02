@@ -2,118 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { THEORY } from '../js/content/theory.mjs';
-import { createAppHarness } from './helpers/app-harness.mjs';
-
-const appUrl = new URL('../app.js', import.meta.url);
-const modules = new Map([
-  ['./js/math/algebra/matrix.mjs', new URL('../js/math/algebra/matrix.mjs', import.meta.url)],
-  ['./js/math/algebra/geometry.mjs', new URL('../js/math/algebra/geometry.mjs', import.meta.url)],
-  ['./js/math/algebra/linear-spaces.mjs', new URL('../js/math/algebra/linear-spaces.mjs', import.meta.url)],
-  ['./js/math/algebra/parameter-systems.mjs', new URL('../js/math/algebra/parameter-systems.mjs', import.meta.url)],
-  ['./js/math/numerical-study.mjs', new URL('../js/math/numerical-study.mjs', import.meta.url)],
-  ['./js/math/numerical-analysis.mjs', new URL('../js/math/numerical-analysis.mjs', import.meta.url)],
-  ['./js/math/logic.mjs', new URL('../js/math/logic.mjs', import.meta.url)],
-  ['./js/math/logic-advanced.mjs', new URL('../js/math/logic-advanced.mjs', import.meta.url)],
-  ['./js/math/graphs.mjs', new URL('../js/math/graphs.mjs', import.meta.url)],
-  ['./js/math/waves.mjs', new URL('../js/math/waves.mjs', import.meta.url)],
-  ['./js/graphics/wave-plot.mjs', new URL('../js/graphics/wave-plot.mjs', import.meta.url)],
-  ['./js/graphics/logic-graph.mjs', new URL('../js/graphics/logic-graph.mjs', import.meta.url)],
-  ['./js/math/mechanics-advanced.mjs', new URL('../js/math/mechanics-advanced.mjs', import.meta.url)],
-  ['./js/math/electromagnetism-advanced.mjs', new URL('../js/math/electromagnetism-advanced.mjs', import.meta.url)],
-  ['./js/math/numerical-advanced.mjs', new URL('../js/math/numerical-advanced.mjs', import.meta.url)],
-  ['./js/math/differential-applications.mjs', new URL('../js/math/differential-applications.mjs', import.meta.url)],
-  ['./js/graphics/function-analysis.mjs', new URL('../js/graphics/function-analysis.mjs', import.meta.url)],
-  ['./js/math/study-calculus.mjs', new URL('../js/math/study-calculus.mjs', import.meta.url)],
-  ['./js/math/poisson-rectangle.mjs',new URL('../js/math/poisson-rectangle.mjs',import.meta.url)],
-  ['./js/math/physics-output.mjs', new URL('../js/math/physics-output.mjs', import.meta.url)],
-  ['./js/state/physics-output.mjs', new URL('../js/state/physics-output.mjs', import.meta.url)],
-  ['./js/ui/physics-output.mjs', new URL('../js/ui/physics-output.mjs', import.meta.url)],
-  ['./js/math/numerical-systems.mjs', new URL('../js/math/numerical-systems.mjs', import.meta.url)],
-  ['./js/graphics/physics-diagrams.mjs', new URL('../js/graphics/physics-diagrams.mjs', import.meta.url)],
-  ['./js/graphics/study-plot.mjs', new URL('../js/graphics/study-plot.mjs', import.meta.url)],
-  ['./js/math/ode-study.mjs', new URL('../js/math/ode-study.mjs', import.meta.url)],
-  ['./js/math/study-ode.mjs', new URL('../js/math/study-ode.mjs', import.meta.url)],
-  ['./js/math/statistics.mjs', new URL('../js/math/statistics.mjs', import.meta.url)],
-  ['./js/graphics/statistics-charts.mjs', new URL('../js/graphics/statistics-charts.mjs', import.meta.url)],
-  ['./js/math/probability.mjs', new URL('../js/math/probability.mjs', import.meta.url)],
-  ['./js/ui/probability.mjs', new URL('../js/ui/probability.mjs', import.meta.url)],
-  ['./js/math/mechanics.mjs', new URL('../js/math/mechanics.mjs', import.meta.url)],
-  ['./js/math/mechanics-units.mjs', new URL('../js/math/mechanics-units.mjs', import.meta.url)],
-  ['./js/math/mechanics-solver.mjs', new URL('../js/math/mechanics-solver.mjs', import.meta.url)],
-  ['./js/ui/mechanics.mjs', new URL('../js/ui/mechanics.mjs', import.meta.url)],
-  ['./js/graphics/mechanics-trajectory.mjs', new URL('../js/graphics/mechanics-trajectory.mjs', import.meta.url)],
-  ['./js/math/experiments.mjs', new URL('../js/math/experiments.mjs', import.meta.url)],
-  ['./js/ui/statistics.mjs', new URL('../js/ui/statistics.mjs', import.meta.url)],
-  ['./js/ui/experiments.mjs', new URL('../js/ui/experiments.mjs', import.meta.url)],
-  ['./js/math/algebra/vector.mjs', new URL('../js/math/algebra/vector.mjs', import.meta.url)],
-  ['./js/math/algebra/triangle.mjs', new URL('../js/math/algebra/triangle.mjs', import.meta.url)],
-  ['./js/graphics/figures.mjs', new URL('../js/graphics/figures.mjs', import.meta.url)],
-  ['./js/graphics/vector-canvas.mjs', new URL('../js/graphics/vector-canvas.mjs', import.meta.url)],
-  ['./js/graphics/em-canvas.mjs', new URL('../js/graphics/em-canvas.mjs', import.meta.url)],
-  ['./js/graphics/colors.mjs', new URL('../js/graphics/colors.mjs', import.meta.url)],
-  ['./js/graphics/formula-background.mjs', new URL('../js/graphics/formula-background.mjs', import.meta.url)],
-  ['./js/utils/format.mjs', new URL('../js/utils/format.mjs', import.meta.url)],
-  ['./js/ui/algebra/matrix.mjs', new URL('../js/ui/algebra/matrix.mjs', import.meta.url)],
-  ['./js/ui/algebra/geometry.mjs', new URL('../js/ui/algebra/geometry.mjs', import.meta.url)],
-  ['./js/ui/algebra/linear-spaces.mjs', new URL('../js/ui/algebra/linear-spaces.mjs', import.meta.url)],
-  ['./js/ui/numerical-analysis.mjs', new URL('../js/ui/numerical-analysis.mjs', import.meta.url)],
-  ['./js/ui/logic.mjs', new URL('../js/ui/logic.mjs', import.meta.url)],
-  ['./js/ui/waves.mjs', new URL('../js/ui/waves.mjs', import.meta.url)],
-  ['./js/ui/mechanics-advanced.mjs', new URL('../js/ui/mechanics-advanced.mjs', import.meta.url)],
-  ['./js/ui/electromagnetism-advanced.mjs', new URL('../js/ui/electromagnetism-advanced.mjs', import.meta.url)],
-  ['./js/ui/study-calculus.mjs', new URL('../js/ui/study-calculus.mjs', import.meta.url)],
-  ['./js/ui/algebra/inequalities.mjs', new URL('../js/ui/algebra/inequalities.mjs', import.meta.url)],
-  ['./js/ui/branding.mjs', new URL('../js/ui/branding.mjs', import.meta.url)],
-  ['./js/offline.mjs', new URL('../js/offline.mjs', import.meta.url)],
-  ['./js/ui/navigation.mjs', new URL('../js/ui/navigation.mjs', import.meta.url)],
-  ['./js/ui/routes.mjs', new URL('../js/ui/routes.mjs', import.meta.url)],
-  ['./js/math/domain-guard.mjs', new URL('../js/math/domain-guard.mjs', import.meta.url)],
-  ['./js/content/theory.mjs', new URL('../js/content/theory.mjs', import.meta.url)],
-  ['./js/ui/theory.mjs', new URL('../js/ui/theory.mjs', import.meta.url)],
-  ['./js/ui/events.mjs', new URL('../js/ui/events.mjs', import.meta.url)],
-  ['./js/ui/canvas-size.mjs', new URL('../js/ui/canvas-size.mjs', import.meta.url)],
-  ['./js/ui/theme.mjs', new URL('../js/ui/theme.mjs', import.meta.url)],
-  ['./js/ui/toast.mjs', new URL('../js/ui/toast.mjs', import.meta.url)],
-  ['./js/math/calculus.mjs', new URL('../js/math/calculus.mjs', import.meta.url)],
-  ['./js/math/numeric.mjs', new URL('../js/math/numeric.mjs', import.meta.url)],
-  ['./js/math/expression.mjs', new URL('../js/math/expression.mjs', import.meta.url)],
-  ['./js/math/graph-types.mjs', new URL('../js/math/graph-types.mjs', import.meta.url)],
-  ['./js/math/applications.mjs', new URL('../js/math/applications.mjs', import.meta.url)],
-  ['./js/math/integration.mjs', new URL('../js/math/integration.mjs', import.meta.url)],
-  ['./js/math/series.mjs', new URL('../js/math/series.mjs', import.meta.url)],
-  ['./js/math/integral-applications.mjs', new URL('../js/math/integral-applications.mjs', import.meta.url)],
-  ['./js/math/parametric.mjs', new URL('../js/math/parametric.mjs', import.meta.url)],
-  ['./js/math/polar.mjs', new URL('../js/math/polar.mjs', import.meta.url)],
-  ['./js/math/conics.mjs', new URL('../js/math/conics.mjs', import.meta.url)],
-  ['./js/ui/algebra/functions.mjs', new URL('../js/ui/algebra/functions.mjs', import.meta.url)],
-  ['./js/ui/algebra/sequences.mjs', new URL('../js/ui/algebra/sequences.mjs', import.meta.url)],
-  ['./js/math/algebra/polynomial.mjs', new URL('../js/math/algebra/polynomial.mjs', import.meta.url)],
-  ['./js/ui/plotter.mjs', new URL('../js/ui/plotter.mjs', import.meta.url)],
-  ['./js/graphics/graph-canvas.mjs', new URL('../js/graphics/graph-canvas.mjs', import.meta.url)],
-  ['./js/ui/calculus.mjs', new URL('../js/ui/calculus.mjs', import.meta.url)],
-  ['./js/state/figures.mjs', new URL('../js/state/figures.mjs', import.meta.url)],
-  ['./js/ui/figure-controls.mjs', new URL('../js/ui/figure-controls.mjs', import.meta.url)],
-  ['./js/graphics/axes.mjs', new URL('../js/graphics/axes.mjs', import.meta.url)],
-  ['./js/ui/electromagnetism.mjs', new URL('../js/ui/electromagnetism.mjs', import.meta.url)],
-  ['./js/ui/electromagnetism-extra.mjs', new URL('../js/ui/electromagnetism-extra.mjs', import.meta.url)],
-  ['./js/ui/algebra/vectors.mjs', new URL('../js/ui/algebra/vectors.mjs', import.meta.url)],
-  ['./js/math/electromagnetism.mjs', new URL('../js/math/electromagnetism.mjs', import.meta.url)],
-  ['./js/math/algebra/sequences.mjs', new URL('../js/math/algebra/sequences.mjs', import.meta.url)],
-  ['./js/math/algebra/inequalities.mjs', new URL('../js/math/algebra/inequalities.mjs', import.meta.url)],
-  ['./js/math/algebra/functions.mjs', new URL('../js/math/algebra/functions.mjs', import.meta.url)],
-  ['./js/graphics/analysis.mjs', new URL('../js/graphics/analysis.mjs', import.meta.url)],
-  ['./js/math/algebra/vector-equations.mjs', new URL('../js/math/algebra/vector-equations.mjs', import.meta.url)],
-  ['./js/graphics/projection.mjs', new URL('../js/graphics/projection.mjs', import.meta.url)],
-  ['./js/graphics/revolution.mjs', new URL('../js/graphics/revolution.mjs', import.meta.url)],
-  ['./js/graphics/preview-canvas.mjs', new URL('../js/graphics/preview-canvas.mjs', import.meta.url)],
-  ['./js/math/vector-calculus.mjs', new URL('../js/math/vector-calculus.mjs', import.meta.url)],
-  ['./js/math/multivariable-study.mjs', new URL('../js/math/multivariable-study.mjs', import.meta.url)],
-  ['./js/math/multivariable.mjs', new URL('../js/math/multivariable.mjs', import.meta.url)],
-]);
+import { createAppHarness, listAppSources } from './helpers/app-harness.mjs';
 
 test('el punto de entrada ES conserva los eventos y cálculos principales', async () => {
-  const harness = await createAppHarness({ appUrl, modules });
-  const { sandbox, context, source, headLinks, delegatedEvents, history, savedTheme, getElementById } = harness;
+  const harness = await createAppHarness();
+  const { sandbox, context, headLinks, delegatedEvents, history, savedTheme, getElementById } = harness;
   assert.equal(headLinks.find(link => link.rel === 'icon')?.href, 'data:image/png;base64,AA==');
   assert.equal(headLinks.find(link => link.rel === 'apple-touch-icon')?.href, 'data:image/png;base64,AA==');
   const actions=harness.actions;
@@ -128,7 +21,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   assert.match(getElementById('update-banner').innerHTML, /Actualizar/);
 
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  const allSource = [source, ...await Promise.all([...modules.values()].map(url => readFile(url, 'utf8')))].join('\n');
+  const allSource = (await Promise.all((await listAppSources()).map(url => readFile(url, 'utf8')))).join('\n');
   assert.doesNotMatch(html+allSource,/\bon(?:click|input|change|pointerdown|keydown|keyup|submit)="/);
   assert.doesNotMatch(allSource,/\balert\s*\(/);
   const handlers = new Set([...((html+allSource).matchAll(/\bdata-action="([\w$]+)"/g))]

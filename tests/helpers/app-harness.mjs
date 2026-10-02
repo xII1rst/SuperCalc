@@ -1,10 +1,30 @@
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 // Simulated browser for loading app.js through vm.SourceTextModule.
 // Limits: addEventListener keeps one listener per event type, and setTimeout
 // runs its callback immediately.
+
+const repoRoot = new URL('../../', import.meta.url);
+export const appUrl = new URL('app.js', repoRoot);
+
+// Imports may only reach the application's own modules: js/**/*.mjs inside
+// this repository (never noCommit/, tests/ or anything outside the root).
+export function resolveAppModule(specifier, referencingUrl) {
+  const url = new URL(specifier, referencingUrl);
+  const path = url.href.startsWith(repoRoot.href) ? url.href.slice(repoRoot.href.length) : '';
+  if (!/^js\/[\w./-]+\.mjs$/.test(path) || path.split('/').includes('..')) {
+    throw new Error(`Import desconocido: ${specifier}`);
+  }
+  return url;
+}
+
+// Every production source file, found on disk rather than through whatever a
+// scenario happens to load, for the whole-application source audits.
+export async function listAppSources() {
+  const files = await readdir(new URL('js/', repoRoot), { recursive: true });
+  return [appUrl, ...files.filter(file => file.endsWith('.mjs')).sort().map(file => new URL(`js/${file}`, repoRoot))];
+}
 
 export function makeElement(id) {
   const classes = new Set();
@@ -36,7 +56,7 @@ export function makeElement(id) {
   };
 }
 
-export async function createAppHarness({ appUrl, modules }) {
+export async function createAppHarness() {
   const elements = new Map();
   const headLinks = [];
   const delegatedEvents = new Map();
@@ -117,11 +137,9 @@ export async function createAppHarness({ appUrl, modules }) {
     context,
     identifier: appUrl.href,
   });
-  const moduleUrls = new Set([...modules.values()].map(url => url.href));
   const linked = new Map([[appUrl.href, appModule]]);
   await appModule.link(async (specifier, referencingModule) => {
-    const moduleUrl = new URL(specifier, referencingModule.identifier);
-    assert.ok(moduleUrls.has(moduleUrl.href), `Import desconocido: ${specifier}`);
+    const moduleUrl = resolveAppModule(specifier, referencingModule.identifier);
     if (!linked.has(moduleUrl.href)) {
       // Cache the loading promise before awaiting so concurrent imports share
       // one module instance, as they do in a native ES-module browser.
@@ -132,7 +150,7 @@ export async function createAppHarness({ appUrl, modules }) {
   await appModule.evaluate();
   return {
     sandbox, context, source, elements, headLinks, delegatedEvents, windowEvents,
-    history, savedTheme, getElementById, appModule,
+    history, savedTheme, getElementById, appModule, linked,
     actions: appModule.namespace.actions,
     get updateFound() { return updateFound; },
     get stateChanged() { return stateChanged; },
