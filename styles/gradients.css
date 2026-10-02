@@ -1,0 +1,65 @@
+
+/* ══════ CAPA DE COLOR: DEGRADADOS (paletas en theme.css) ══════
+   Solo color: misma disposición, mismos tamaños. Los extremos viven en theme.css. */
+:root{
+  --grad-accent:linear-gradient(120deg,var(--grad-a),var(--grad-m),var(--grad-b));
+  --grad-soft:linear-gradient(135deg,var(--grad-soft-a),var(--grad-soft-m),var(--grad-soft-b));
+  --grad-line:linear-gradient(180deg,var(--grad-soft-a),var(--grad-soft-m),var(--grad-soft-b));
+  --grad-line-x:linear-gradient(90deg,var(--grad-soft-a),var(--grad-soft-m),var(--grad-soft-b));
+  /* Fondo como el ejemplo de ui-ux-pro-max: dos resplandores sobre un degradado base */
+  --grad-page:radial-gradient(60% 50% at 12% 20%,var(--glow-1),transparent 70%),radial-gradient(55% 50% at 90% 75%,var(--glow-2),transparent 70%),linear-gradient(160deg,var(--grad-page-a),var(--grad-page-b));
+  --grad-title:linear-gradient(100deg,var(--grad-title-a),var(--grad-title-m),var(--grad-title-b));
+  --grad-tile:linear-gradient(135deg,rgba(var(--al-rgb),.16),rgba(var(--fi-rgb),.16));
+  --grid-layers:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+}
+
+/* Fondo de página: degradado bajo la cuadrícula */
+html,body{background-color:var(--bg);background-image:var(--grad-page);background-size:100% 100%;background-repeat:no-repeat;background-attachment:fixed}
+.tool-app,#calc-app,#mat-app,#ineq-app,#fn-app,#seq-app{
+  background-image:var(--grid-layers),var(--grad-page);
+  background-size:24px 24px,24px 24px,100% 100%,100% 100%,100% 100%;background-repeat:repeat,repeat,no-repeat,no-repeat,no-repeat;
+}
+#launcher{background-image:var(--grid-layers);background-size:24px 24px}
+#submod-screen{
+  background-image:var(--grad-line),var(--grid-layers),var(--grad-page);
+  background-size:2px 100%,24px 24px,24px 24px,100% 100%,100% 100%,100% 100%;
+  background-repeat:no-repeat,repeat,repeat,no-repeat,no-repeat,no-repeat;
+  background-position:max(16px,calc(50% - var(--col)/2)) 0,0 0,0 0,0 0,0 0,0 0;
+  background-attachment:local,scroll,scroll,scroll,scroll,scroll;
+}
+
+/* Regla de margen en degradado */
+.tool-scroll,.calc-scroll,.mat-panel,.ineq-pick,.ineq-solver-body{background-image:var(--grad-line)}
+.launcher-page{border-left:2px solid transparent;border-image:var(--grad-line) 1}
+.submod-header,.submod-cards{border-left:0}
+.solver-desc,.unk-desc{border-image:var(--grad-line) 1}
+
+/* Títulos */
+.sc-logo-name,.submod-title,.tool-intro h1{background:var(--grad-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Botones principales y estados activos */
+.action-btn,.tool-button,.mat-btn,.ineq-btn,.calc-btn,.em-action-btn{background:var(--grad-accent);border-color:transparent;color:var(--on-grad)}
+.pill button.on,.op-btn.on,.unk-op-btn.on,.em-coord-pill button.on{background:var(--grad-accent);border-color:transparent;color:var(--on-grad)}
+.icon-tog.on .sw-track,#panel-tog-btn.on .sw-track,#em-panel-tog-btn.on .sw-track{background:var(--grad-accent);border-color:transparent}
+.icon-tog.on .sw-knob,#panel-tog-btn.on .sw-knob,#em-panel-tog-btn.on .sw-knob{background:var(--on-grad)}
+.theme-switch-knob{background:var(--grad-accent)}
+
+/* Pestaña activa: subrayado en degradado */
+.tab.on,.mat-tab.on,.calc-tab.on,.seq-tab.on,.em-tab.on{
+  border-bottom-color:transparent;
+  background-image:var(--grad-line-x);background-size:100% 2px;background-position:left bottom;background-repeat:no-repeat;
+}
+
+/* Respuesta recuadrada y resultados: bordes en degradado */
+.result-box,.solve-result,.unk-result-box,.calc-res-val,.ineq-res-interval,.fn-formula,.seq-expr-display{
+  border-color:transparent;
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad-soft) border-box;
+}
+.tool-result,.mat-res,.ineq-res,.calc-res,.em-result-card{
+  border-left-color:transparent;
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad-line) border-box;
+}
+.tool-result.tool-error{background:var(--surface)}
+
+/* Iconos de menú sobre un tinte violeta → azul */
+.lmod-icon,.submod-icon,.calc-card-icon,.ineq-type-icon{background:var(--grad-tile)}

@@ -1,10 +1,17 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-21';
+const CACHE = 'supercalc-v1.0-rework-22';
 const APP_PRECACHE = [
   './',
   './index.html',
   './theme.css',
-  './style.css',
+  './styles/base.css',
+  './styles/vectors.css',
+  './styles/electromagnetism.css',
+  './styles/launcher.css',
+  './styles/tools.css',
+  './styles/calculus.css',
+  './styles/gradients.css',
+  './styles/utilities.css',
   './fonts/fonts.css',
   './fonts/ibm-plex-sans-400-greek.woff2',
   './fonts/ibm-plex-sans-400-italic-greek.woff2',

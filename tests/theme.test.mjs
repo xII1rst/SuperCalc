@@ -4,19 +4,31 @@ import { readFile, readdir } from 'node:fs/promises';
 import { applyTheme, initTheme, toggleTheme } from '../js/ui/theme.mjs';
 import { readCanvasPalette, resolveCanvasColor } from '../js/graphics/colors.mjs';
 
-const [theme,layout,html,worker]=await Promise.all([
+const [theme,html,worker]=await Promise.all([
   readFile(new URL('../theme.css',import.meta.url),'utf8'),
-  readFile(new URL('../style.css',import.meta.url),'utf8'),
   readFile(new URL('../index.html',import.meta.url),'utf8'),
   readFile(new URL('../sw.js',import.meta.url),'utf8'),
 ]);
+// The layout stylesheets, in the order index.html links them (the cascade order).
+const layoutFiles=[...html.matchAll(/<link rel="stylesheet" href="(styles\/[^"]+\.css)">/g)].map(match=>match[1]);
+const layout=(await Promise.all(layoutFiles.map(file=>readFile(new URL(`../${file}`,import.meta.url),'utf8')))).join('');
 const graphics=await Promise.all([
   'analysis','vector-canvas','em-canvas','graph-canvas','colors','formula-background'
 ].map(name=>readFile(new URL(`../js/graphics/${name}.mjs`,import.meta.url),'utf8')));
 
+test('cada hoja de estilo enlazada existe y se precarga',async()=>{
+  const linked=[...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map(match=>match[1]);
+  assert.deepEqual(linked.slice(0,2),['fonts/fonts.css','theme.css']);
+  assert.ok(layoutFiles.length>=8);
+  for(const file of linked){
+    await readFile(new URL(`../${file}`,import.meta.url),'utf8');
+    assert.match(worker,new RegExp(`'\\./${file.replace(/[./]/g,'\\$&')}'`),`Sin precarga: ${file}`);
+  }
+});
+
 test('la paleta oscura se carga antes de los componentes y está disponible offline',()=>{
   assert.match(html,/<html[^>]+data-theme="dark"/);
-  assert.ok(html.indexOf('href="theme.css"')<html.indexOf('href="style.css"'));
+  assert.ok(html.indexOf('href="theme.css"')<html.indexOf('href="styles/'));
   assert.match(worker,/['"]\.\/theme\.css['"]/);
   assert.match(theme,/--bg:\s*#182029/);
   assert.match(theme,/--al:\s*#a5a2ff/);

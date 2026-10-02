@@ -1,0 +1,134 @@
+/* SuperCalc — «Pizarra y papel». Layout and components; colors live in theme.css. */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Tipografía: IBM Plex Sans para la interfaz, JetBrains Mono solo para matemáticas */
+  --font-ui:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-math:'JetBrains Mono',ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,monospace;
+  --fs-xs:.75rem;   /* 12 */
+  --fs-sm:.8125rem; /* 13 */
+  --fs-md:.875rem;  /* 14 */
+  --fs-base:1rem;   /* 16 */
+  --fs-lg:1.1875rem;/* 19 */
+  --fs-xl:1.4375rem;/* 23 */
+  --fs-2xl:1.75rem; /* 28 */
+  /* Espaciado 4/8 */
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--sp-7:48px;
+  /* Radios por jerarquía */
+  --r-control:6px;
+  --r-card:10px;
+  --r-answer:4px;
+  --r: var(--r-card);
+  --r2: var(--r-control);
+  --tap:44px;
+  --col:52rem;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-ui);font-size:100%;line-height:1.45;overflow:hidden;-webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{font-size:max(16px,1em)}
+.sc-icon-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.sc-icon{display:block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+#app{display:flex;flex-direction:column;width:100vw;height:100dvh;position:relative;z-index:1;background:var(--bg)}
+
+/* ── Hoja: cuadrícula y regla de margen (el único gesto fuerte del diseño) ── */
+#launcher,#submod-screen,.tool-app,#calc-app,#mat-app,#ineq-app,#fn-app,#seq-app{
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+
+/* ── Foco visible y movimiento reducido ── */
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0}
+[role="button"]{cursor:pointer}
+button,[role="button"],a,input,select,label{touch-action:manipulation}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ── HEADER (Vectores 3D) ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top));background:var(--chrome);
+  border-bottom:1px solid var(--line-subtle);flex-shrink:0;gap:8px;flex-wrap:wrap;
+}
+.header-controls{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-icon{width:32px;height:32px;background:var(--surface2);border:1px solid var(--line-medium);border-radius:var(--r-control);
+  display:flex;align-items:center;justify-content:center;color:var(--al);flex-shrink:0}
+.logo-icon .sc-icon{width:19px;height:19px}
+.logo-inner{display:flex;flex-direction:column;gap:1px}
+.logo-text{font-family:var(--font-ui);font-size:var(--fs-lg);font-weight:600;color:var(--text-strong);letter-spacing:-.01em}
+.logo-text span{color:inherit}
+
+/* Selector segmentado */
+.pill{display:flex;background:var(--surface2);border:1px solid var(--border-control);border-radius:var(--r-control);overflow:hidden}
+.pill button{min-height:36px;padding:6px 14px;font-size:var(--fs-sm);font-family:var(--font-ui);font-weight:600;
+  border:none;background:none;color:var(--text2);cursor:pointer;transition:background-color .15s,color .15s}
+.pill button.on{background:var(--accent);color:var(--on-accent)}
+
+/* Interruptor con etiqueta */
+.icon-tog{display:flex;align-items:center;gap:8px;min-height:36px;background:transparent;
+  border:1px solid var(--border-control);border-radius:999px;padding:4px 10px 4px 12px;cursor:pointer;transition:border-color .15s,background-color .15s}
+.icon-tog:hover{background:var(--surface2)}
+.icon-tog.on{border-color:var(--accent)}
+.icon-tog .tog-lbl{font-size:var(--fs-sm);font-family:var(--font-ui);font-weight:600;color:var(--text2);transition:color .15s}
+.icon-tog.on .tog-lbl{color:var(--text-strong)}
+.sw{width:34px;height:20px;position:relative;flex-shrink:0}
+.sw-track{position:absolute;inset:0;background:var(--surface3);border:1px solid var(--border-control);border-radius:999px;transition:background-color .2s}
+.sw-knob{position:absolute;width:14px;height:14px;top:3px;left:3px;background:var(--text2);border-radius:50%;transition:transform .2s var(--ease),background-color .2s}
+.icon-tog.on .sw-track{background:var(--accent);border-color:var(--accent)}
+.icon-tog.on .sw-knob{transform:translateX(14px);background:var(--on-accent)}
+
+/* ── CANVAS ── */
+#app-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+#cw{flex:1;position:relative;overflow:hidden;touch-action:none;min-height:0}
+canvas{display:block;width:100%;height:100%;cursor:grab}
+canvas:active{cursor:grabbing}
+#legend{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:52vw}
+.leg-item{display:flex;align-items:center;gap:6px;
+  background:rgba(var(--bg-rgb),.86);padding:3px 9px;border-radius:var(--r-control);border-left:3px solid transparent}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.leg-text{font-size:var(--fs-xs);font-family:var(--font-math);color:var(--text);white-space:nowrap}
+#btn-reset{position:absolute;top:10px;right:10px;min-height:36px;background:rgba(var(--bg-rgb),.9);
+  border:1px solid var(--border-control);border-radius:var(--r-control);color:var(--text2);
+  font-size:var(--fs-sm);font-family:var(--font-ui);font-weight:600;
+  padding:6px 12px;cursor:pointer;transition:border-color .15s,color .15s}
+#btn-reset,#btn-em-reset{position:absolute;top:10px;right:10px;min-height:36px;background:rgba(var(--bg-rgb),.9);
+  border:1px solid var(--border-control);border-radius:var(--r-control);color:var(--text2);
+  font-size:var(--fs-sm);font-family:var(--font-ui);font-weight:600;
+  padding:6px 12px;cursor:pointer;transition:border-color .15s,color .15s}
+#btn-reset:hover,#btn-em-reset:hover{border-color:var(--accent);color:var(--text-strong)}
+
+/* ── BOTTOM PANEL — mobile ── */
+#bottom{background:var(--chrome);border-top:1px solid var(--line-subtle);flex-shrink:0}
+#bottom.collapsed{display:none}
+#panel-tog-wrap{display:flex;justify-content:flex-end;align-items:center;
+  padding:6px 12px;background:var(--surface);border-top:1px solid var(--border)}
+#panel-tog-btn{display:flex;align-items:center;gap:8px;min-height:36px;background:transparent;
+  border:1px solid var(--border-control);border-radius:999px;padding:4px 10px 4px 12px;cursor:pointer;user-select:none}
+#panel-tog-btn:hover{background:var(--surface2)}
+#panel-tog-btn.on{border-color:var(--accent)}
+#panel-tog-btn .tog-lbl{font-size:var(--fs-sm);font-family:var(--font-ui);font-weight:600;color:var(--text2)}
+#panel-tog-btn.on .tog-lbl{color:var(--text-strong)}
+#panel-tog-btn.on .sw-track{background:var(--accent);border-color:var(--accent)}
+#panel-tog-btn.on .sw-knob{transform:translateX(14px);background:var(--on-accent)}
+
+/* Pestañas: compartidas por todos los módulos */
+.tabs,.em-tabs,.mat-tabs,.calc-tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--line-tabs);overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-height:var(--tap);padding:10px 12px;font-size:var(--fs-md);font-weight:500;text-align:center;white-space:nowrap;scroll-snap-align:start;
+  background:none;border:none;font-family:var(--font-ui);cursor:pointer;
+  color:var(--text-muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--text-strong);font-weight:600;border-bottom-color:var(--al)}
+
+.panel{display:none;padding:12px 14px 16px;overflow-y:auto;max-height:340px}
+.panel.on{display:block}
