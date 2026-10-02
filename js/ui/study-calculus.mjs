@@ -1,18 +1,14 @@
-import { studyPlotSvg } from '../graphics/study-plot.mjs';
-import { odeClassification, homogeneousSecondOrderStudy, polynomialExponentialSecondOrder, variationRepeatedReciprocal, variationTangent, familyEquation, sumSubstitution, affineForcedSystem } from '../math/ode-study.mjs';
-import { planeFromPointNormal, lineStudy, differentialStudy, implicitSurfaceStudy, chainRuleStudy, jacobianStudy, curveStudy, polynomialPotentialStudy, polynomialCriticalStudy, constrainedQuadraticStudy, greenRegionStudy } from '../math/multivariable-study.mjs';
-import { multivariableLimit } from '../math/multivariable.mjs';
-import { vectorApplications } from '../math/algebra/linear-spaces.mjs';
-import { theoremCase, theoremCurve, tangentDifferential, symbolicParametricDerivatives, rationalFunctionAnalysis, polynomialExponentialAnalysis, positiveReciprocalMinimum, maximalEllipseRectangle, cylinderAreaMinimum, nearestParabolaPoints, stationarySineCoefficient, exponentialLimitCoefficient, theoremCheck } from '../math/differential-applications.mjs';
+import { affineForcedSystem, familyEquation, homogeneousSecondOrderStudy, odeClassification, polynomialExponentialSecondOrder, sumSubstitution, variationRepeatedReciprocal, variationTangent } from '../math/ode-study.mjs';
+import { antiderivativeInitialValue, curveMeasureExpression, firstTaylorTerms, fundamentalIntegralDerivative, implicitSlope, integrateParametricFlux, integrateParametricSurface, integrateTripleRegion, integrateVariableRegion, laminaProperties, linearObjectiveCylinderPlane, logarithmicRadialHarmonic, minimumNormOnPlane, piecewiseContinuity, polarAreaBetween, powerSeriesInterval, rationalSeriesComparison, sineIntegralLimit, tangentPlane, telescopingOffset, trilinearPotentialIntegral } from '../math/study-calculus.mjs';
+import { bernoulliConstant, bernoulliLinearForcing, exactPolynomialForm, firstOrderExponentialForcing, forcedSecondOrder, inferMonomialFactor, inverseLaplaceQuadratic, inverseLaplaceShiftedPower, laplaceExponentialPlusTime, laplaceRepeatedRootForcing, laplaceSecondOrderHarmonic, laplaceSystem2D, laplaceTable, linearFirstOrder, linearPowerCoefficient, linearSystem2D, logisticGrowth, orthogonalPowerTrajectories, rlCurrent, separablePower, symmetricSystemModes, thermalRelaxation, thirdOrderRepeatedRoot } from '../math/study-ode.mjs';
+import { chainRuleStudy, constrainedQuadraticStudy, curveStudy, differentialStudy, greenRegionStudy, implicitSurfaceStudy, jacobianStudy, lineStudy, planeFromPointNormal, polynomialCriticalStudy, polynomialPotentialStudy } from '../math/multivariable-study.mjs';
+import { collectVariables, normalizeExpression } from '../math/expression.mjs';
+import { constant, coordinateFormula, num, nums, one, polynomialTerms, read, two } from './study/inputs.mjs';
+import { cylinderAreaMinimum, exponentialLimitCoefficient, maximalEllipseRectangle, nearestParabolaPoints, polynomialExponentialAnalysis, positiveReciprocalMinimum, rationalFunctionAnalysis, stationarySineCoefficient, symbolicParametricDerivatives, tangentDifferential, theoremCase, theoremCheck, theoremCurve } from '../math/differential-applications.mjs';
 import { functionAnalysisSvg } from '../graphics/function-analysis.mjs';
-import { calcParse, collectVariables, normalizeExpression } from '../math/expression.mjs';
-import { piecewiseContinuity, implicitSlope, polarAreaBetween, curveArcLength,
-  surfaceOfRevolution, curveMeasureExpression, antiderivativeInitialValue, fundamentalIntegralDerivative, sineIntegralLimit, rationalSeriesComparison, firstTaylorTerms,
-  integrateVariableRegion, laminaProperties, integrateTripleRegion, integrateParametricSurface,
-  integrateParametricFlux, linearObjectiveCylinderPlane, minimumNormOnPlane, logarithmicRadialHarmonic, trilinearPotentialIntegral, tangentPlane, powerSeriesInterval, telescopingOffset } from '../math/study-calculus.mjs';
-import { separablePower, linearFirstOrder, linearPowerCoefficient, bernoulliConstant, bernoulliLinearForcing, exactPolynomialForm, inferMonomialFactor, logisticGrowth, thermalRelaxation, rlCurrent, orthogonalPowerTrajectories, thirdOrderRepeatedRoot, forcedSecondOrder, linearSystem2D, laplaceSystem2D, symmetricSystemModes,
-  laplaceTable, laplaceExponentialPlusTime, inverseLaplaceShiftedPower, inverseLaplaceQuadratic, firstOrderExponentialForcing,
-  laplaceSecondOrderHarmonic, laplaceRepeatedRootForcing } from '../math/study-ode.mjs';
+import { multivariableLimit } from '../math/multivariable.mjs';
+import { studyPlotSvg } from '../graphics/study-plot.mjs';
+import { vectorApplications } from '../math/algebra/linear-spaces.mjs';
 
 const fields={
   oclassify:[['equation','Ecuación en x,y; derivadas y\',y\'\',y\'\'\'','(y\'\')^3+2*y\'=x','text']],
@@ -182,54 +178,6 @@ const modes={
 };
 const groups={differential:'Aplicaciones diferenciales',integral:'Aplicaciones integrales',multivariable:'Regiones y superficies',ode:'Métodos de EDO'};
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const read=key=>document.getElementById(`study-${key}`).value.trim();
-function num(key) {const raw=read(key);if(raw===''||!Number.isFinite(Number(raw))) throw new RangeError(`${key}: número finito requerido`);return Number(raw);}
-function constant(key) {
-  const raw=read(key);
-  if(collectVariables(raw).length) throw new RangeError(`${key}: usa una constante numérica`);
-  const fn=calcParse(raw),result=fn?fn(0):NaN;
-  if(!Number.isFinite(result)) throw new RangeError(`${key}: constante inválida`);
-  return result;
-}
-function one(key,variable='x') {
-  const source=read(key),vars=collectVariables(source).filter(name=>name!==variable);
-  if(vars.length) throw new RangeError(`${key}: usa solo ${variable}`);
-  const fn=calcParse(source,variable);
-  if(!fn) throw new RangeError(`${key}: expresión no reconocida`);
-  return fn;
-}
-function two(key) {
-  const source=read(key),vars=collectVariables(source).filter(name=>name!=='x');
-  if(vars.some(name=>name!=='y')) throw new RangeError(`${key}: usa solo x e y`);
-  const fn=calcParse(source,'x');
-  if(!fn) throw new RangeError(`${key}: expresión no reconocida`);
-  return vars.length?fn:(x,y)=>fn(x);
-}
-function coordinateFormula(key,first,allowed,argumentsInOrder) {
-  const source=read(key),variables=collectVariables(source);
-  if(variables.some(name=>!allowed.includes(name))) throw new RangeError(`${key}: usa solo ${allowed.join(', ')}`);
-  const parsed=calcParse(source,first);
-  if(!parsed) throw new RangeError(`${key}: expresión no reconocida`);
-  const extra=variables.filter(name=>name!==first);
-  return (...values)=>{
-    const scope=Object.fromEntries(argumentsInOrder.map((name,i)=>[name,values[i]]));
-    return parsed(scope[first],...extra.map(name=>scope[name]));
-  };
-}
-function nums(key) {
-  const list=read(key).split(/[,\s]+/).filter(Boolean).map(Number);
-  if(!list.length||list.some(value=>!Number.isFinite(value))) throw new RangeError(`${key}: lista numérica inválida`);
-  return list;
-}
-function polynomialTerms(key) {
-  const lines=read(key).split(/[\n;]+/).map(line=>line.trim()).filter(Boolean);
-  if(!lines.length||lines.length>30) throw new RangeError(`${key}: introduce de 1 a 30 términos`);
-  return lines.map(line=>{
-    const values=line.split(/[,\s]+/).filter(Boolean).map(Number);
-    if(values.length!==3||values.some(value=>!Number.isFinite(value))) throw new RangeError(`${key}: usa coeficiente, potencia x, potencia y`);
-    return values;
-  });
-}
 function solve(mode) {
   if(mode==='oclassify')return odeClassification(read('equation'));
   if(mode==='ohomogeneous')return homogeneousSecondOrderStudy(num('damping'),num('stiffness'),num('y0'),num('v0'),num('x'));
