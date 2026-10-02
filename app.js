@@ -20,6 +20,8 @@ import * as mechanicsUI from './js/ui/mechanics.mjs';
 import * as mechanicsAdvancedUI from './js/ui/mechanics-advanced.mjs';
 import * as theoryUI from './js/ui/theory.mjs';
 import { createNavigation } from './js/ui/navigation.mjs';
+import { composeActions } from './js/ui/action-registry.mjs';
+import { physicsOutputUnitChanged } from './js/ui/physics-output.mjs';
 import { createFigureControls } from './js/ui/figure-controls.mjs';
 import * as plotter from './js/ui/plotter.mjs';
 import './js/ui/branding.mjs';
@@ -49,32 +51,32 @@ const navigation = createNavigation({
   expOpenPanel: experimentsUI.expOpenPanel,
   theoryOpen: theoryUI.theoryOpen,
 });
-export const actions = {
-  ...navigation,
-  ...matrixUI,
-  ...geometryUI,
-  ...linearUI,
-  ...numericalUI,
-  ...logicUI,
-  ...wavesUI,
-  ...ineqUI,
-  ...functionsUI,
-  ...sequencesUI,
-  ...calculusUI,
-  ...studyCalculusUI,
-  ...emUI,
-  ...emAdvancedUI,
-  ...vectorsUI,
-  ...statisticsUI,
-  ...probabilityUI,
-  ...experimentsUI,
-  ...mechanicsUI,
-  ...mechanicsAdvancedUI,
-  ...theoryUI,
-  ...plotter,
-  ...figureControls,
-  installApp, dismissInstall, reloadApp, toggleTheme,
-};
+export const actions = composeActions({
+  navigation,
+  matrixUI,
+  geometryUI,
+  linearUI,
+  numericalUI,
+  logicUI,
+  wavesUI,
+  ineqUI,
+  functionsUI,
+  sequencesUI,
+  calculusUI,
+  studyCalculusUI,
+  emUI,
+  emAdvancedUI,
+  vectorsUI,
+  statisticsUI,
+  probabilityUI,
+  experimentsUI,
+  mechanicsUI,
+  mechanicsAdvancedUI,
+  theoryUI,
+  plotter,
+  figureControls,
+  app: { installApp, dismissInstall, reloadApp, toggleTheme },
+}, { physicsOutputUnitChanged });
 bindActions(document,actions);
 mechanicsUI.mechInitialize();
 document.addEventListener('supercalc:themechange', () => {
