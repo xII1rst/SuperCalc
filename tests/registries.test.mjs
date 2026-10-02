@@ -7,12 +7,17 @@ import * as ode from '../js/ui/study/ode.mjs';
 import * as electrostatics from '../js/ui/electromagnetism/electrostatics.mjs';
 import * as circuits from '../js/ui/electromagnetism/circuits.mjs';
 import * as magnetism from '../js/ui/electromagnetism/magnetism.mjs';
+import * as forces from '../js/ui/mechanics/forces.mjs';
+import * as motion from '../js/ui/mechanics/motion.mjs';
+import * as collisions from '../js/ui/mechanics/collisions.mjs';
+import * as rotation from '../js/ui/mechanics/rotation.mjs';
 
 // Each tool splits its modes into family registries; together they must
 // declare fields, metadata and a solver for exactly the same keys.
 const registries = {
   'estudio de cálculo': { families: { differential, integral, multivariable, ode }, total: 81 },
   'electromagnetismo avanzado': { families: { electrostatics, circuits, magnetism }, total: 49 },
+  'mecánica avanzada': { families: { forces, motion, collisions, rotation }, total: 33 },
 };
 
 for (const [tool, { families, total }] of Object.entries(registries)) {
