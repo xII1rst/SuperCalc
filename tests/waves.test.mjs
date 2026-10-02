@@ -96,3 +96,23 @@ test('modelos de intensidad EM, polarizadores, Young, película y anillos',()=>{
   close(film.wavelengths[0].wavelength,532e-9);
   close(newtonRing(1,589e-9,5,true).radius,Math.sqrt(5*589e-9));
 });
+
+test('las ondas muestran fasor, vectores y una alternativa SVG sin Canvas', async () => {
+  const { waveScene, waveSvg, drawWavePlot } = await import('../js/graphics/wave-plot.mjs');
+  const harmonic = waveScene('harmonic', { a: 2, w: Math.PI, phase: Math.PI / 3 }, 0.25);
+  assert.match(harmonic.phaseText, /θ = ωt \+ φ = 1\.833 rad \(105°/);
+  assert.ok(harmonic.items.some(item => item.type === 'arrow'), 'fasor dibujado como flecha');
+  assert.ok(harmonic.items.some(item => item.type === 'circle' && !item.fill), 'círculo de referencia');
+  // La proyección del fasor coincide en altura con el punto de la gráfica temporal.
+  const link = harmonic.items.find(item => item.type === 'line' && item.color === 'graph-point');
+  assert.ok(Math.abs(link.y1 - link.y2) < 1e-9);
+  const traveling = waveScene('traveling', { a: 1, k: Math.PI, w: 2 * Math.PI }, 0);
+  assert.match(traveling.items.filter(item => item.type === 'text').map(item => item.text).join(' '), /v = ω\/k = 2 m\/s/);
+  const standing = waveScene('standing', { a: 1, k: Math.PI, w: 2 * Math.PI }, 0.1);
+  assert.equal(standing.items.filter(item => item.type === 'circle' && item.fill && item.color === 'graph-curve2').length, 3, 'nodos en x = 0, 1, 2 m');
+  assert.match(waveScene('lissajous', { ax: 2, ay: 3, wx: 1, wy: 1, phase: Math.PI / 3 }, 0).phaseText, /Fase relativa/);
+  const svg = waveSvg('harmonic', { a: 2, w: Math.PI, phase: 0 }, 0);
+  assert.match(svg, /role="img"/); assert.match(svg, /<desc>θ = ωt \+ φ/); assert.match(svg, /marker-end/);
+  assert.equal(drawWavePlot({ clientWidth: 400, getContext: () => null }, 'harmonic', { a: 1, w: 1, phase: 0 }, 0), false);
+  assert.equal(waveScene('nope', {}, 0), null);
+});

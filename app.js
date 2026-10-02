@@ -18,6 +18,7 @@ import * as probabilityUI from './js/ui/probability.mjs';
 import * as experimentsUI from './js/ui/experiments.mjs';
 import * as mechanicsUI from './js/ui/mechanics.mjs';
 import * as mechanicsAdvancedUI from './js/ui/mechanics-advanced.mjs';
+import * as theoryUI from './js/ui/theory.mjs';
 import { createNavigation } from './js/ui/navigation.mjs';
 import { createFigureControls } from './js/ui/figure-controls.mjs';
 import * as plotter from './js/ui/plotter.mjs';
@@ -46,6 +47,7 @@ const navigation = createNavigation({
   mechPlusOpenPanel: mechanicsAdvancedUI.mechPlusOpenPanel,
   probOpenPanel: probabilityUI.probOpenPanel,
   expOpenPanel: experimentsUI.expOpenPanel,
+  theoryOpen: theoryUI.theoryOpen,
 });
 export const actions = {
   ...navigation,
@@ -68,6 +70,7 @@ export const actions = {
   ...experimentsUI,
   ...mechanicsUI,
   ...mechanicsAdvancedUI,
+  ...theoryUI,
   ...plotter,
   ...figureControls,
   installApp, dismissInstall, reloadApp, toggleTheme,

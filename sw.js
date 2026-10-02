@@ -1,10 +1,32 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-1';
+const CACHE = 'supercalc-v1.0-rework-3';
 const APP_PRECACHE = [
   './',
   './index.html',
   './theme.css',
   './style.css',
+  './fonts/fonts.css',
+  './fonts/ibm-plex-sans-400-greek.woff2',
+  './fonts/ibm-plex-sans-400-italic-greek.woff2',
+  './fonts/ibm-plex-sans-400-italic-latin-ext.woff2',
+  './fonts/ibm-plex-sans-400-italic-latin.woff2',
+  './fonts/ibm-plex-sans-400-latin-ext.woff2',
+  './fonts/ibm-plex-sans-400-latin.woff2',
+  './fonts/ibm-plex-sans-500-greek.woff2',
+  './fonts/ibm-plex-sans-500-latin-ext.woff2',
+  './fonts/ibm-plex-sans-500-latin.woff2',
+  './fonts/ibm-plex-sans-600-greek.woff2',
+  './fonts/ibm-plex-sans-600-latin-ext.woff2',
+  './fonts/ibm-plex-sans-600-latin.woff2',
+  './fonts/ibm-plex-sans-700-greek.woff2',
+  './fonts/ibm-plex-sans-700-latin-ext.woff2',
+  './fonts/ibm-plex-sans-700-latin.woff2',
+  './fonts/jetbrains-mono-400-greek.woff2',
+  './fonts/jetbrains-mono-400-latin-ext.woff2',
+  './fonts/jetbrains-mono-400-latin.woff2',
+  './fonts/jetbrains-mono-600-greek.woff2',
+  './fonts/jetbrains-mono-600-latin-ext.woff2',
+  './fonts/jetbrains-mono-600-latin.woff2',
   './app.js',
   './js/math/algebra/matrix.mjs',
   './js/math/algebra/geometry.mjs',
@@ -55,6 +77,9 @@ const APP_PRECACHE = [
   './js/offline.mjs',
   './js/ui/navigation.mjs',
   './js/ui/routes.mjs',
+  './js/math/domain-guard.mjs',
+  './js/content/theory.mjs',
+  './js/ui/theory.mjs',
   './js/ui/events.mjs',
   './js/ui/canvas-size.mjs',
   './js/ui/theme.mjs',
@@ -107,13 +132,11 @@ const APP_PRECACHE = [
   './js/graphics/mechanics-trajectory.mjs',
   './js/ui/experiments.mjs'
 ];
-const FONT_URL = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap';
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(APP_PRECACHE.map(url => new Request(url, {cache: 'reload'})))
-        .then(() => c.add(FONT_URL).catch(() => {})))
+      .then(c => c.addAll(APP_PRECACHE.map(url => new Request(url, {cache: 'reload'}))))
       .then(() => self.skipWaiting())
   );
 });
@@ -149,7 +172,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first para fuentes y recursos externos
+  // Cache-first para recursos externos
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

@@ -62,3 +62,19 @@ test('los controles no nativos del HTML son enfocables y declaran su estado', as
   }
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
 });
+
+test('las fuentes son propias, con licencia y precargadas para uso sin conexión', async () => {
+  const { readdir } = await import('node:fs/promises');
+  const [html, worker, css] = await Promise.all(['../index.html', '../sw.js', '../fonts/fonts.css'].map(file => readFile(new URL(file, import.meta.url), 'utf8')));
+  assert.doesNotMatch(html + worker, /fonts\.googleapis|fonts\.gstatic/);
+  assert.match(html, /href="fonts\/fonts\.css"/);
+  const files = await readdir(new URL('../fonts/', import.meta.url));
+  const woff2 = files.filter(name => name.endsWith('.woff2'));
+  assert.ok(woff2.length >= 12);
+  for (const name of woff2) {
+    assert.match(worker, new RegExp(`'\\./fonts/${name.replace(/\./g, '\\.')}'`), `sin precarga: ${name}`);
+    assert.match(css, new RegExp(`url\\(${name.replace(/\./g, '\\.')}\\)`), `sin @font-face: ${name}`);
+  }
+  assert.match(worker, /'\.\/fonts\/fonts\.css'/);
+  assert.ok(files.includes('OFL-IBM-Plex-Sans.txt') && files.includes('OFL-JetBrains-Mono.txt'));
+});

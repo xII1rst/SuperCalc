@@ -153,13 +153,113 @@ export function exponentialLimitCoefficient(target) {
   finite(target,'Límite requerido');return {coefficients:target<0?[]:target===0?[0]:[-finite(Math.SQRT2*Math.sqrt(target),'k'),finite(Math.SQRT2*Math.sqrt(target),'k')],
     formula:'lim (e^(kx)−1−kx)/x²=k²/2.',steps:['L’Hôpital dos veces: k²e^(kx)/2 → k²/2.','Resolver k²=2·valor requerido; incluir ambos signos reales.'],assumption:target<0?'No existe k real para un límite negativo.':'k real; límite bilateral.'};
 }
+// ── Familias no polinómicas: contraejemplos de las hipótesis de Rolle y valor medio ──
+const tryPoly=node=>{try{return polynomial(node);}catch{return null;}};
+const nice=x=>String(Number(x.toPrecision(10)));
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+const fracText=(p,q)=>{const g=gcd(p,q)||1,[n,d]=[p/g,q/g];return d===1?String(n).replace('-','−'):`${n<0?'−':''}${Math.abs(n)}/${d}`;};
+function smallFraction(r){for(let q=1;q<=12;q++){const p=Math.round(r*q);if(Math.abs(p/q-r)<1e-12)return [p,q];}return null;}
+// x^(p/q) real: con q impar se toma la raíz real también para x < 0.
+function realPower(x,p,q){if(x===0)return p>0?0:p===0?1:NaN;const mag=Math.abs(x)**(p/q);if(x>0)return mag;return q%2?(p%2?-mag:mag):NaN;}
+const linText=(m,q)=>`${m===1?'':m===-1?'−':nice(m)}x${q?` ${q<0?'−':'+'} ${nice(Math.abs(q))}`:''}`;
+const close=(a,b)=>Math.abs(a-b)<=1e-9*Math.max(1,Math.abs(a),Math.abs(b));
+function theoremFamily(node){
+  if(node.type==='fn'&&node.fn==='abs'){
+    const l=tryPoly(node.arg);
+    if(l&&l.length===2&&l[1]!==0){
+      const[q,m]=l,x0=-q/m,M=Math.abs(m);
+      return {text:`|${linText(m,q)}|`,f:x=>Math.abs(m*x+q),d:x=>m*Math.sign(m*x+q),
+        breaks:[{x:x0,type:'derivabilidad',reason:`|${linText(m,q)}| tiene un pico: derivadas laterales −${nice(M)} y ${nice(M)}`}],
+        solve:slope=>close(slope,M)?{interval:[x0,Infinity]}:close(slope,-M)?{interval:[-Infinity,x0]}:{points:[]},
+        proof:`|${linText(m,q)}| es continua en todo ℝ; es derivable salvo en x = ${nice(x0)}.`};
+    }
+  }
+  if(node.type==='^'&&node.left.type==='var'&&node.left.val==='x'){
+    const e=tryPoly(node.right);
+    if(e&&e.length===1&&!(Number.isInteger(e[0])&&e[0]>=0)){
+      const fr=smallFraction(e[0]);if(!fr)throw new RangeError('Exponente racional p/q con q ≤ 12.');
+      const[pn,qd]=fr,r=pn/qd,text=`x^(${qd===1?pn:`${pn}/${qd}`})`;
+      return {text,f:x=>realPower(x,pn,qd),d:x=>r*realPower(x,pn-qd,qd),evenRoot:qd%2===0,
+        breaks:r<0?[{x:0,type:'continuidad',reason:`${text} no está definida en x = 0 (asíntota vertical)`}]:r<1?[{x:0,type:'derivabilidad',reason:`f′(x) = (${fracText(pn,qd)})·x^(${fracText(pn-qd,qd)}) no existe en x = 0`}]:[],
+        solve:slope=>{if(slope===0)return {points:r>1?[0]:[]};const mag=Math.abs(slope/r)**(1/(r-1));return {points:[mag,-mag]};},
+        proof:`${text} es continua${r<0?' salvo en x = 0':''} y derivable salvo en x = 0${r>1?' (aquí sí lo es)':''}.`};
+    }
+  }
+  if(node.type==='/'){
+    const c=tryPoly(node.left);let lin=tryPoly(node.right),k=1;
+    if(!(lin&&lin.length===2)&&node.right.type==='^'){const kk=tryPoly(node.right.right);lin=tryPoly(node.right.left);k=kk&&kk.length===1?kk[0]:NaN;}
+    if(c&&c.length===1&&c[0]!==0&&lin&&lin.length===2&&lin[1]!==0&&Number.isInteger(k)&&k>=1&&k<=6){
+      const C=c[0],[q,m]=lin,x0=-q/m,text=`${nice(C)}/(${linText(m,q)})${k>1?`^${k}`:''}`;
+      return {text,f:x=>C/(m*x+q)**k,d:x=>-k*C*m*(m*x+q)**(-k-1),
+        breaks:[{x:x0,type:'continuidad',reason:`f no está definida en x = ${nice(x0)} (asíntota vertical)`}],
+        solve:slope=>{if(slope===0)return {points:[]};const t=Math.abs(-slope/(k*C*m))**(-1/(k+1));return {points:[(t-q)/m,(-t-q)/m]};},
+        proof:`${text} es continua y derivable salvo en x = ${nice(x0)}.`};
+    }
+  }
+  return null;
+}
+function familyTheorem(family,start,end,kind){
+  if(family.evenRoot&&start<0)throw new RangeError(`${family.text} solo está definida para x ≥ 0.`);
+  const cont=family.breaks.find(b=>b.type==='continuidad'&&b.x>=start&&b.x<=end),diff=family.breaks.find(b=>b.type==='derivabilidad'&&b.x>start&&b.x<end);
+  const fa=family.f(start),fb=family.f(end),ends=Number.isFinite(fa)&&Number.isFinite(fb);
+  const slope=kind==='rolle'?0:ends?(fb-fa)/(end-start):NaN;
+  const formula=kind==='rolle'?'f′(c)=0, c∈(a,b)':'f′(c)=[f(b)−f(a)]/(b−a), c∈(a,b)';
+  if(!cont&&!diff){
+    if(kind==='rolle'&&!close(fa,fb))return {status:'no cumple Rolle',fa,fb,assumption:'f(a) debe igualar f(b); no se concluye existencia por Rolle.'};
+    const sol=family.solve(slope);
+    const out={status:'hipótesis verificadas',fa,fb,slope,formula,steps:[family.proof,...(kind==='rolle'?['f(a)=f(b); secante de pendiente 0.']:[])],assumption:'Familia declarada: continuidad y derivabilidad comprobadas analíticamente.'};
+    if(sol.interval)out.allPoints=`Todo c en (${nice(Math.max(start,sol.interval[0]))}, ${nice(Math.min(end,sol.interval[1]))})`;
+    else out.points=sol.points.filter(c=>c>start&&c<end&&close(family.d(c),slope));
+    return out;
+  }
+  const failure=cont||diff,sol=Number.isFinite(slope)?family.solve(slope):{points:[]};
+  const points=(sol.points||[]).filter(c=>c>start&&c<end&&c!==failure.x&&close(family.d(c),slope));
+  const interval=sol.interval?[Math.max(start,sol.interval[0]),Math.min(end,sol.interval[1])]:null;
+  const exists=points.length>0||Boolean(interval&&interval[1]>interval[0]);
+  return {status:'hipótesis no verificadas',fa:Number.isFinite(fa)?fa:'no definida',fb:Number.isFinite(fb)?fb:'no definida',...(Number.isFinite(slope)?{slope}:{}),
+    failure:`${failure.type} en x = ${nice(failure.x)}: ${failure.reason}.`,
+    ...(interval&&interval[1]>interval[0]?{allPoints:`Todo c en (${nice(interval[0])}, ${nice(interval[1])})`}:{points}),
+    conclusionHolds:exists,
+    lesson:exists?'Aun así existe c: las hipótesis del teorema son suficientes, no necesarias.':`No existe c con f′(c) = ${nice(slope||0)}: sin la hipótesis de ${failure.type}, la conclusión del teorema falla.`,
+    formula,steps:[family.proof,...(kind==='rolle'&&ends&&!close(fa,fb)?['Además f(a) ≠ f(b): tampoco se cumple esa hipótesis de Rolle.']:[])],
+    assumption:'El teorema solo garantiza c cuando se cumplen todas sus hipótesis; aquí una falla.'};
+}
+// Contraejemplos guiados: casos clásicos con la lección que muestran.
+const THEOREM_CASES={
+  abs:{expression:'abs(x)',start:-1,end:1,kind:'rolle',caso:'f(x) = |x| en [−1, 1], Rolle'},
+  cusp:{expression:'x^(2/3)',start:-1,end:1,kind:'rolle',caso:'f(x) = x^(2/3) en [−1, 1], Rolle'},
+  pole:{expression:'1/x^2',start:-1,end:1,kind:'rolle',caso:'f(x) = 1/x² en [−1, 1], Rolle'},
+  cbrt:{expression:'x^(1/3)',start:-1,end:1,kind:'mvt',caso:'f(x) = x^(1/3) en [−1, 1], valor medio'},
+  ok:{expression:'x^2-4*x+3',start:1,end:3,kind:'rolle',caso:'f(x) = x² − 4x + 3 en [1, 3], Rolle'},
+};
+export function theoremCase(id){
+  if(id==='jump')return {caso:'f(x) = x en [0, 1) y f(1) = 0, Rolle',status:'hipótesis no verificadas',fa:0,fb:0,slope:0,
+    failure:'continuidad en x = 1: el límite por la izquierda es 1 pero f(1) = 0 (salto).',points:[],conclusionHolds:false,
+    lesson:'No existe c con f′(c) = 0, porque f′(x) = 1 en (0, 1): sin continuidad en [a, b], Rolle falla aunque f(a) = f(b).',
+    formula:'f′(c)=0, c∈(a,b)',steps:['f es derivable en (0, 1) con f′ = 1, pero no es continua en x = 1.'],assumption:'El teorema solo garantiza c cuando se cumplen todas sus hipótesis; aquí una falla.'};
+  const preset=THEOREM_CASES[id];if(!preset)throw new RangeError('Contraejemplo desconocido.');
+  return {caso:preset.caso,...theoremCheck(preset.expression,preset.start,preset.end,preset.kind)};
+}
+// Puntos para graficar f en [a,b], cortando en discontinuidades.
+export function theoremCurve(id,expression,start,end){
+  if(id==='jump')return {pieces:[Array.from({length:101},(_,i)=>[i/100*0.999,i/100*0.999])],dots:[[0.97,0],[1.03,0],[NaN,NaN],[1,-0.06],[1,0.06]],start:0,end:1,f:x=>x<1?x:0};
+  const preset=id&&THEOREM_CASES[id];
+  const expr=preset?preset.expression:expression,a=preset?preset.start:start,b=preset?preset.end:end;
+  const source=sourceAST(expr),family=theoremFamily(source),fn=family?family.f:calcParse(expr,'x');
+  // Recorte vertical: cerca de una asíntota la curva se corta para no aplastar la gráfica.
+  const ref=Math.max(1,...[fn(a),fn(b)].filter(Number.isFinite).map(Math.abs)),cap=12*ref,pieces=[];let piece=[];
+  for(let i=0;i<=400;i++){const x=a+(b-a)*i/400,y=fn(x);if(Number.isFinite(y)&&Math.abs(y)<=cap)piece.push([x,y]);else if(piece.length){pieces.push(piece);piece=[];}}
+  if(piece.length)pieces.push(piece);
+  return {pieces:pieces.slice(0,3),dots:[],start:a,end:b,f:fn};
+}
 export function theoremCheck(expression,start,end,kind='mvt') {
   finite(start,'a');finite(end,'b');if(start>=end||!['mvt','rolle'].includes(kind))throw new RangeError('Intervalo o teorema inválido.');
   const source=sourceAST(expression);let slope,points,fa,fb,proof,allPoints;
   if(source.type==='fn'&&source.fn==='sqrt'&&source.arg.type==='var'&&source.arg.val==='x') {
     if(start<0)throw new RangeError('√x requiere a≥0.');fa=Math.sqrt(start);fb=Math.sqrt(end);slope=(fb-fa)/(end-start);points=[1/(4*slope*slope)];proof='√x es continua para x≥0 y diferenciable para x>0; (a,b) está en x>0.';
   }else {
-    const p=polynomial(source);if(p.length>5)throw new RangeError('Teoremas: polinomios hasta grado 4 o √x.');
+    const family=theoremFamily(source);if(family)return familyTheorem(family,start,end,kind);
+    const p=polynomial(source);if(p.length>5)throw new RangeError('Teoremas: polinomios hasta grado 4, √x, |mx+q|, x^(p/q) o c/(mx+q)^k.');
     fa=evaluate(p,start);fb=evaluate(p,end);slope=(fb-fa)/(end-start);const equation=subtract(derivative(p),[slope]);allPoints=equation.every(c=>c===0)?'Todo c del intervalo abierto (a,b)':undefined;points=allPoints?[start+(end-start)/2]:realPolynomialRoots(equation);proof='Un polinomio es continuo en [a,b] y diferenciable en (a,b).';
   }
   [fa,fb,slope].forEach(v=>finite(v,'Valor del teorema'));

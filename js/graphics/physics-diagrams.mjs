@@ -11,6 +11,32 @@ export function forceDiagram(title,vectors,{background='',unit='N',caption='Flec
   const dx=vx*scale,dy=-vy*scale,color=i%2?'var(--graph-point,#ef4444)':'var(--graph-curve,#2563eb)';return `<g stroke="${color}" fill="${color}">${line(x,y,x+dx,y+dy).replace('/>',' stroke-width="2" marker-end="url(#physics-arrow)"/>')}<text x="${point(x+dx+5)}" y="${point(y+dy+(dy<0?-5:16))}" stroke="none">${escape(v.label)}${v.showMagnitude===false?'':` = ${fmt(size)} ${escape(unit)}`}</text></g>`;
  }).join('');return figure(title,background+arrows,caption);
 }
+// Triángulo de impedancia: R en el eje real, X desde el extremo de R y Z como hipotenusa.
+export function impedanceDiagram(resistance,reactance){
+ if(![resistance,reactance].every(Number.isFinite)||resistance<0)throw new RangeError('Impedancia con R ≥ 0 y X finita.');
+ const W=440,H=250,left=70,maxW=280,maxH=150,impedance=Math.hypot(resistance,reactance);
+ if(impedance===0)throw new RangeError('Impedancia nula: no hay triángulo que dibujar.');
+ const scale=Math.min(resistance>0?maxW/resistance:Infinity,reactance!==0?maxH/Math.abs(reactance):Infinity);
+ const dx=resistance*scale,dy=-reactance*scale,oy=reactance>=0?H-50:50,ox=left,tx=ox+dx,ty=oy+dy;
+ const angle=Math.atan2(reactance,resistance),deg=angle*180/Math.PI,arc=Math.min(42,Math.max(18,dx*.35));
+ const ax=ox+arc*Math.cos(angle),ay=oy-arc*Math.sin(angle),sweep=reactance>=0?0:1;
+ const blue='var(--graph-curve,#2563eb)',orange='var(--graph-point,#ef4444)',text='currentColor';
+ const arrow=(x1,y1,x2,y2,color,dash='')=>`<g stroke="${color}" fill="${color}">${line(x1,y1,x2,y2).replace('/>',` stroke-width="2.4"${dash} marker-end="url(#physics-arrow)"/>`)}</g>`;
+ const label=(x,y,content,color,anchor='middle')=>`<text x="${point(x)}" y="${point(y)}" text-anchor="${anchor}" fill="${color}" stroke="var(--graph-bg,#fff)" stroke-width="4" paint-order="stroke">${content}</text>`;
+ // Normal a Z que apunta fuera del triángulo (lejos del vértice (tx, oy)).
+ const mx=(ox+tx)/2,my=(oy+ty)/2,len=Math.hypot(tx-ox,ty-oy);
+ let nx=-(ty-oy)/len,ny=(tx-ox)/len;
+ if(nx*(tx-mx)+ny*(oy-my)>0){nx=-nx;ny=-ny;}
+ const content=`<g stroke="${text}" opacity=".35">${line(30,oy,W-20,oy)}${line(ox,15,ox,H-15)}</g>`
+  +`<text x="${W-24}" y="${point(oy-8)}" text-anchor="end" fill="${text}" opacity=".7">Re</text><text x="${ox+8}" y="24" fill="${text}" opacity=".7">Im</text>`
+  +arrow(ox,oy,tx,oy,blue)+arrow(tx,oy,tx,ty,orange,' stroke-dasharray="6 4"')+arrow(ox,oy,tx,ty,blue)
+  +(reactance!==0&&resistance>0?`<path d="M${point(ox+arc)} ${point(oy)} A${point(arc)} ${point(arc)} 0 0 ${sweep} ${point(ax)} ${point(ay)}" fill="none" stroke="${text}" opacity=".7"/>`
+   +label(ox+(arc+16)*Math.cos(angle/2),oy-(arc+16)*Math.sin(angle/2)+4,`φ = ${escape(fmt(deg))}°`,text,'start'):'')
+  +label(ox+dx/2,oy+(reactance>=0?20:-10),`R = ${escape(fmt(resistance))} Ω`,blue)
+  +(reactance!==0?label(tx+10,oy+dy/2+4,`X = ${escape(fmt(reactance))} Ω`,orange,'start'):'')
+  +label(mx+nx*12,my+ny*12+4,`|Z| = ${escape(fmt(impedance))} Ω`,blue,'end');
+ return `<figure class="physics-diagram"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Triángulo de impedancia" style="width:100%;max-width:560px;height:auto;color:var(--graph-text,#334155)"><title>Triángulo de impedancia</title><desc>R = ${escape(fmt(resistance))} Ω, X = ${escape(fmt(reactance))} Ω, |Z| = ${escape(fmt(impedance))} Ω, φ = ${escape(fmt(deg))}°</desc><defs><marker id="physics-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="context-stroke"/></marker></defs><g font-size="13">${content}</g></svg><figcaption>Plano complejo: R en el eje real y X = X_L − X_C en el imaginario. X positiva es inductiva; negativa, capacitiva. φ = arg(Z) es el desfase del voltaje respecto a la corriente.</figcaption></figure>`;
+}
 export function mechanicsDiagram(mode,input,data){
  const v=(label,origin,vector,showMagnitude=true)=>({label,origin,vector,showMagnitude}),g=input.gravity||9.80665;
  if(mode==='cables'){

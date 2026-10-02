@@ -3,7 +3,7 @@ import { odeClassification, homogeneousSecondOrderStudy, polynomialExponentialSe
 import { planeFromPointNormal, lineStudy, differentialStudy, implicitSurfaceStudy, chainRuleStudy, jacobianStudy, curveStudy, polynomialPotentialStudy, polynomialCriticalStudy, constrainedQuadraticStudy, greenRegionStudy } from '../math/multivariable-study.mjs';
 import { multivariableLimit } from '../math/multivariable.mjs';
 import { vectorApplications } from '../math/algebra/linear-spaces.mjs';
-import { tangentDifferential, symbolicParametricDerivatives, rationalFunctionAnalysis, polynomialExponentialAnalysis, positiveReciprocalMinimum, maximalEllipseRectangle, cylinderAreaMinimum, nearestParabolaPoints, stationarySineCoefficient, exponentialLimitCoefficient, theoremCheck } from '../math/differential-applications.mjs';
+import { theoremCase, theoremCurve, tangentDifferential, symbolicParametricDerivatives, rationalFunctionAnalysis, polynomialExponentialAnalysis, positiveReciprocalMinimum, maximalEllipseRectangle, cylinderAreaMinimum, nearestParabolaPoints, stationarySineCoefficient, exponentialLimitCoefficient, theoremCheck } from '../math/differential-applications.mjs';
 import { functionAnalysisSvg } from '../graphics/function-analysis.mjs';
 import { calcParse, collectVariables, normalizeExpression } from '../math/expression.mjs';
 import { piecewiseContinuity, implicitSlope, polarAreaBetween, curveArcLength,
@@ -40,7 +40,8 @@ const fields={
   linearization:[['expr','f(x)','sqrt(x^2+1)','text'],['x0','x₀','1'],['increment','dx','0.1']],
   functionanalysis:[['expr','Polinomio o N(x)/D(x), grados ≤4','x/(x^2+1)','text'],['scope','Extremos locales o absolutos en intervalo','locales','select','locales,intervalo'],['start','x inicial de gráfica / intervalo','-6'],['end','x final de gráfica / intervalo','6'],['minimumY','y mínimo de gráfica','-6'],['maximumY','y máximo de gráfica','6']],
   exponentialanalysis:[['expr','P(x) de P(x)e^(kx), grado ≤4','x','text'],['rate','k','-1']],
-  theorem:[['expr','Polinomio de grado ≤4 o sqrt(x)','x^2-4*x+3','text'],['start','a','1'],['end','b','3'],['kind','Teorema','rolle','select','rolle,mvt']],
+  theorem:[['expr','f(x): polinomio (grado ≤4), sqrt(x), abs(mx+q), x^(p/q) o c/(mx+q)^k','x^2-4*x+3','text'],['start','a','1'],['end','b','3'],['kind','Teorema','rolle','select','rolle=Rolle,mvt=Valor medio']],
+  theoremcases:[['case','Contraejemplo','abs','select','abs=|x| en [−1; 1] · Rolle,cusp=x^(2/3) en [−1; 1] · Rolle,pole=1/x² en [−1; 1] · Rolle,cbrt=x^(1/3) en [−1; 1] · valor medio,jump=Salto en x = 1 · Rolle,ok=x² − 4x + 3 en [1; 3] · Rolle (sí se cumple)']],
   reciprocalminimum:[['a','a en a·x^p+b/x^q','1'],['b','b','128'],['p','p > 0','2'],['q','q > 0','1']],
   ellipserectangle:[['a','Semieje horizontal a','4'],['b','Semieje vertical b','3']],
   cylinderminimum:[['volume','Volumen (cm³)','500'],['lids','Tapas: 1 abierto / 2 cerrado','2','select','2,1']],
@@ -123,6 +124,7 @@ const modes={
   functionanalysis:['differential','Análisis de polinomios y funciones racionales','Dominio, simetría, signos de f′/f″, extremos, inflexiones, asíntotas y gráfica.'],
   exponentialanalysis:['differential','Extremos de P(x)e^(kx)','Clasifica puntos críticos por cambio de signo y muestra f″.'],
   theorem:['differential','Rolle y teorema del valor medio','Verifica continuidad, diferenciabilidad y valores extremos en las familias admitidas.'],
+  theoremcases:['differential','Contraejemplos de Rolle y valor medio','Qué pasa cuando falla la continuidad o la derivabilidad: a veces no existe c, y a veces existe igual.'],
   reciprocalminimum:['differential','Mínimo global de a·x^p+b/x^q','Dominio x>0; cambio de signo de f′ y comportamiento en los extremos.'],
   ellipserectangle:['differential','Rectángulo máximo en una elipse','Rectángulo centrado con lados paralelos a los ejes; a,b son semiejes.'],
   cylinderminimum:['differential','Cilindro de área mínima','Elige una o dos tapas; volumen en cm³, radio/altura en cm, área en cm².'],
@@ -272,6 +274,7 @@ function solve(mode) {
   if(mode==='functionanalysis')return rationalFunctionAnalysis(read('expr'),{start:num('start'),end:num('end'),closedInterval:read('scope')==='intervalo'});
   if(mode==='exponentialanalysis')return polynomialExponentialAnalysis(read('expr'),num('rate'));
   if(mode==='theorem')return theoremCheck(read('expr'),num('start'),num('end'),read('kind'));
+  if(mode==='theoremcases')return theoremCase(read('case'));
   if(mode==='reciprocalminimum')return positiveReciprocalMinimum(num('a'),num('b'),num('p'),num('q'));
   if(mode==='ellipserectangle')return maximalEllipseRectangle(num('a'),num('b'));
   if(mode==='cylinderminimum')return cylinderAreaMinimum(num('volume'),num('lids'));
@@ -366,7 +369,7 @@ function solve(mode) {
   if(mode==='laplacerepeated') return laplaceRepeatedRootForcing(num('root'),num('amplitude'),num('power'),num('y0'),num('v0'),num('time'));
   throw new RangeError('Operación no disponible');
 }
-const labels={parameters:'Parámetros',status:'Estado',values:'Valores particulares',freeParameters:'Parámetros libres',nullspace:'Direcciones libres',equations:'Ecuaciones en las uniones',checks:'Comprobación izquierda/derecha',assumption:'Hipótesis',x:'x',y:'y',dxdt:'dx/dt',dydt:'dy/dt',d2xdt2:'d²x/dt²',d2ydt2:'d²y/dt²',dydx:'dy/dx',d2ydx2:'d²y/dx²',step:'Paso h',residual:'F(x,y)',fx:'Fx',fy:'Fy',slope:'dy/dx',area:'Área',length:'Longitud',subintervals:'Subintervalos',formula:'Fórmula',radius:'Radio',openInterval:'Intervalo abierto',leftEndpoint:'Extremo izquierdo',rightEndpoint:'Extremo derecho',sum:'Suma',decomposition:'Descomposición',value:'Valor',coarse:'Malla n/2',refinementDifference:'Diferencia entre mallas',nx:'Divisiones en x',ny:'Divisiones en y',point:'Punto',gradient:'Gradiente',normal:'Normal',derivative:'Derivada',equilibrium:'Equilibrio',integralXPower:'Integral de xᵖ',transformed:'Variable transformada',homogeneous:'Parte homogénea',particular:'Solución particular',constants:'Constantes',regime:'Régimen',resonant:'Resonancia',matrixExponential:'e^(At)',transform:'Transformada',domain:'Dominio'};
+const labels={caso:'Caso',failure:'Hipótesis que falla',conclusionHolds:'¿Existe c?',lesson:'Lección',converges:'converge',absolute:'absoluta',parameters:'Parámetros',status:'Estado',values:'Valores particulares',freeParameters:'Parámetros libres',nullspace:'Direcciones libres',equations:'Ecuaciones en las uniones',checks:'Comprobación izquierda/derecha',assumption:'Hipótesis',x:'x',y:'y',dxdt:'dx/dt',dydt:'dy/dt',d2xdt2:'d²x/dt²',d2ydt2:'d²y/dt²',dydx:'dy/dx',d2ydx2:'d²y/dx²',step:'Paso h',residual:'F(x,y)',fx:'Fx',fy:'Fy',slope:'dy/dx',area:'Área',length:'Longitud',subintervals:'Subintervalos',formula:'Fórmula',radius:'Radio',openInterval:'Intervalo abierto',leftEndpoint:'Extremo izquierdo',rightEndpoint:'Extremo derecho',sum:'Suma',decomposition:'Descomposición',value:'Valor',coarse:'Malla n/2',refinementDifference:'Diferencia entre mallas',nx:'Divisiones en x',ny:'Divisiones en y',point:'Punto',gradient:'Gradiente',normal:'Normal',derivative:'Derivada',equilibrium:'Equilibrio',integralXPower:'Integral de xᵖ',transformed:'Variable transformada',homogeneous:'Parte homogénea',particular:'Solución particular',constants:'Constantes',regime:'Régimen',resonant:'Resonancia',matrixExponential:'e^(At)',transform:'Transformada',domain:'Dominio'};
 Object.assign(labels,{mass:'Masa',centerX:'Centro de masa x̄',centerY:'Centro de masa ȳ',firstMomentX:'Momento ∫x dm',firstMomentY:'Momento ∫y dm',inertiaX:'Momento Ix = ∫y² dm',inertiaY:'Momento Iy = ∫x² dm',inertiaZ:'Momento Iz = ∫(x²+y²) dm',coarseMass:'Masa con malla gruesa',massRefinementDifference:'Diferencia de masa entre mallas',inertiaRefinementDifference:'Diferencia de Iz entre mallas'});
 Object.assign(labels,{flux:'Flujo orientado',orientation:'Orientación',minimum:'Mínimo global',maximum:'Máximo global'});
 Object.assign(labels,{laplacian:'Laplaciano Δu',secondDerivatives:'Derivadas uxx, uyy',fromPotential:'Potencial inicial',toPotential:'Potencial final',lineIntegral:'Integral de línea',curl:'Rotacional'});
@@ -379,11 +382,11 @@ Object.assign(labels,{transformX:'Transformada X(s)',transformY:'Transformada Y(
 Object.assign(labels,{initialValue:'Verificación y(x₀)',steps:'Pasos',derivativeFormula:'Fórmula de la derivada',upperTerm:'Término del límite superior',lowerTerm:'Término del límite inferior',limit:'Límite',comparisonPower:'Exponente de comparación',bound:'Desigualdad',polynomial:'Polinomio',terms:'Términos: orden y coeficiente',reference:'Valor de f en el punto',absoluteError:'Error absoluto en el punto'});
 Object.assign(labels,{intercept:'Intersección con eje y',tangent:'Recta tangente',differential:'Diferencial dy',approximation:'Aproximación lineal',exact:'Valor evaluado',actualChange:'Cambio real Δy',firstDerivatives:'Derivadas x′, y′',criticalPoints:'Puntos críticos',monotonicity:'Signos de f′ y monotonía',concavity:'Signos de f″ y concavidad',inflections:'Inflexiones',discontinuities:'Discontinuidades y límites laterales',excluded:'Puntos excluidos',symmetry:'Simetría',asymptote:'Asíntota: coeficientes desde término constante',asymptoteType:'Tipo de asíntota',extrema:'Comparación de extremos',candidates:'Todos los candidatos',points:'Puntos solución',coefficient:'Coeficiente a',coefficients:'Coeficientes',type:'Clasificación',before:'Signo a la izquierda',after:'Signo a la derecha',left:'Extremo izquierdo / límite izquierdo',right:'Extremo derecho / límite derecho',sign:'Signo',trend:'Comportamiento',distanceSquared:'Distancia²',distance:'Distancia mínima',width:'Ancho',height:'Altura',maximumArea:'Área máxima',minimumArea:'Área mínima',vertex:'Vértice',fa:'f(a)',fb:'f(b)',allPoints:'Conjunto solución'});
 Object.assign(labels,{order:'Orden',degree:'Grado',linear:'Lineal',characteristic:'Ecuación característica',generalSolution:'Familia general',initialCheck:'Comprobación de condiciones iniciales',resonanceOrder:'Multiplicidad de resonancia',particularCoefficients:'Coeficientes de la particular',particularExpression:'Expresión de la particular',steps:'Pasos',equation:'Ecuación',family:'Familia',u:'u=x+y',elimination:'EDO por eliminación',particularSlope:'Pendiente de la particular',particularConstant:'Constante de la particular',constant:'Constante',partials:'Derivadas parciales',hessianFormulas:'Fórmulas del Hessiano',hessian:'Hessiano',maximumRate:'Tasa máxima',maximumDirection:'Dirección de crecimiento máximo',unitDirection:'Dirección unitaria',directionalDerivative:'Derivada direccional',dzdx:'∂z/∂x',dzdy:'∂z/∂y',outerPartials:'Parciales de la función exterior',outerGradient:'Gradiente exterior',jacobianFormulas:'Fórmulas del Jacobiano',jacobian:'Jacobiano',derivatives:'Derivadas por cadena',formulas:'Fórmulas',matrix:'Matriz',determinant:'Determinante',absoluteJacobian:'Valor absoluto del Jacobiano',position:'Posición',velocity:'Velocidad',acceleration:'Aceleración',velocityFormulas:'Derivadas de velocidad',accelerationFormulas:'Derivadas de aceleración',proof:'Justificación',conservative:'Campo conservativo',potential:'Potencial',curl:'Qₓ−Pᵧ',plane:'Plano tangente',lambda:'Multiplicador λ',otherExtreme:'Otro extremo',dot:'Producto escalar',cross:'Producto vectorial',norm:'Norma de u',normU:'Norma de u',normV:'Norma de v',angleDegrees:'Ángulo (grados)'});
-const differentialModes=new Set(['oclassify','ohomogeneous','opolyexp','ofamily','osubstitution','ovarreciprocal','ovartan','oforcedsystem','mplane','mline','mvectors','mdifferential','mlimit','mimplicit','mchain','mjacobian','mcurve','mpotential','mcritical','mconstraint','mgreen','mpolar','linearization','functionanalysis','exponentialanalysis','theorem','reciprocalminimum','ellipserectangle','cylinderminimum','nearestparabola','sineparameter','exponentialparameter','parametric']);
+const differentialModes=new Set(['theoremcases','oclassify','ohomogeneous','opolyexp','ofamily','osubstitution','ovarreciprocal','ovartan','oforcedsystem','mplane','mline','mvectors','mdifferential','mlimit','mimplicit','mchain','mjacobian','mcurve','mpotential','mcritical','mconstraint','mgreen','mpolar','linearization','functionanalysis','exponentialanalysis','theorem','reciprocalminimum','ellipserectangle','cylinderminimum','nearestparabola','sineparameter','exponentialparameter','parametric']);
 const differentialFmt=value=>value===Infinity?'+∞':value===-Infinity?'−∞':value===null?'no aplica':
-  Array.isArray(value)?`[${value.map(differentialFmt).join(', ')}]`:value&&typeof value==='object'?Object.entries(value).map(([key,item])=>`${labels[key]||key}: ${differentialFmt(item)}`).join('; '):fmt(value);
-const fmt=value=>value===null?'sin solución':typeof value==='number'?(Number.isFinite(value)?String(Number(value.toPrecision(10))):'indefinido'):
-  Array.isArray(value)?`[${value.map(fmt).join(', ')}]`:typeof value==='object'?Object.entries(value).map(([key,item])=>`${key}: ${fmt(item)}`).join('; '):String(value);
+  Array.isArray(value)?(value.length&&value.every(item=>typeof item==='string')?value.join(' '):`[${value.map(differentialFmt).join(', ')}]`):value&&typeof value==='object'?Object.entries(value).map(([key,item])=>`${labels[key]||key}: ${differentialFmt(item)}`).join('; '):fmt(value);
+const fmt=value=>value===null?'sin solución':typeof value==='boolean'?(value?'sí':'no'):typeof value==='number'?(Number.isFinite(value)?String(Number(value.toPrecision(10))):'indefinido'):
+  Array.isArray(value)?(value.length&&value.every(item=>typeof item==='string')?value.join(' '):`[${value.map(fmt).join(', ')}]`):typeof value==='object'?Object.entries(value).map(([key,item])=>`${labels[key]||key}: ${fmt(item)}`).join('; '):String(value);
 export function studyOpenPanel(group) {
   if(!groups[group]) return;
   document.getElementById('study-title').textContent=groups[group];
@@ -397,7 +400,7 @@ export function studySelect() {
   if(!fields[mode]) return;
   document.getElementById('study-fields').innerHTML=fields[mode].map(([key,label,defaultValue,type,options])=>
     `<label class="linear-field" for="study-${key}"><span>${label}</span>${type==='textarea'?`<textarea id="study-${key}" class="tool-textarea" rows="4">${defaultValue}</textarea>`:
-      type==='select'?`<select id="study-${key}" class="tool-input">${options.split(',').map(option=>`<option value="${option}">${option}</option>`).join('')}</select>`:
+      type==='select'?`<select id="study-${key}" class="tool-input">${options.split(',').map(option=>{const cut=option.indexOf('='),value=cut<0?option:option.slice(0,cut),text=cut<0?option:option.slice(cut+1);return `<option value="${value}">${text}</option>`;}).join('')}</select>`:
         `<input id="study-${key}" class="tool-input" type="${type==='text'?'text':'number'}" step="any" value="${defaultValue}">`}</label>`).join('');
   document.getElementById('study-result').textContent='';
   studyPreviewInputs();
@@ -406,10 +409,22 @@ export function studyCalculate() {
   const mode=document.getElementById('study-mode').value,target=document.getElementById('study-result');
   try {
     const data=solve(mode),format=differentialModes.has(mode)?differentialFmt:fmt;
-    const graph=mode==='functionanalysis'?functionAnalysisSvg(data,{start:num('start'),end:num('end'),minimum:num('minimumY'),maximum:num('maximumY')}):studyRegionPlot(mode);
+    const graph=mode==='functionanalysis'?functionAnalysisSvg(data,{start:num('start'),end:num('end'),minimum:num('minimumY'),maximum:num('maximumY')}):mode==='theorem'||mode==='theoremcases'?theoremPlot(mode,data):studyRegionPlot(mode);
     target.classList.remove('tool-error');
-    target.innerHTML=`<div class="tool-result-title">${modes[mode][1]}</div><p>${modes[mode][2]}</p><dl class="mechplus-results">${Object.entries(data).map(([key,value])=>`<dt>${key==='expression'&&mode==='functionanalysis'?'Función':labels[key]||escapeHtml(key)}</dt><dd>${escapeHtml(format(value))}</dd>`).join('')}</dl>${graph}`;
+    target.innerHTML=`<div class="tool-result-title">${modes[mode][1]}</div><p>${modes[mode][2]}</p><dl class="mechplus-results">${Object.entries(data).map(([key,value])=>`<dt>${key==='expression'&&mode==='functionanalysis'?'Función':key==='slope'&&mode.startsWith('theorem')?'Pendiente de la secante':labels[key]||escapeHtml(key)}</dt><dd>${escapeHtml(format(value))}</dd>`).join('')}</dl>${graph}`;
   } catch(error) {target.classList.add('tool-error');target.textContent=error.message;}
+}
+
+// f en [a,b], la secante y las tangentes en los c hallados.
+function theoremPlot(mode,data){
+  const id=mode==='theoremcases'?read('case'):null;let curve;
+  try{curve=theoremCurve(id,id?null:read('expr'),id?null:num('start'),id?null:num('end'));}catch{return '';}
+  const series=curve.pieces.map((points,i)=>({label:i?'f(x), otro tramo':'f(x)',points}));
+  if(curve.dots.length)series.push({label:'Valor aislado f(1) = 0',points:curve.dots});
+  const fa=Number(data.fa),fb=Number(data.fb),slope=Number(data.slope);
+  if(Number.isFinite(fa)&&Number.isFinite(fb))series.push({label:'Secante',points:[[curve.start,fa],[curve.end,fb]]});
+  if(Number.isFinite(slope)&&curve.f)for(const c of (Array.isArray(data.points)?data.points:[]).slice(0,2)){const y=curve.f(c),w=(curve.end-curve.start)*.16;series.push({label:`Tangente en c = ${fmt(c)}`,points:[[c-w,y-slope*w],[c+w,y+slope*w]]});}
+  return studyPlotSvg(series.slice(0,6),{title:'f, secante y tangentes en c'});
 }
 
 function studyRegionPlot(mode){

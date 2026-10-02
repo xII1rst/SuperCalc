@@ -1,5 +1,8 @@
 // Cálculos de las aplicaciones de cálculo; no dependen del DOM ni del canvas.
+import { requireFiniteOn, requireDifferentiableAt } from './domain-guard.mjs';
 export function optimizeFunction(fn,a,b){
+  if(!(a<b))throw new RangeError('El intervalo debe cumplir a < b.');
+  requireFiniteOn(fn,a,b,'f','extremos');
   const h=1e-6, n=2000, dx=(b-a)/n;
   let maxX=a, minX=a, maxV=fn(a,0), minV=fn(a,0);
   const crits=[];
@@ -22,6 +25,7 @@ export function populationGrowth(p0,k,t){
 }
 
 export function motionAt(fn,t0){
+  requireDifferentiableAt(fn,t0,'s(t)','t');
   const h=1e-6;
   const s0=fn(t0,0);
   const vel=(fn(t0+h,0)-fn(t0-h,0))/(2*h);
@@ -30,6 +34,7 @@ export function motionAt(fn,t0){
 }
 
 export function tangentAt(fn,x0){
+  requireDifferentiableAt(fn,x0);
   const h=1e-6;
   const fx0=fn(x0,0);
   const fpx0=(fn(x0+h,0)-fn(x0-h,0))/(2*h);
@@ -85,6 +90,7 @@ function requireFn(fn) {
 // Método de Newton-Raphson: x_{n+1} = x_n − f(x_n)/f'(x_n).
 export function newtonMethod(fn, x0, { tol = 1e-10, maxIter = 100 } = {}) {
   requireFn(fn);
+  if (!Number.isFinite(fn(x0, 0))) throw new RangeError(`f no está definida en x₀ = ${x0}: elige un punto inicial dentro del dominio.`);
   let x = x0;
   const iterations = [];
   for (let i = 0; i < maxIter; i++) {
@@ -103,6 +109,7 @@ export function newtonMethod(fn, x0, { tol = 1e-10, maxIter = 100 } = {}) {
 // Aproximación lineal L(x) = f(a) + f'(a)(x−a).
 export function linearApproximation(fn, a, x) {
   requireFn(fn);
+  requireDifferentiableAt(fn, a);
   const fa = fn(a, 0);
   const fpa = derivNum(fn, a);
   return { fa, fpa, approx: fa + fpa * (x - a), exact: fn(x, 0) };
@@ -196,6 +203,7 @@ export function inverseHyperbolic(x) {
 // Derivada de la función inversa: (f⁻¹)'(y) = 1 / f'(x) con y = f(x).
 export function inverseFunctionDerivative(fn, x) {
   requireFn(fn);
+  requireDifferentiableAt(fn, x);
   const y = fn(x, 0);
   const fp = derivNum(fn, x);
   return { x, y, fprime: fp, inverseDerivative: fp !== 0 ? 1 / fp : NaN };

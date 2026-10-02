@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { THEORY } from '../js/content/theory.mjs';
 
 const appUrl = new URL('../app.js', import.meta.url);
 const modules = new Map([
@@ -66,6 +67,9 @@ const modules = new Map([
   ['./js/offline.mjs', new URL('../js/offline.mjs', import.meta.url)],
   ['./js/ui/navigation.mjs', new URL('../js/ui/navigation.mjs', import.meta.url)],
   ['./js/ui/routes.mjs', new URL('../js/ui/routes.mjs', import.meta.url)],
+  ['./js/math/domain-guard.mjs', new URL('../js/math/domain-guard.mjs', import.meta.url)],
+  ['./js/content/theory.mjs', new URL('../js/content/theory.mjs', import.meta.url)],
+  ['./js/ui/theory.mjs', new URL('../js/ui/theory.mjs', import.meta.url)],
   ['./js/ui/events.mjs', new URL('../js/ui/events.mjs', import.meta.url)],
   ['./js/ui/canvas-size.mjs', new URL('../js/ui/canvas-size.mjs', import.meta.url)],
   ['./js/ui/theme.mjs', new URL('../js/ui/theme.mjs', import.meta.url)],
@@ -312,6 +316,36 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   const mathCards=getElementById('submod-cards').innerHTML;
   for (const id of ['al','ca','num','logic','stats','prob','exp'])
     assert.match(mathCards,new RegExp(`data-arg="${id}"`));
+  assert.match(mathCards,/data-arg="theory-math"/);
+  // Fichas teóricas: cada enlace apunta a una herramienta real del menú.
+  const catalog=actions.routeCatalog();
+  for (const subject of THEORY) for (const unit of subject.units) {
+    for (const item of [...unit.topics,...unit.cards]) if (item.tool) assert.ok(catalog.has(item.tool),`${unit.id}: enlace desconocido ${item.tool}`);
+  }
+  actions.launchSubmod('theory-math');
+  assert.ok(getElementById('theory-app').classList.contains('visible'));
+  assert.match(getElementById('theory-subject').innerHTML,/Cálculo Diferencial[\s\S]*Lógica Matemática/);
+  assert.doesNotMatch(getElementById('theory-subject').innerHTML,/Electromagnetismo/);
+  assert.match(getElementById('theory-units').innerHTML,/Unidad 1\. Sucesiones/);
+  assert.match(getElementById('theory-units').innerHTML,/data-action="theoryGo" data-arg="#\/al\/seq"[^>]*>Sucesiones y progresiones/);
+  assert.match(getElementById('theory-summary').textContent,/^\d+ subtemas: \d+ cubiertos/);
+  getElementById('theory-subject').value='logica';
+  actions.theorySelect();
+  assert.match(getElementById('theory-units').innerHTML,/Flujo máximo y corte mínimo/);
+  actions.theoryGo('#/logic/logic-graphs');
+  assert.ok(!getElementById('theory-app').classList.contains('visible'));
+  assert.ok(getElementById('logic-app').classList.contains('visible'));
+  actions.closeModule('logic');
+  actions.launchSubmod('theory-fi');
+  assert.match(getElementById('theory-subject').innerHTML,/Electromagnetismo[\s\S]*Ondas/);
+  assert.equal(getElementById('theory-back').textContent,'Física');
+  actions.closeModule('theory');
+  // Atrás desde el menú de la herramienta vuelve a la ficha, y luego al menú de Matemáticas.
+  actions.closeSubmod();
+  assert.ok(getElementById('theory-app').classList.contains('visible'));
+  actions.closeModule('theory');
+  assert.ok(!getElementById('theory-app').classList.contains('visible'));
+  assert.match(getElementById('submod-title').innerHTML,/Matemáticas/);
   actions.openSubmod('num');
   for (const id of ['num-errors','num-precision','num-roots','num-linear','num-system2d','num-interpolation','num-derivative','num-quadrature','num-ode'])
     assert.match(getElementById('submod-cards').innerHTML,new RegExp(`data-arg="${id}"`));
@@ -578,7 +612,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   ms(44,'sin(u)*cos(v)','sin(u)*sin(v)','cos(u)','x^2+y^2','π','2*π',8*Math.PI/3);
   ms(45,'u*cos(v)','u*sin(v)','v','1',1,'2*π',Math.PI*(Math.SQRT2+Math.asinh(1)));
   multiCase(46,'twoconstraints',{radiusSquared:2,planeA:1,planeB:0,planeC:1,planeD:1,objectiveX:1,objectiveY:1,objectiveZ:1},[],[/1\.414213562/,/stationarityResidual/]);
-  multiCase(47,'planenorm',{planeA:1,planeB:1,planeC:1,planeD:3},[],[/point: \[1, 1, 1\]/,/value: 3/,/no existe/]);
+  multiCase(47,'planenorm',{planeA:1,planeB:1,planeC:1,planeD:3},[],[/Punto: \[1, 1, 1\]/,/Valor: 3/,/no existe/]);
   multiCase(48,'mchain',{expr:'x^2+y*z',maps:'u*v\nu+v\nu-v',variables:'u,v',point:'1,2'},[],[/Derivadas por cadena<\/dt><dd>\[10, 0\]/]);
   multiCase(49,'harmoniclog',{scale:1,x:1,y:2},[['Laplaciano Δu',0]],[/origen/]);
   multiCase(50,'trilinearpath',{coefficient:1,from:'1,1,1',to:'2,3,4'},[['Integral de línea',23]],[/∇\(k xyz\)/]);
@@ -2116,7 +2150,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   difStudy(24,'parametric',{xexpr:'t^2-1',yexpr:'t^3+t',time:1},[['dy/dx',2],['d²y/dx²',.5]],['Derivadas x′, y′','2t','3t^2 + 1']);
   difStudy(26,'functionanalysis',{expr:'x^3-3*x^2+1',scope:'intervalo',start:-1,end:3,minimumY:-4,maximumY:2},[],['Mínimo global: [x: -1; Valor: -3, x: 2; Valor: -3]','Máximo global: [x: 0; Valor: 1, x: 3; Valor: 1]','Todos los candidatos']);
   difStudy(27,'theorem',{expr:'x^2-4*x+3',start:1,end:3,kind:'rolle'},[['f(a)',0],['f(b)',0]],['hipótesis verificadas','[2]','continuo en [a,b]','diferenciable en (a,b)']);
-  difStudy(28,'theorem',{expr:'sqrt(x)',start:1,end:9,kind:'mvt'},[['dy/dx',.25]],['[4]','continua para x≥0']);
+  difStudy(28,'theorem',{expr:'sqrt(x)',start:1,end:9,kind:'mvt'},[['Pendiente de la secante',.25]],['[4]','continua para x≥0']);
   difStudy(29,'functionanalysis',{expr:'x^4-4*x^3',scope:'locales',start:-2,end:5,minimumY:-30,maximumY:20},[],['estacionario sin extremo','x: 3','Valor: -27','cóncava hacia arriba','cóncava hacia abajo','x: 2; Valor: -16']);
   difStudy(30,'linearization',{expr:'x^(1/3)',x0:8,increment:.06},[['Diferencial dy',.005],['Aproximación lineal',2.005]],['Valor evaluado','Error absoluto en el punto']);
   difStudy(31,'exponentialanalysis',{expr:'x',rate:-1},[],['x: 1','máximo local',`Segunda derivada: ${difNumber(-1/Math.E)}`]);
@@ -2204,7 +2238,7 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   intStudy(30,'arc',{expr:'x^(3/2)',start:0,end:4,n:400},[['Longitud',8*(10**1.5-1)/27]],['Derivada','Diferencia entre mallas']);
   intAction(31,'calcPolar',{'polar-op':'area','polar-r':'2*(1+cos(t))','polar-a':0,'polar-b':Math.PI*2},'res-polar',['18.84955592','Área polar']);
   intAction(32,'calcIntegralNumeric',{'int-def-fx':'1/(1+x^2)','int-def-a':0,'int-def-b':1,'int-num-n':4,'int-num-method':'simpson'},'res-def-num',['0.78539216','π/4','Error absoluto frente a referencia','Malla y valores']);
-  intStudy(33,'series',{center:0,radius:3,power:1},[['Radio',3]],['x: -3; converges: true; absolute: false','x: 3; converges: false']);
+  intStudy(33,'series',{center:0,radius:3,power:1},[['Radio',3]],['x: -3; converge: sí; absoluta: no','x: 3; converge: no']);
   intStudy(34,'comparisonseries',{a:2,b:1,power:3},[['Exponente de comparación',2]],['converge','3/n^2','p=2']);
   intAction(42,'calcRevolutionVolume',{'int-rev-mode':'add','int-rev-fx':'x','int-rev-gx':'x^2','int-rev-a':0,'int-rev-b':1,'int-rev-axis':'x-shift','int-rev-shift':2,'int-rev-m':1,'int-rev-offset':0},'res-rev',['1.67551608','Primitiva de la sección','Evaluación simbólica','8/15']);
   intStudy(43,'surface',{expr:'x^3',start:0,end:1,axis:'x',n:400},[['Área',Math.PI*(10**1.5-1)/27]],['Diferencia entre mallas']);
@@ -2212,11 +2246,14 @@ test('el punto de entrada ES conserva los eventos y cálculos principales', asyn
   intStudy(45,'polararea',{outer:'3*cos(x)',inner:'1+cos(x)',start:-Math.PI/3,end:Math.PI/3,n:400},[['Área',Math.PI]]);
   intStudy(46,'taylorterms',{expr:'ln(1+x)',center:0,terms:4,x:.1},[['Valor',.1-.1**2/2+.1**3/3-.1**4/4]],['k: 1; coef: 1','k: 4; coef: -0.25','Error absoluto en el punto']);
   intStudy(47,'taylorterms',{expr:'cos(x)',center:'π/3',terms:4,x:Math.PI/3},[['Valor',.5]],['k: 0; coef: 0.5','k: 3; coef: 0.1443375673']);
-  intStudy(48,'series',{center:2,radius:2,power:2},[['Radio',2]],['x: 0; converges: true; absolute: true','x: 4; converges: true; absolute: true']);
+  intStudy(48,'series',{center:2,radius:2,power:2},[['Radio',2]],['x: 0; converge: sí; absoluta: sí','x: 4; converge: sí; absoluta: sí']);
   intStudy(49,'integrallimit',{amplitude:1,rate:1,power:2},[['Límite',1/3]],['L’Hôpital','TFC','sen u/u']);
   intStudy(50,'telescoping',{offset:2},[['Suma',.75]],['1/[n(n+2)]']);
   intAction('singularidad','calcIntegralDef',{'int-def-fx':'1/x^2','int-def-a':-1,'int-def-b':1},'res-def',['Singularidad interior']);
   intAction('serie no demostrada','calcSeries',{'series-type':'ratio','series-term':'sin(n)'},'res-series',['Inconcluso','no demuestra el límite']);
+  intAction('raíz (n/(2n+1))^n','calcSeries',{'series-type':'root','series-term':'(n/(2n+1))^n'},'res-series',['Prueba de la raíz','Converge','= 0.5']);
+  intAction('integral 1/(n ln² n)','calcSeries',{'series-type':'integral','series-term':'1/(n*ln(n)^2)','series-N':'2'},'res-series',['Prueba de la integral','Converge','−1/ln(x)','Hipótesis']);
+  intAction('alternante 1/n','calcSeries',{'series-type':'alt','series-term':'1/n','series-N':'10'},'res-series',['Converge condicionalmente','S_N','b_(N+1)','Leibniz']);
   actions.closeModule('study');actions.closeModule('calc');actions.launchSubmod('calc-int');
   getElementById('int-def-fx').value = 'x^2';
   getElementById('int-def-a').value = '0';

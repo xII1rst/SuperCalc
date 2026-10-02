@@ -89,7 +89,9 @@ test('familias, dominio, dimensiones y rango numérico se validan antes de concl
   assert.throws(()=>rationalFunctionAnalysis('sin(x)'),/Familia/);
   assert.throws(()=>rationalFunctionAnalysis('1/(x-x)'),/denominador/);
   assert.throws(()=>theoremCheck('sqrt(x)',-1,2),/a≥0/);
-  assert.throws(()=>theoremCheck('1/x',-1,1),/Familia/);
+  const pole=theoremCheck('1/x',-1,1);
+  assert.equal(pole.status,'hipótesis no verificadas');assert.match(pole.failure,/continuidad en x = 0/);assert.equal(pole.conclusionHolds,false);
+  assert.throws(()=>theoremCheck('sin(x)',0,1),/Familia/);
   assert.throws(()=>tangentDifferential('(x^2-1)/(x-1)',1),/no está definida/);
   assert.throws(()=>positiveReciprocalMinimum(0,128),/positivo/);
   assert.throws(()=>maximalEllipseRectangle(-4,3),/positivo/);
@@ -99,4 +101,32 @@ test('familias, dominio, dimensiones y rango numérico se validan antes de concl
   assert.deepEqual(exponentialLimitCoefficient(-1).coefficients,[]);
   assert.ok(exponentialLimitCoefficient(1e308).coefficients.every(Number.isFinite));
   assert.throws(()=>realPolynomialRoots([1,NaN]),/finitos/);
+});
+
+test('contraejemplos de Rolle y valor medio: hipótesis que fallan y si existe c', async () => {
+  const { theoremCase, theoremCurve } = await import('../js/math/differential-applications.mjs');
+  const expectations = {
+    abs: ['derivabilidad en x = 0', false], cusp: ['derivabilidad en x = 0', false], pole: ['continuidad en x = 0', false],
+    cbrt: ['derivabilidad en x = 0', true], jump: ['continuidad en x = 1', false],
+  };
+  for (const [id, [failure, holds]] of Object.entries(expectations)) {
+    const result = theoremCase(id);
+    assert.equal(result.status, 'hipótesis no verificadas', id);
+    assert.match(result.failure, new RegExp(failure), id);
+    assert.equal(result.conclusionHolds, holds, id);
+    assert.match(result.lesson, holds ? /suficientes, no necesarias/ : /No existe c/, id);
+    assert.ok(theoremCurve(id).pieces[0].length > 50, id);
+  }
+  const cbrt = theoremCase('cbrt');
+  assert.deepEqual(cbrt.points.map(c => Number(Math.abs(c).toFixed(8))), [0.19245009, 0.19245009]);
+  assert.match(theoremCase('cusp').failure, /\(2\/3\)·x\^\(−1\/3\)/);
+  const ok = theoremCase('ok');
+  assert.equal(ok.status, 'hipótesis verificadas'); assert.deepEqual(ok.points, [2]);
+  assert.throws(() => theoremCase('desconocido'), /desconocido/);
+  // Familias nuevas también desde la entrada libre.
+  assert.ok(Math.abs(theoremCheck('x^(4/3)', -1, 8, 'mvt').points[0] - (1.25) ** 3) < 1e-9);
+  assert.ok(Math.abs(theoremCheck('1/(x-2)', -1, 1, 'mvt').points[0] - (2 - Math.sqrt(3))) < 1e-9);
+  assert.equal(theoremCheck('abs(x-3)', -1, 1, 'mvt').allPoints, 'Todo c en (-1, 1)');
+  assert.equal(theoremCheck('abs(x)', -1, 2, 'mvt').conclusionHolds, false);
+  assert.throws(() => theoremCheck('x^(1/2)', -1, 1), /x ≥ 0/);
 });

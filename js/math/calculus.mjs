@@ -995,6 +995,45 @@ export function symbolicLimit(fxStr, aStr, varName='x'){
 }
 
 // ── COMPUTE LIMIT ──
+// Polo de un cociente de polinomios: D(a) = 0 y N(a) ≠ 0 dan límites laterales infinitos.
+function astPolynomial(node,v){
+  if(node.type==='num')return [node.val];
+  if(node.type==='var')return node.val===v?[0,1]:null;
+  if(node.type==='neg'){const p=astPolynomial(node.arg,v);return p&&p.map(c=>-c);}
+  if(node.type==='+'||node.type==='-'||node.type==='*'){
+    const a=astPolynomial(node.left,v),b=astPolynomial(node.right,v);if(!a||!b)return null;
+    if(node.type==='*'){const out=Array(a.length+b.length-1).fill(0);a.forEach((x,i)=>b.forEach((y,j)=>{out[i+j]+=x*y;}));return out;}
+    return Array.from({length:Math.max(a.length,b.length)},(_,i)=>(a[i]||0)+(node.type==='+'?1:-1)*(b[i]||0));
+  }
+  if(node.type==='/'&&node.right.type==='num'&&node.right.val!==0){const a=astPolynomial(node.left,v);return a&&a.map(c=>c/node.right.val);}
+  if(node.type==='^'&&node.right.type==='num'&&Number.isInteger(node.right.val)&&node.right.val>=0&&node.right.val<=12){
+    const base=astPolynomial(node.left,v);if(!base)return null;let out=[1];
+    for(let i=0;i<node.right.val;i++){const next=Array(out.length+base.length-1).fill(0);out.forEach((x,k)=>base.forEach((y,j)=>{next[k+j]+=x*y;}));out=next;}
+    return out;
+  }
+  return null;
+}
+const polyAt=(p,x)=>p.reduceRight((sum,c)=>sum*x+c,0);
+function rationalPole(fxStr,a,varName){
+  if(!Number.isFinite(a))return null;
+  let ast;try{ast=parseExpr(tokenize(fxStr));}catch{return null;}
+  if(ast.type!=='/')return null;
+  const N=astPolynomial(ast.left,varName),D=astPolynomial(ast.right,varName);
+  if(!N||!D)return null;
+  const scale=Math.max(1,...D.map(Math.abs));
+  if(Math.abs(polyAt(D,a))>1e-12*scale||Math.abs(polyAt(N,a))<=1e-12*Math.max(1,...N.map(Math.abs)))return null;
+  // Multiplicidad m de a en D por división sintética.
+  let q=D.slice(),m=0;
+  while(q.length>1&&Math.abs(polyAt(q,a))<=1e-9*Math.max(1,...q.map(Math.abs))&&m<12){
+    const out=Array(q.length-1).fill(0);let carry=0;
+    for(let i=q.length-1;i>=1;i--){carry=q[i]+carry*a;out[i-1]=carry;}
+    q=out;m++;
+  }
+  const lead=polyAt(N,a)/polyAt(q,a);
+  if(!Number.isFinite(lead)||lead===0)return null;
+  const right=Math.sign(lead)*Infinity,left=(m%2?-1:1)*right;
+  return {m,right,left,lead};
+}
 export function computeLimit(fxStr,aStr,side,varName='x'){
   const steps=[]; const r={steps,fxStr,aStr,side,varName};
   const a=evalA(aStr); r.a=a;
@@ -1061,6 +1100,25 @@ export function computeLimit(fxStr,aStr,side,varName='x'){
       r.value='No demostrado'; r.valueNum=NaN; r.exists=null; r.inconclusive=true;
       r.estimate=null; r.tipo='numerico';
       r.domainError=`${pole} tiene un posible polo en el punto indicado; la sustitución numérica no demuestra un límite.`;
+      steps.push({tipo:'dominio',detail:r.domainError});
+      return r;
+    }
+  }
+
+  if(freeVars.length===0){
+    const pole=rationalPole(normalizedFx,a,varName);
+    if(pole){
+      const show=v=>v>0?'+∞':'−∞',pick=side==='right'?pole.right:side==='left'?pole.left:pole.right===pole.left?pole.right:null;
+      r.exists=false;r.exact=null;r.tipo='infinito';r.vr=pole.right;r.vl=pole.left;
+      r.isInfinity=pick!==null;r.valueNum=pick===null?NaN:pick;r.value=pick===null?'No existe':show(pick);
+      steps.push({tipo:'simbolico',aDisplay:fmtA(aStr),detail:`El denominador se anula en ${varName} = ${fmtA(aStr)} con multiplicidad ${pole.m} y el numerador no: los límites laterales son ${show(pole.left)} (izquierda) y ${show(pole.right)} (derecha).${side==='both'&&pick===null?' Al ser distintos, el límite bilateral no existe.':''}`,result:r.value});
+      return r;
+    }
+    // Sin puntos del dominio a ningún lado: no hay límite que estudiar.
+    const outside=[1e-2,1e-4,1e-6].every(h=>!Number.isFinite(fn(a+h))&&!Number.isFinite(fn(a-h)));
+    if(outside&&Number.isFinite(a)){
+      r.value='No existe';r.valueNum=NaN;r.exists=false;r.exact=null;r.tipo='dominio';
+      r.domainError=`${varName} = ${fmtA(aStr)} está fuera del dominio de f: no hay puntos cercanos donde evaluarla.`;
       steps.push({tipo:'dominio',detail:r.domainError});
       return r;
     }

@@ -9,7 +9,7 @@ import {
   youngInterference, soapFilmConstructive, newtonRing,
   lcOscillation, tubeModes, lissajous, multipleSlitInterference, gratingOrders,
 } from '../math/waves.mjs';
-import { drawWavePlot } from '../graphics/wave-plot.mjs';
+import { drawWavePlot, waveScene, waveSvg } from '../graphics/wave-plot.mjs';
 
 const fmt=value=>value===Infinity?'∞':Number.isFinite(value)?(value===0?'0':String(Number(value.toPrecision(10)))):'—';
 const modes={
@@ -153,8 +153,13 @@ function drawAt(time) {
   const parameters=mode==='harmonic'?{a:number('a'),w:number('w'),phase:number('phase')}:
     mode==='lissajous'?{ax:number('ax'),ay:number('ay'),wx:number('wx'),wy:number('wy'),phase:number('phase')}:
       {a:number('a'),k:number('k'),w:number('w')};
-  drawWavePlot(document.getElementById('waves-canvas'),mode,parameters,time);
-  document.getElementById('waves-visual-description').textContent=`Gráfica ${mode==='lissajous'?'paramétrica':'de amplitud'} en t = ${fmt(time)} s. Usa el deslizador o reproduce para explorar.`;
+  const canvas=document.getElementById('waves-canvas'),fallback=document.getElementById('waves-fallback');
+  const drawn=drawWavePlot(canvas,mode,parameters,time);
+  // Sin Canvas 2D: la misma escena como SVG estático y accesible.
+  if(fallback){fallback.hidden=drawn;if(!drawn)fallback.innerHTML=waveSvg(mode,parameters,time);}
+  if(canvas)canvas.hidden=!drawn;
+  const scene=waveScene(mode,parameters,time);
+  document.getElementById('waves-visual-description').textContent=`${mode==='harmonic'?'Fasor y gráfica temporal':mode==='lissajous'?'Trayectoria paramétrica':'Perfil de la onda'} en t = ${fmt(time)} s. ${scene?.phaseText?scene.phaseText+'.':''}${drawn?' Usa el deslizador o reproduce para explorar.':' Vista estática: este navegador no dibuja Canvas.'}`;
 }
 export function wavesTimeChanged() {
   playing=false;document.getElementById('waves-play').textContent='Reproducir';

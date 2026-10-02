@@ -1,6 +1,6 @@
 import {poissonRectangle} from '../math/poisson-rectangle.mjs';
 import {calcParse,collectVariables} from '../math/expression.mjs';
-import { potentialMapSvg, forceDiagram, circuitDiagram } from '../graphics/physics-diagrams.mjs';
+import {potentialMapSvg,forceDiagram,circuitDiagram,impedanceDiagram} from '../graphics/physics-diagrams.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
 import { labelledOutputEntries, physicsOutputControls } from './physics-output.mjs';
 export { physicsOutputUnitChanged } from './physics-output.mjs';
@@ -312,7 +312,7 @@ function validateResult(data,mode) {
   }
   for(const [key,item]of Object.entries(data))inspect(item,key);
 }
-const fmt=item=>item===null?'—':typeof item==='number'?(Number.isFinite(item)?String(Number(item.toPrecision(10))):'∞'):Array.isArray(item)?`(${item.map(fmt).join(', ')})`:String(item);
+const fmt=item=>item===null?'—':typeof item==='boolean'?(item?'sí':'no'):typeof item==='number'?(Number.isFinite(item)?String(Number(item.toPrecision(10))):'∞'):Array.isArray(item)?`(${item.map(fmt).join(', ')})`:String(item);
 export function emPlusOpenPanel(group) {
   if(!groupNames[group]) return;
   document.getElementById('emplus-title').textContent=groupNames[group];
@@ -383,7 +383,7 @@ function emVisual(mode,data){
    const r=seriesRlcTransient(number('resistance'),number('inductance'),number('capacitance'),number('charge'),number('current'),t);return [t,r.charge];
   });return studyPlotSvg([{label:mode==='rc'?'Voltaje de carga':mode==='rl'?'Corriente de subida':'Carga del capacitor',points}],{title:'Evolución del circuito ideal',xLabel:'t (s)',yLabel:mode==='rc'?'V (V)':mode==='rl'?'I (A)':'q (C)'});
  }
- if(mode==='rlc')return forceDiagram('Impedancia del RLC serie',[{label:'R',origin:[240,220],vector:[number('resistance'),0]},{label:'Xₗ−X꜀',origin:[240,220],vector:[0,data.reactance]},{label:'Z',origin:[240,220],vector:[number('resistance'),data.reactance]}],{unit:'Ω',caption:'Plano complejo: resistencia en eje real, reactancia en eje imaginario. X positiva es inductiva; negativa, capacitiva. Arg(Z) es el desfase del voltaje respecto a la corriente.'});
+ if(mode==='rlc')return impedanceDiagram(number('resistance'),data.reactance);
  if(mode==='poisson'){
   const length=number('length'),points=Array.from({length:81},(_,i)=>{const x=length*i/80;return [x,poissonOneDimensional(length,number('left'),number('right'),number('rho'),x).potential];});
   return studyPlotSvg([{label:'V(x)',points}],{title:'Potencial con fronteras 1D',xLabel:'x (m)',yLabel:'V (V)'});

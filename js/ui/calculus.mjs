@@ -17,7 +17,7 @@ import {
 } from '../math/applications.mjs';
 import { integrate, definiteIntegral, polynomialRevolutionEvaluation } from '../math/integration.mjs';
 import { riemannSum, trapezoidalRule } from '../math/numeric.mjs';
-import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries } from '../math/series.mjs';
+import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries, rootTest, integralTest, alternatingSeries } from '../math/series.mjs';
 import {
   areaBetweenCurves, arcLength, surfaceAreaOfRevolution, workVariable, fluidForce, centroidRegion,
 } from '../math/integral-applications.mjs';
@@ -716,7 +716,9 @@ function appMotion(){
   const stStr=v('app-vel-st'), t0=pf('app-vel-t0');
   const fn=calcParse(stStr);
   if(!fn||isNaN(t0)){appRes(errBox('Verifica los datos'));return;}
-  const {s0,vel,acel}=motionAt(fn,t0);
+  let motion;
+  try{motion=motionAt(fn,t0);}catch(error){appRes(errBox(error.message));return;}
+  const {s0,vel,acel}=motion;
   const symV=symbolicDeriv(stStr,1), symA=symbolicDeriv(stStr,2);
   appRes(
     (symV?resBox("v(t) = s'(t) =",symV):'')+
@@ -770,10 +772,12 @@ function appNewton(){
   const fxStr=v('app-newton-fx'), x0=pf('app-newton-x0');
   const fn=calcParse(fxStr);
   if(!fn||isNaN(x0)){appRes(errBox('Verifica los datos'));return;}
-  const {root,iterations,converged}=newtonMethod(fn,x0);
+  let result;
+  try{result=newtonMethod(fn,x0);}catch(error){appRes(errBox(error.message));return;}
+  const {root,iterations,converged}=result;
   const last=iterations[iterations.length-1];
   appRes(
-    resBox('Raíz de f(x) = 0', formatResult(root,10), converged?'Convergió':'No convergió', true)+
+    resBox('Raíz de f(x) = 0', formatResult(root,10), converged?'Convergió':'No convergió: prueba otro x₀ (f′ pudo anularse o salir del dominio)', true)+
     resBox('Iteraciones', String(iterations.length), last?`Último paso: x = ${fN(last.xNext,6)}`:'')
   );
 }
@@ -823,7 +827,7 @@ function appHyperbolic(){
     resBox(`cosh(${x})`, formatResult(h.cosh,6))+
     resBox(`tanh(${x})`, formatResult(h.tanh,6))+
     resBox('cosh² − sinh²', formatResult(h.identity,6), 'Identidad fundamental = 1')+
-    resBox('Inversas', `asinh=${fN(inv.asinh,4)}, acosh=${Number.isFinite(inv.acosh)?fN(inv.acosh,4):'—'}, atanh=${Number.isFinite(inv.atanh)?fN(inv.atanh,4):'—'}`)
+    resBox('Inversas', `asinh=${fN(inv.asinh,4)}, acosh=${Number.isFinite(inv.acosh)?fN(inv.acosh,4):'—'}, atanh=${Number.isFinite(inv.atanh)?fN(inv.atanh,4):'—'}`, Number.isFinite(inv.acosh)&&Number.isFinite(inv.atanh)?'':'— : fuera del dominio (acosh exige x ≥ 1; atanh, |x| < 1).')
   );
 }
 
@@ -1421,11 +1425,27 @@ function calcIntegrateCAS(){
   res.innerHTML=html;
 }
 
+// Muestra solo los campos de la prueba elegida y ajusta sus etiquetas.
+function seriesTypeChanged(){
+  const type=document.getElementById('series-type')?.value||'geo';
+  document.querySelectorAll?.('#body-series [data-series]').forEach(row=>{row.hidden=!row.dataset.series.split(' ').includes(type);});
+  const term=document.getElementById('series-term-lbl'), from=document.getElementById('series-N-lbl'), input=document.getElementById('series-term');
+  if(term) term.textContent=type==='alt'?'bₙ =':type==='integral'?'f(n) =':'aₙ =';
+  if(input) input.placeholder=type==='alt'?'ej: 1/n  (serie Σ(−1)^(n+1)·bₙ)':type==='integral'?'ej: 1/(n*ln(n)^2)':type==='root'?'ej: (n/(2n+1))^n':'ej: 1/2^n';
+  if(from) from.textContent=type==='alt'?'términos N =':'desde n =';
+}
+
+const escSeries=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const seriesSteps=steps=>steps.length?`<div class="calc-res-hint">${steps.map(step=>`• ${escSeries(step)}`).join('<br>')}</div>`:'';
+const proofNote=proof=>proof==='analytic'?'Familia analítica: conclusión demostrada.':proof==='analytic-sampled-hypotheses'?'Límite demostrado; positividad y decrecimiento comprobados solo por muestreo.':proof==='sampled'?'Conclusión apoyada en muestreo: no es una demostración.':'La familia de esta expresión no permite concluir con este criterio.';
+
 function seriesVerdict(c){
   if(c==='converge') return 'Converge';
   if(c==='diverge') return 'Diverge';
   if(c==='inconcluso') return 'Inconcluso (la prueba no decide)';
   if(c==='posible convergencia') return 'Posible convergencia';
+  if(c==='converge absolutamente') return 'Converge absolutamente';
+  if(c==='converge condicionalmente') return 'Converge condicionalmente';
   return c;
 }
 
@@ -1450,6 +1470,22 @@ function calcSeries(){
     if(!term){res.innerHTML=errBox('Ingresa el término aₙ');return;}
     const r=ratioTest(term);
     html=resBox('Prueba de la razón', seriesVerdict(r.conclusion), r.proof==='analytic'?`L = lim |aₙ₊₁/aₙ| = ${fN(r.L,6)}; familia analítica admitida`:`Cociente muestreado ≈ ${fN(r.sampleRatio,6)}; no demuestra el límite`, true);
+  } else if(type==='root'){
+    const term=v('series-term');
+    if(!term){res.innerHTML=errBox('Ingresa el término aₙ');return;}
+    const r=rootTest(term);
+    html=resBox('Prueba de la raíz', seriesVerdict(r.conclusion), r.proof==='analytic'?`L = lím |aₙ|^(1/n) = ${r.L===Infinity?'∞':fN(r.L,6)}${r.L===1?'; L = 1 no decide: usa otro criterio':''}. ${proofNote(r.proof)}`:`Raíz muestreada ≈ ${fN(r.sampleRoot,6)}; no demuestra el límite.`, true);
+  } else if(type==='integral'){
+    const term=v('series-term'), start=parseInt(document.getElementById('series-N')?.value)||1;
+    if(!term){res.innerHTML=errBox('Ingresa f(n)');return;}
+    const r=integralTest(term,start);
+    html=resBox('Prueba de la integral', seriesVerdict(r.conclusion), [r.family?`Familia: ${escSeries(r.family)}.`:'', r.antiderivative?`Primitiva F(x) = ${escSeries(r.antiderivative)}.`:'', proofNote(r.proof)].filter(Boolean).join(' '), true)
+      +(r.hypothesis?`<div class="calc-res-hint">Hipótesis: ${escSeries(r.hypothesis)}</div>`:'')+seriesSteps(r.steps);
+  } else if(type==='alt'){
+    const term=v('series-term'), N=parseInt(document.getElementById('series-N')?.value)||10;
+    if(!term){res.innerHTML=errBox('Ingresa bₙ > 0 de Σ(−1)^(n+1)·bₙ');return;}
+    const r=alternatingSeries(term,N);
+    html=resBox('Serie alternante Σ(−1)^(n+1)·bₙ', seriesVerdict(r.conclusion), [proofNote(r.proof)].filter(Boolean).join(' '), true)+seriesSteps(r.steps);
   } else if(type==='nth'){
     const term=v('series-term');
     if(!term){res.innerHTML=errBox('Ingresa el término aₙ');return;}
@@ -1794,9 +1830,10 @@ function renderRevolutionSolid(fn, a, b, axis, gn=null, offset=0){
 function toggleRevSolid(){
   showRevSolid = !showRevSolid;
   const tog = document.getElementById('rev-fig-tog');
-  if(tog) tog.classList.toggle('on', showRevSolid);
-  const lbl = document.getElementById('rev-fig-lbl');
-  if(lbl) lbl.textContent = showRevSolid ? 'SÓLIDO' : '2D';
+  if(tog) {
+    tog.classList.toggle('on', showRevSolid);
+    tog.setAttribute('aria-pressed', String(showRevSolid));
+  }
   const wrap = document.getElementById('rev-canvas-wrap');
   if(wrap) wrap.style.display = showRevSolid ? '' : 'none';
   drawRevolutionSolid();
@@ -1830,7 +1867,7 @@ function calcInit(tab='dif'){
 
 export {
   previewCalcExpression,
-  calcInit, calcTab, toggleCard, clearCard, kbInsert,
+  calcInit, calcTab, toggleCard, clearCard, kbInsert, seriesTypeChanged,
   calcLimit, calcLimitOp, calcDerivative, calcImplicit, calcAnalysis,
   calcIntegralIndef, calcIntegralDef, calcIntegralNumeric, calcRevolutionVolume, calcRevolutionModeChanged, calcRevolutionAxisChanged, calcTaylor, calcPartial,
   calcGradient, calcDoubleIntegral, calcEDOSep, calcEDOLinear,

@@ -2,7 +2,7 @@ import * as matrixUI from './algebra/matrix.mjs';
 import * as ineqUI from './algebra/inequalities.mjs';
 import { parseRoute, routeHash } from './routes.mjs';
 
-export function createNavigation({ initVectorsApp, emInit, emResizeCanvas, emPlusOpenPanel, calcInit, studyOpenPanel, geomInit, linearInit, numOpenPanel, logicOpenPanel, wavesOpenPanel, fnBack, seqSetMode, mechOpenPanel, mechPlusOpenPanel, probOpenPanel, expOpenPanel }) {
+export function createNavigation({ initVectorsApp, emInit, emResizeCanvas, emPlusOpenPanel, calcInit, studyOpenPanel, geomInit, linearInit, numOpenPanel, logicOpenPanel, wavesOpenPanel, fnBack, seqSetMode, mechOpenPanel, mechPlusOpenPanel, probOpenPanel, expOpenPanel, theoryOpen }) {
 // ═══════════════════════════════════════════════════════
 // SUPER CALC — NAVIGATION
 // ═══════════════════════════════════════════════════════
@@ -17,6 +17,7 @@ const SUBMOD_CONFIG = {
       { icon:'statistics', name:'Estadística', desc:'Medidas, percentiles y gráficos de datos', id:'stats', cls:'math-sub' },
       { icon:'probability', name:'Probabilidad', desc:'Binomial, combinaciones y sumas de dados', id:'prob', cls:'math-sub', action:'openSubmod' },
       { icon:'experiments', name:'Experimentos', desc:'Dados, monedas y cifras de π', id:'exp', cls:'math-sub', action:'openSubmod' },
+      { icon:'book', name:'Fichas teóricas', desc:'Definiciones, teoremas y cobertura por unidad', id:'theory-math', cls:'math-sub' },
     ]
   },
   num: {
@@ -86,6 +87,7 @@ const SUBMOD_CONFIG = {
       { icon:'bolt', name:'Electromagnetismo', desc:'Electrostática, circuitos, magnetismo y ondas EM', id:'em', cls:'fi-sub', action:'openSubmod' },
       { icon:'mechanics', name:'Mecánica', desc:'Movimiento, proyectiles, fuerza y energía', id:'mech', cls:'fi-sub', action:'openSubmod' },
       { icon:'curve', name:'Ondas', desc:'Oscilaciones, sonido, propagación y óptica', id:'waves', cls:'fi-sub', action:'openSubmod' },
+      { icon:'book', name:'Fichas teóricas', desc:'Definiciones, teoremas y cobertura por unidad', id:'theory-fi', cls:'fi-sub' },
     ]
   },
   em: {
@@ -165,6 +167,23 @@ function cardsOf(parent){
   return cfg ? (cfg.groups ? cfg.groups.flatMap(group => group.cards) : cfg.cards) : [];
 }
 
+// Nombre de cada herramienta por su enlace directo, para las fichas teóricas.
+function routeCatalog(){
+  const tools = new Map();
+  for (const parent of Object.keys(SUBMOD_CONFIG)) {
+    for (const card of cardsOf(parent)) if (card.action !== 'openSubmod') tools.set(`#/${parent}/${card.id}`, card.name);
+  }
+  return tools;
+}
+
+// Desde una ficha se salta a la herramienta; al volver se regresa a la ficha.
+function theoryGo(hash){
+  const route = parseRoute(hash);
+  if (!route?.parent || !routeCatalog().has(`#/${route.parent}/${route.id}`)) return;
+  _closeModuleNoHistory('theory');
+  openRoute(route);
+}
+
 // Abre el menú o la herramienta del enlace; un destino desconocido deja la portada.
 function openRoute(route){
   if (!route) return false;
@@ -189,7 +208,7 @@ function openRoute(route){
 }
 
 function activeModuleId() {
-  const moduleIds = ['app','em-app','emplus-app','mech-app','mechplus-app','waves-app','mat-app','geom-app','linear-app','num-app','logic-app','study-app','calc-app','ineq-app','fn-app','seq-app','stats-app','prob-app','exp-app'];
+  const moduleIds = ['app','em-app','emplus-app','mech-app','mechplus-app','waves-app','mat-app','geom-app','linear-app','num-app','logic-app','study-app','calc-app','ineq-app','fn-app','seq-app','stats-app','prob-app','exp-app','theory-app'];
   const activeModule = moduleIds.find(id => {
     const el = document.getElementById(id);
     return el && (el.style.display === 'flex' || el.classList.contains('visible'));
@@ -311,7 +330,7 @@ function _closeModuleNoHistory(id){
   else if(id==='fn'){    document.getElementById('fn-app').classList.remove('visible'); setTimeout(()=>fnBack(),350); }
   else if(id==='seq'){   document.getElementById('seq-app').classList.remove('visible'); }
   else if(id==='calc')    document.getElementById('calc-app').classList.remove('visible');
-  else if(id==='stats' || id==='prob' || id==='exp' || id==='mech') {
+  else if(id==='stats' || id==='prob' || id==='exp' || id==='mech' || id==='theory') {
     const screen = document.getElementById(`${id}-app`);
     screen.classList.remove('visible');
     screen.inert = true;
@@ -323,14 +342,30 @@ function setAuthorVisible(visible){
   if(el) el.style.opacity = visible ? '' : '0';
 }
 
+// Al retroceder desde la portada se pregunta en un diálogo propio, no con confirm().
 function _confirmExit(){
-  const confirmed = confirm('¿Salir de SuperCalc?');
-  if(confirmed){
-    history.go(-1);
-  } else {
-    history.pushState({sc:'launcher'}, '');
-  }
+  const dialog = document.getElementById('exit-dialog');
+  if (typeof dialog?.showModal !== 'function') { exitStay(); return; }
+  if (!dialog.open) dialog.showModal();
 }
+
+function closeExitDialog(){
+  const dialog = document.getElementById('exit-dialog');
+  if (dialog?.open) dialog.close();
+}
+
+function exitStay(){
+  closeExitDialog();
+  history.pushState({sc:'launcher'}, '');
+}
+
+function exitLeave(){
+  closeExitDialog();
+  history.go(-1);
+}
+
+// Esc cierra el diálogo: equivale a quedarse.
+document.getElementById('exit-dialog')?.addEventListener?.('cancel', event => { event.preventDefault(); exitStay(); });
 
 function renderSubmod(parent) {
   currentParent = parent;
@@ -519,6 +554,14 @@ function launchSubmod(id, recordHistory = true) {
       screen.classList.add('visible');
       expOpenPanel(id.slice(4));
     });
+  } else if (id === 'theory-math' || id === 'theory-fi') {
+    document.getElementById('submod-screen').classList.remove('visible');
+    scheduleModuleLaunch(() => {
+      const screen = document.getElementById('theory-app');
+      screen.inert = false;
+      screen.classList.add('visible');
+      theoryOpen(id.slice(7), routeCatalog());
+    });
   } else if (id === 'stats' || id === 'prob' || id === 'exp' || id === 'mech') {
     document.getElementById('submod-screen').classList.remove('visible');
     scheduleModuleLaunch(() => {
@@ -539,5 +582,5 @@ function goHome() {
   closeModule('em');
 }
 
-return { openSubmod, launchSubmod, closeSubmod, closeModule, goHome };
+return { openSubmod, launchSubmod, closeSubmod, closeModule, goHome, exitStay, exitLeave, theoryGo, routeCatalog };
 }
