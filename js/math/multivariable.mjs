@@ -10,7 +10,7 @@ import { symbolicLimit } from './calculus/limits.mjs';
 import { tokenize, parseExpr } from './calculus/parser.mjs';
 import { simplify } from './calculus/ast.mjs';
 import { collectTerms, astToStr } from './calculus/printer.mjs';
-import { gradient2D, midpointIntegral2D, simpsonIntegral } from './calculus/numeric.mjs';
+import { gradient2D, midpointIntegral2D } from './calculus/numeric.mjs';
 
 // ── Parsers de aridad fija (x,y), (x,y,z), (u,v) y (t) ──
 function f2(expr) {

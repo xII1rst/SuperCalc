@@ -1,10 +1,7 @@
 import { newtonSystem, systemStability } from '../math/numerical-systems.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
 import { derivativeIntervalBound, taylorErrorStudy, bisectionIterationRequirement, expandedInterpolation, convergenceOrderStudy, derivativeReference } from '../math/numerical-study.mjs';
-import {
-  numericError, significantArithmetic, bisection, newtonTrace, iterativeLinearSystem,
-  newtonInterpolation, lagrangeInterpolation, interpolationErrorStudy, leastSquaresPolynomial, finiteDifference, ivpTrace,
-} from '../math/numerical-analysis.mjs';
+import { numericError, significantArithmetic, bisection, newtonTrace, iterativeLinearSystem, lagrangeInterpolation, interpolationErrorStudy, leastSquaresPolynomial, finiteDifference, ivpTrace } from '../math/numerical-analysis.mjs';
 import { calcParse, collectVariables, normalizeExpression } from '../math/expression.mjs';
 import {
   luSolve, finitePrecisionElimination, bairstow, exponentialFit, sinusoidalFit, linearTestStability,

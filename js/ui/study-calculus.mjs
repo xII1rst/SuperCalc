@@ -1,14 +1,8 @@
-import { affineForcedSystem, familyEquation, homogeneousSecondOrderStudy, odeClassification, polynomialExponentialSecondOrder, sumSubstitution, variationRepeatedReciprocal, variationTangent } from '../math/ode-study.mjs';
-import { antiderivativeInitialValue, curveMeasureExpression, firstTaylorTerms, fundamentalIntegralDerivative, implicitSlope, integrateParametricFlux, integrateParametricSurface, integrateTripleRegion, integrateVariableRegion, laminaProperties, linearObjectiveCylinderPlane, logarithmicRadialHarmonic, minimumNormOnPlane, piecewiseContinuity, polarAreaBetween, powerSeriesInterval, rationalSeriesComparison, sineIntegralLimit, tangentPlane, telescopingOffset, trilinearPotentialIntegral } from '../math/study-calculus.mjs';
-import { bernoulliConstant, bernoulliLinearForcing, exactPolynomialForm, firstOrderExponentialForcing, forcedSecondOrder, inferMonomialFactor, inverseLaplaceQuadratic, inverseLaplaceShiftedPower, laplaceExponentialPlusTime, laplaceRepeatedRootForcing, laplaceSecondOrderHarmonic, laplaceSystem2D, laplaceTable, linearFirstOrder, linearPowerCoefficient, linearSystem2D, logisticGrowth, orthogonalPowerTrajectories, rlCurrent, separablePower, symmetricSystemModes, thermalRelaxation, thirdOrderRepeatedRoot } from '../math/study-ode.mjs';
-import { chainRuleStudy, constrainedQuadraticStudy, curveStudy, differentialStudy, greenRegionStudy, implicitSurfaceStudy, jacobianStudy, lineStudy, planeFromPointNormal, polynomialCriticalStudy, polynomialPotentialStudy } from '../math/multivariable-study.mjs';
 import { collectVariables, normalizeExpression } from '../math/expression.mjs';
-import { constant, coordinateFormula, num, nums, one, polynomialTerms, read, two } from './study/inputs.mjs';
-import { cylinderAreaMinimum, exponentialLimitCoefficient, maximalEllipseRectangle, nearestParabolaPoints, polynomialExponentialAnalysis, positiveReciprocalMinimum, rationalFunctionAnalysis, stationarySineCoefficient, symbolicParametricDerivatives, tangentDifferential, theoremCase, theoremCheck, theoremCurve } from '../math/differential-applications.mjs';
+import { constant, coordinateFormula, num, one, read } from './study/inputs.mjs';
+import { theoremCurve } from '../math/differential-applications.mjs';
 import { functionAnalysisSvg } from '../graphics/function-analysis.mjs';
-import { multivariableLimit } from '../math/multivariable.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
-import { vectorApplications } from '../math/algebra/linear-spaces.mjs';
 import * as differential from './study/differential.mjs';
 import * as integral from './study/integral.mjs';
 import * as multivariable from './study/multivariable.mjs';

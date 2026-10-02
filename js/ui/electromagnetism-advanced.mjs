@@ -1,6 +1,6 @@
 import {poissonRectangle} from '../math/poisson-rectangle.mjs';
 import {calcParse,collectVariables} from '../math/expression.mjs';
-import {potentialMapSvg,forceDiagram,circuitDiagram,impedanceDiagram} from '../graphics/physics-diagrams.mjs';
+import { potentialMapSvg, circuitDiagram, impedanceDiagram } from '../graphics/physics-diagrams.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
 import { labelledOutputEntries, physicsOutputControls } from './physics-output.mjs';
 export { physicsOutputUnitChanged } from './physics-output.mjs';
