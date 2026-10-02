@@ -1,6 +1,7 @@
 import { calcParse, collectVariables } from './expression.mjs';
 import { matGauss } from './algebra/matrix.mjs';
-import { integrate, definiteIntegral } from './integration.mjs';
+import { integrate } from './integration/engine.mjs';
+import { definiteIntegral } from './integration/definite.mjs';
 import { tokenize, parseExpr } from './calculus/parser.mjs';
 import { substAST, evalAST } from './calculus/ast.mjs';
 import { symbolicDeriv } from './calculus/derivatives.mjs';

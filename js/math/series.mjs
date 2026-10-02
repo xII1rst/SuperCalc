@@ -7,7 +7,7 @@ import { diffAST } from './calculus/derivatives.mjs';
 import { simplify, evalAST } from './calculus/ast.mjs';
 import { collectTerms, astToStr } from './calculus/printer.mjs';
 import { collectVariables, calcParse } from './expression.mjs';
-import { integrate } from './integration.mjs';
+import { integrate } from './integration/engine.mjs';
 import { evalTermN, sequenceLimit, polynomialQuotientLimit } from './algebra/sequences.mjs';
 
 const num = n => ({ type: 'num', val: n });

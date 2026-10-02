@@ -15,7 +15,9 @@ import {
   newtonMethod, linearApproximation, meanValueTheorem, rollesTheorem, checkContinuity,
   hyperbolicValues, inverseHyperbolic,
 } from '../math/applications.mjs';
-import { integrate, definiteIntegral, polynomialRevolutionEvaluation } from '../math/integration.mjs';
+import { integrate } from '../math/integration/engine.mjs';
+import { definiteIntegral } from '../math/integration/definite.mjs';
+import { polynomialRevolutionEvaluation } from '../math/integration/revolution.mjs';
 import { riemannSum, trapezoidalRule } from '../math/numeric.mjs';
 import { geometricSeries, pSeries, ratioTest, nthTermTest, taylorSeries, rootTest, integralTest, alternatingSeries } from '../math/series.mjs';
 import {
