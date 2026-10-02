@@ -1,7 +1,7 @@
-import { MECH_BIG_G, MECH_G, angularMomentumSkater, angularMomentumVector, apsisAngularMomentum, atwood, averagePower, ballisticPendulum, bankedCurve, beamReactions, centerOfMass, circularMotion, circularOrbit, collisionOneDimensional, collisionTwoDimensional, forceSystem2D, galileanTransform, gravitationalAttraction, hingedRodDrop, inclinedPlane, kineticDecomposition, linearImpulse, particleKinematics, polarForce, potentialEquilibria, riverCrossing, rollingDownIncline, rotatingFrameVelocity, springLaunch, standardInertia, tablePulley, twoCableEquilibrium, vectorPair, verticalLoop, workByForce } from '../math/mechanics-advanced.mjs';
+import { MECH_BIG_G, MECH_G, angularMomentumVector, atwood, particleKinematics } from '../math/mechanics-advanced.mjs';
 import { forceDiagram, mechanicsDiagram } from '../graphics/physics-diagrams.mjs';
 import { labelledOutputEntries, physicsOutputControls } from './physics-output.mjs';
-import { num, rowDimensions, rows, scalarDimensions, singleRow, unitOptions, unitSpecs, value, vector, vectorDimensions } from './mechanics/units.mjs';
+import { num, rowDimensions, rows, scalarDimensions, unitOptions, unitSpecs, value, vector, vectorDimensions } from './mechanics/units.mjs';
 import { studyPlotSvg } from '../graphics/study-plot.mjs';
 import * as forces from './mechanics/forces.mjs';
 import * as motion from './mechanics/motion.mjs';
