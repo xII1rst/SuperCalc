@@ -1,5 +1,4 @@
-import { WAVE_C, beats, combineSoundLevels, dampingFromAmplitudes, deepWaterDispersion, dopplerFrequency, electromagneticWave, gasSoundSpeed, gratingOrders, harmonicMotion, intensityLevel, lcOscillation, lissajous, machCone, materialWaveSpeed, movingWallEcho, multipleSlitInterference, newtonRing, normalIncidence, pendulumPeriod, phasorSum, pointSourceDistanceForLevel, pointSourceSound, polarizerChain, refractiveMedium, soapFilmConstructive, springOscillator, standingWave, stringBoundary, stringHarmonics, stringWave, travelingWave, tubeModes, wavePowerString, waveRelation, youngInterference } from '../math/waves.mjs';
-import { fmt, number, numbers, read, result, unitFactors, unitsByMode, values } from './waves/output.mjs';
+import { unitFactors, unitsByMode } from './waves/output.mjs';
 import { stopAnimation, visualModes, wavesRedraw } from './waves/animation.mjs';
 export {physicsOutputUnitChanged} from './physics-output.mjs';
 export { wavesTimeChanged, wavesRedraw, wavesToggleAnimation } from './waves/animation.mjs';
