@@ -20,8 +20,8 @@ test('el módulo dueño de una acción compartida no puede ser sustituido', () =
   assert.equal(composeActions({ a: { shared: one } }, { shared: one }).shared, one);
 });
 
-// The table must equal what the former namespace spread produced: same keys,
-// same order and the same function objects.
+// Existing actions retain the same keys, order and function objects as the
+// former namespace spread; the new search actions are checked separately.
 test('la tabla de acciones coincide con la composición anterior por propagación', async () => {
   const harness = await createAppHarness();
   const namespace = async path => (await harness.linked.get(new URL(path, appUrl).href)).namespace;
@@ -35,7 +35,9 @@ test('la tabla de acciones coincide con la composición anterior por propagació
   const pick = keys => Object.fromEntries(keys.map(key => [key, harness.actions[key]]));
   const spread = { ...pick(navigationKeys), ...Object.assign({}, ...namespaces), ...pick(figureKeys),
     ...pick(['installApp', 'dismissInstall', 'reloadApp', 'toggleTheme']) };
-  assert.deepEqual(Object.keys(harness.actions), Object.keys(spread));
+  const searchKeys = ['searchGo', 'searchOpen', 'searchClose', 'searchUpdate', 'searchChoose'];
+  assert.deepEqual(Object.keys(harness.actions).filter(key => !searchKeys.includes(key)), Object.keys(spread));
   for (const key of Object.keys(spread)) assert.equal(harness.actions[key], spread[key], key);
-  assert.equal(Object.keys(harness.actions).length, 243);
+  for (const key of searchKeys) assert.equal(typeof harness.actions[key], 'function', key);
+  assert.equal(Object.keys(harness.actions).length, 243 + searchKeys.length);
 });

@@ -1,0 +1,18 @@
+<button type="button" class="search-trigger tool-search-launch" data-action="searchOpen" aria-label="Buscar herramienta" title="Buscar herramienta (Ctrl / ⌘ K)" aria-haspopup="dialog" aria-controls="tool-search-dialog">
+  <svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-search"></use></svg>
+</button>
+<dialog id="tool-search-dialog" class="tool-search-dialog" aria-labelledby="tool-search-title" aria-describedby="tool-search-hint">
+  <div class="search-panel">
+    <div class="search-heading">
+      <h2 id="tool-search-title">Buscar herramienta</h2>
+      <button type="button" class="search-close" data-action="searchClose" aria-label="Cerrar búsqueda">✕</button>
+    </div>
+    <label class="search-input-wrap" for="tool-search-input">
+      <svg class="sc-icon" aria-hidden="true"><use href="#sc-icon-search"></use></svg>
+      <input id="tool-search-input" type="search" placeholder="Nombre, tema o palabra clave…" autocomplete="off" spellcheck="false" maxlength="160" data-action="searchUpdate" data-event="input" autofocus>
+    </label>
+    <p id="tool-search-status" class="search-status" role="status" aria-live="polite" aria-atomic="true"></p>
+    <ol id="tool-search-results" class="search-results" aria-label="Herramientas encontradas"></ol>
+    <p id="tool-search-hint" class="search-hint"><span>↑ ↓ para recorrer · Enter para abrir · Esc para cerrar</span><span>Busca también en inglés</span></p>
+  </div>
+</dialog>

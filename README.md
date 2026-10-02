@@ -6,6 +6,8 @@ Disponible en: https://supercalc-sooty.vercel.app
 
 ## Cómo se usa
 
+**Buscar herramienta** encuentra calculadoras por nombre, tema y palabras clave en español o inglés, sin conexión. Está disponible en la portada, los menús y el botón de lupa de cada pantalla; **Ctrl+K** o **⌘K** abre la búsqueda desde cualquier herramienta. Las flechas recorren los resultados, Enter abre el primero desde el campo de búsqueda y Esc cierra el diálogo. Los resultados de operaciones específicas abren su ficha o seleccionan su modo automáticamente.
+
 El launcher abre **Matemáticas** y **Física**. Matemáticas reúne Álgebra, Cálculo, Estadística, Probabilidad y Experimentos; Física reúne Electromagnetismo y Mecánica. Cálculo, Probabilidad, Experimentos y Mecánica muestran un menú de funciones antes de abrir un formulario individual; Atrás regresa a ese menú. Estadística abre directamente su único análisis. Se introducen datos, se ejecuta una operación y se muestran resultados, pasos o gráficas según el caso. Los controles usan acciones declarativas (`data-action`) enlazadas por un módulo de eventos, no llamadas JavaScript incrustadas en el HTML.
 
 - **Álgebra:** vectores en R²/R³ con suma, productos, proyecciones, ecuaciones, incógnitas, triángulos y figuras 3D; matrices con operaciones, determinantes, inversa, sistemas y eigenvalores; inecuaciones, análisis de funciones y sucesiones/progresiones. El selector agrupa vectores y matrices por un lado, y funciones y relaciones por otro.
@@ -37,6 +39,7 @@ SuperCalc/
 │   ├── shared/                                     Fragmentos comunes
 │   │   ├── icons.html                              Símbolos SVG reutilizables de la interfaz
 │   │   ├── launcher.html                           Portada, logo y acceso a Matemáticas y Física
+│   │   ├── search.html                             Diálogo y acceso global a la búsqueda de herramientas
 │   │   └── submenu.html                            Contenedor del selector de submódulos
 │   └── screens/                                    Fragmentos de pantallas y formularios
 │       ├── calculus/                               Fragmentos de la pantalla de Cálculo
@@ -77,6 +80,7 @@ SuperCalc/
 │   ├── tools.css                                   Pantallas, formularios y resultados de herramientas
 │   ├── calculus.css                                Paneles, teclado, fichas y gráficas de Cálculo
 │   ├── gradients.css                               Degradados de fondos, títulos y estados activos
+│   ├── search.css                                  Buscador, resultados y acceso desde herramientas
 │   └── utilities.css                               Clases auxiliares y estilos de fichas teóricas
 ├── fonts/                                          Tipografías locales y licencias SIL OFL
 │   ├── OFL-IBM-Plex-Sans.txt                       Licencia SIL OFL 1.1 de IBM Plex Sans
@@ -181,6 +185,10 @@ SuperCalc/
 │   │   ├── vector-calculus.mjs                     Divergencia, rotacional, integrales de línea y teoremas
 │   │   └── waves.mjs                               Oscilaciones, ondas mecánicas, electromagnéticas y óptica
 │   ├── ui/                                         Interfaz, formularios, navegación y eventos
+│   │   ├── search.mjs                              Diálogo, teclado y selección de resultados
+│   │   ├── search/                                 Catálogo derivado de menús, registros y marcado
+│   │   │   ├── catalog.mjs                          Herramientas y operaciones por familia
+│   │   │   └── markup.mjs                           Fichas, pestañas y opciones de formularios estáticos
 │   │   ├── algebra/                                Herramientas de álgebra
 │   │   │   ├── vectors/                            Secciones y herramientas de triángulos
 │   │   │   │   ├── sections.mjs                    Despliegue de secciones y pasos de resolución
@@ -309,7 +317,8 @@ SuperCalc/
 │   ├── state/                                      Estado compartido de figuras y resultados físicos
 │   │   ├── figures.mjs                             Estado de figuras compartido por interfaz y lienzos
 │   │   └── physics-output.mjs                      Último resultado calculado de cada panel de física
-│   ├── utils/                                      Utilidades de formato independientes del navegador
+│   ├── utils/                                      Utilidades independientes del navegador
+│   │   ├── search.mjs                              Normalización, sinónimos y ranking de resultados
 │   │   └── format.mjs                              Formato numérico, fracciones, radicales y ángulos
 │   └── offline.mjs                                 Registro PWA, instalación y actualización de la aplicación
 ├── scripts/                                        Ensamblado HTML y auditoría de fuentes

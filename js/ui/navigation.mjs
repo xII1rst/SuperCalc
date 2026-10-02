@@ -30,8 +30,19 @@ function theoryGo(hash){
   openRoute(route);
 }
 
+// La búsqueda puede saltar desde cualquier pantalla y elegir un modo tras inicializarla.
+function searchGo(hash, onOpened){
+  const route = parseRoute(hash);
+  if (!route?.parent || !cardsOf(route.parent).some(card => card.id === route.id)) return false;
+  clearTimeout(submodRevealTimer);
+  clearTimeout(moduleLaunchTimer);
+  const active = activeModuleId();
+  if (active) _closeModuleNoHistory(active);
+  return openRoute(route, onOpened);
+}
+
 // Abre el menú o la herramienta del enlace; un destino desconocido deja la portada.
-function openRoute(route){
+function openRoute(route, onOpened){
   if (!route) return false;
   const parent = route.parent && Object.hasOwn(SUBMOD_CONFIG, route.parent) ? route.parent : null;
   if (!route.id) {
@@ -49,7 +60,7 @@ function openRoute(route){
   hideLauncherImmediately();
   renderSubmod(owner);
   navPush({sc:'submod', parent:owner});
-  launchSubmod(card.id);
+  launchSubmod(card.id, true, onOpened);
   return true;
 }
 
@@ -246,17 +257,21 @@ function scheduleModuleLaunch(callback) {
   moduleLaunchTimer = setTimeout(callback, 300);
 }
 
-function launchSubmod(id, recordHistory = true) {
+function launchSubmod(id, recordHistory = true, onOpened) {
+  const launch = callback => scheduleModuleLaunch(() => {
+    callback();
+    onOpened?.();
+  });
   document.getElementById('submod-screen').inert = true;
   if (id === 'vectors') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('app').style.display = 'flex';
       initVectorsApp();
     });
   } else if (id === 'em' || id === 'em-basics') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('em-app').classList.add('visible');
       emInit();
       setTimeout(() => emResizeCanvas(), 50);
@@ -264,7 +279,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('emplus-') && ['electrostatics','circuits','magnetism'].includes(id.slice(7))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('emplus-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -272,13 +287,13 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id === 'mat') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('mat-app').classList.add('visible');
       matrixUI.matInit();
     });
   } else if (id === 'geom') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('geom-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -286,7 +301,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id === 'linear') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('linear-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -294,7 +309,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('num-') && ['errors','taylor','precision','roots','linear','system','stability','system2d','interpolation','derivative','quadrature','ode'].includes(id.slice(4))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('num-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -302,7 +317,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('logic-') && ['bases','sets','propositions','boolean','graphs'].includes(id.slice(6))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('logic-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -310,7 +325,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('waves-') && ['oscillations','mechanical','optics'].includes(id.slice(6))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('waves-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -318,7 +333,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('mechplus-') && ['forces','motion','collisions','rotation'].includes(id.slice(9))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('mechplus-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -326,7 +341,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('study-') && ['differential','integral','multivariable','ode'].includes(id.slice(6))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('study-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -334,29 +349,29 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (Object.hasOwn(CALC_DESTINATIONS,id)) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('calc-app').classList.add('visible');
       calcInit(CALC_DESTINATIONS[id]);
     });
   } else if (id === 'ineq') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('ineq-app').classList.add('visible');
     });
   } else if (id === 'fn') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('fn-app').classList.add('visible');
     });
   } else if (id === 'seq') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       document.getElementById('seq-app').classList.add('visible');
       seqSetMode('terminos');
     });
   } else if (id.startsWith('mech-') && ['motion','projectile','dynamics'].includes(id.slice(5))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('mech-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -364,7 +379,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('prob-') && ['combinations','coin','dice'].includes(id.slice(5))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('prob-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -372,7 +387,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id.startsWith('exp-') && ['dice','coin','pi'].includes(id.slice(4))) {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('exp-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -380,7 +395,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id === 'theory-math' || id === 'theory-fi') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById('theory-app');
       screen.inert = false;
       screen.classList.add('visible');
@@ -388,7 +403,7 @@ function launchSubmod(id, recordHistory = true) {
     });
   } else if (id === 'stats' || id === 'prob' || id === 'exp' || id === 'mech') {
     document.getElementById('submod-screen').classList.remove('visible');
-    scheduleModuleLaunch(() => {
+    launch(() => {
       const screen = document.getElementById(`${id}-app`);
       screen.inert = false;
       screen.classList.add('visible');
@@ -406,5 +421,5 @@ function goHome() {
   closeModule('em');
 }
 
-return { openSubmod, launchSubmod, closeSubmod, closeModule, goHome, exitStay, exitLeave, theoryGo, routeCatalog };
+return { openSubmod, launchSubmod, closeSubmod, closeModule, goHome, exitStay, exitLeave, theoryGo, searchGo, routeCatalog };
 }

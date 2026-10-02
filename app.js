@@ -20,6 +20,7 @@ import * as mechanicsUI from './js/ui/mechanics.mjs';
 import * as mechanicsAdvancedUI from './js/ui/mechanics-advanced.mjs';
 import * as theoryUI from './js/ui/theory.mjs';
 import { createNavigation } from './js/ui/navigation.mjs';
+import { createToolSearch } from './js/ui/search.mjs';
 import { composeActions } from './js/ui/action-registry.mjs';
 import { physicsOutputUnitChanged } from './js/ui/physics-output.mjs';
 import { createFigureControls } from './js/ui/figure-controls.mjs';
@@ -51,8 +52,22 @@ const navigation = createNavigation({
   expOpenPanel: experimentsUI.expOpenPanel,
   theoryOpen: theoryUI.theoryOpen,
 });
+const toolSearch = createToolSearch({
+  openTool: navigation.searchGo,
+  selectActions: {
+    studySelect: studyCalculusUI.studySelect,
+    emPlusSelect: emAdvancedUI.emPlusSelect,
+    mechPlusSelect: mechanicsAdvancedUI.mechPlusSelect,
+    wavesSelect: wavesUI.wavesSelect,
+    toggleCard: calculusUI.toggleCard,
+    geomSelect: geometryUI.geomSelect,
+    linearSelect: linearUI.linearSelect,
+    matTab: matrixUI.matTab,
+  },
+});
 export const actions = composeActions({
   navigation,
+  search: toolSearch.actions,
   matrixUI,
   geometryUI,
   linearUI,
@@ -77,7 +92,7 @@ export const actions = composeActions({
   figureControls,
   app: { installApp, dismissInstall, reloadApp, toggleTheme },
 }, { physicsOutputUnitChanged });
-bindActions(document,actions);
+bindActions(document,actions,{onKeydown:toolSearch.handleKeydown});
 mechanicsUI.mechInitialize();
 document.addEventListener('supercalc:themechange', () => {
   if (document.getElementById('app')?.style.display === 'flex') vectorsUI.draw();

@@ -1,6 +1,6 @@
 // Eventos declarativos para controles estáticos y formularios creados con innerHTML.
 // El nombre se busca en una tabla cerrada: no se evalúa código del HTML.
-export function bindActions(root,actions){
+export function bindActions(root,actions,{onKeydown}={}){
   const dispatch=event=>{
     const element=event.target?.closest?.('[data-action]');
     if(!element) return;
@@ -33,6 +33,7 @@ export function bindActions(root,actions){
   for(const type of ['click','change','input','pointerdown']) root.addEventListener(type,dispatch);
   // Controles no nativos (role="button") responden a Enter y Espacio como un botón.
   root.addEventListener('keydown',event=>{
+    if(onKeydown?.(event)) return;
     if(event.key!=='Enter'&&event.key!==' ') return;
     const element=event.target;
     if(element?.getAttribute?.('role')!=='button'||!element.dataset?.action) return;

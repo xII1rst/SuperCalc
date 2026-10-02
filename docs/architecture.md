@@ -45,6 +45,12 @@ Cada variable de estado de módulo tiene un único dueño que la asigna; los dem
 
 `createNavigation` es el único punto de inicialización: conserva el ciclo de vida de pantallas, el historial y los temporizadores. Los menús (`SUBMOD_CONFIG`) y el catálogo de rutas están en `js/ui/navigation/catalog.mjs`; el diálogo de salida en `exit-dialog.mjs`.
 
+## Búsqueda
+
+`js/ui/search.mjs` crea el diálogo de búsqueda al abrirlo por primera vez. `search/catalog.mjs` deriva sus entradas de los menús y de los registros de modos; `search/markup.mjs` añade fichas de cálculo, pestañas de matrices y opciones de geometría y espacios lineales desde el marcado existente. Añadir una operación a esos registros o formularios también la incorpora al buscador. Los sinónimos y el ranking están en `js/utils/search.mjs`, sin DOM.
+
+La búsqueda usa las acciones declarativas y el oyente de teclado existente de `bindActions`; no añade oyentes al arrancar. `navigation.searchGo` valida el destino, cierra la pantalla activa y cancela transiciones pendientes. Su callback selecciona la operación después de inicializar la nueva pantalla. Los módulos y estilos se precargan para funcionar sin conexión.
+
 ## Marcado y estilos
 
 - `index.html` es un **archivo generado**. El marcado se edita en `html/` (`shell.html` incluye un fragmento por pantalla) y se ensambla con `node scripts/assemble-html.mjs`. `tests/html-assembly.test.mjs` falla si `index.html` quedó desactualizado.

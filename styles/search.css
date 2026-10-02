@@ -1,0 +1,116 @@
+.search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text2);
+  font: 500 var(--fs-md) var(--font-ui);
+  cursor: pointer;
+}
+.search-trigger:hover { background: var(--surface2); color: var(--text-strong); }
+.launcher-search { width: 100%; margin-bottom: 22px; }
+.launcher-search kbd { margin-left: auto; }
+.search-trigger kbd { font: var(--fs-xs) var(--font-math); color: var(--text3); }
+.tool-search-launch {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 1200;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px var(--panel-shadow);
+}
+body:has(#launcher:not(.hidden)) .tool-search-launch,
+body:has(#submod-screen.visible) .tool-search-launch { display: none; }
+#calc-app.visible .calc-keyboard { width: calc(100% - 64px); }
+.submod-search-row { display: flex; width: 100%; justify-content: space-between; gap: 12px; align-items: center; }
+.submod-search-row .search-trigger { padding: 6px 10px; background: none; }
+.tool-search-dialog {
+  margin: auto;
+  padding: 0;
+  width: min(42rem, calc(100% - 32px));
+  max-height: min(85dvh, 50rem);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-card);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: 0 18px 48px var(--panel-shadow);
+  overflow: hidden;
+}
+.tool-search-dialog::backdrop { background: rgba(var(--bg-deep-rgb), .78); }
+.search-panel { display: flex; flex-direction: column; max-height: inherit; padding: 20px; }
+.search-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; }
+.search-heading h2 { font: 600 var(--fs-lg) var(--font-ui); color: var(--text-strong); }
+.search-close {
+  display: grid;
+  place-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+}
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-control);
+  background: var(--bg-deep);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.search-input-wrap:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+#tool-search-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--text-strong);
+  font: var(--fs-base) var(--font-ui);
+}
+#tool-search-input::placeholder { color: var(--text-muted); }
+.search-status { padding: 14px 0 8px; font-size: var(--fs-sm); color: var(--text2); line-height: 1.5; }
+.search-results { list-style: none; margin: 0; padding: 0 4px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.search-results li + li { border-top: 1px solid var(--line-subtle); }
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text);
+  font: var(--fs-md) var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.search-result:hover, .search-result:focus-visible { background: var(--surface2); }
+.search-result-icon { color: var(--accent); flex-shrink: 0; }
+.search-result-content { display: flex; flex-direction: column; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.search-result-title { font-weight: 600; color: var(--text-strong); }
+.search-result-path { font-size: var(--fs-xs); color: var(--accent); }
+.search-result-description { font-size: var(--fs-sm); line-height: 1.4; color: var(--text2); }
+.search-result-arrow { margin-left: auto; flex-shrink: 0; color: var(--text3); }
+.search-hint { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 14px; color: var(--text3); font-size: var(--fs-xs); }
+@media (max-width: 560px) {
+  .tool-search-dialog { width: calc(100% - 16px); max-height: 90dvh; }
+  .search-panel { padding: 14px; }
+  .search-trigger kbd { display: none; }
+  .search-result { gap: 8px; }
+}
