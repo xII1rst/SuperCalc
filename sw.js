@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-5';
+const CACHE = 'supercalc-v1.0-rework-6';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -96,6 +96,18 @@ const APP_PRECACHE = [
   './js/math/calculus/revolution.mjs',
   './js/math/calculus/antiderivative.mjs',
   './js/math/integration.mjs',
+  './js/math/integration/ast-tools.mjs',
+  './js/math/integration/format.mjs',
+  './js/math/integration/polynomials.mjs',
+  './js/math/integration/partial-fractions.mjs',
+  './js/math/integration/rules/basic.mjs',
+  './js/math/integration/rules/substitution.mjs',
+  './js/math/integration/rules/by-parts.mjs',
+  './js/math/integration/rules/trigonometric.mjs',
+  './js/math/integration/engine.mjs',
+  './js/math/integration/improper.mjs',
+  './js/math/integration/definite.mjs',
+  './js/math/integration/revolution.mjs',
   './js/math/numeric.mjs',
   './js/math/series.mjs',
   './js/math/parametric.mjs',
