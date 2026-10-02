@@ -1,4 +1,7 @@
-import { tokenize, parseExpr, simplify, astToStr, collectVariables } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { simplify } from './calculus/ast.mjs';
+import { astToStr } from './calculus/printer.mjs';
+import { collectVariables } from './expression.mjs';
 import { luSolve } from './numerical-advanced.mjs';
 import { linearSystem2D } from './study-ode.mjs';
 import { solveSecondOrderHomogeneous } from './applications.mjs';

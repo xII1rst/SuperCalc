@@ -1,4 +1,4 @@
-import { derivativeDetails } from './calculus.mjs';
+import { derivativeDetails } from './calculus/derivatives.mjs';
 import { vdot, vcross } from './algebra/vector.mjs';
 
 export const MECH_G=9.80665;

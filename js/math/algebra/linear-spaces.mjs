@@ -1,4 +1,4 @@
-import { tokenize, parseExpr } from '../calculus.mjs';
+import { tokenize, parseExpr } from '../calculus/parser.mjs';
 import { matEigenAll, matGauss, matInv, matMul, matSpace } from './matrix.mjs';
 
 const EPS = 1e-9;

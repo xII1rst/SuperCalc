@@ -2,7 +2,11 @@
 // convergencia (geométrica, p-serie, razón, raíz, integral, término n-ésimo y
 // series alternantes con cota de Leibniz). Sin DOM ni navegador.
 
-import { tokenize, parseExpr, diffAST, simplify, collectTerms, evalAST, collectVariables, astToStr, calcParse } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { diffAST } from './calculus/derivatives.mjs';
+import { simplify, evalAST } from './calculus/ast.mjs';
+import { collectTerms, astToStr } from './calculus/printer.mjs';
+import { collectVariables, calcParse } from './expression.mjs';
 import { integrate } from './integration.mjs';
 import { evalTermN, sequenceLimit, polynomialQuotientLimit } from './algebra/sequences.mjs';
 

@@ -1,5 +1,9 @@
 import { luSolve } from './numerical-advanced.mjs';
-import { tokenize, parseExpr, diffAST, simplify, astToStr, collectVariables, calcParse } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { diffAST } from './calculus/derivatives.mjs';
+import { simplify } from './calculus/ast.mjs';
+import { astToStr } from './calculus/printer.mjs';
+import { collectVariables, calcParse } from './expression.mjs';
 const allowed=['x','y','z','u','v','w'];
 const norm=v=>Math.max(...v.map(Math.abs));
 export function newtonSystem(expressions,variables,initial,{iterations=30,tolerance=1e-9}={}){

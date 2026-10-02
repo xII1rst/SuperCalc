@@ -1,5 +1,8 @@
 import { EM_EPS0, EM_MU0, EM_K, rcCircuit } from './electromagnetism.mjs';
-import { tokenize, parseExpr, diffAST, simplify, astToStr, substAST, evalAST } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { diffAST } from './calculus/derivatives.mjs';
+import { simplify, substAST, evalAST } from './calculus/ast.mjs';
+import { astToStr } from './calculus/printer.mjs';
 
 function finite(value,name) {
   if(typeof value!=='number'||!Number.isFinite(value)) throw new RangeError(`${name}: valor finito requerido`);

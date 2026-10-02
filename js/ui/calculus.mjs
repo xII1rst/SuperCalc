@@ -1,14 +1,14 @@
 import { polynomialPotentialStudy, greenRegionStudy, stokesDiskStudy } from '../math/multivariable-study.mjs';
 import { functionAnalysisSvg } from '../graphics/function-analysis.mjs';
 import { tangentDifferential, rationalFunctionAnalysis, theoremCheck } from '../math/differential-applications.mjs';
-import {
-  calcParse, collectVariables, normalizeExpression, symbolicDeriv, derivativeDetails, computeLimit, calculateLimitOperation, fmtA, fmtNum,
-  fmtResult, visSubstitute, basicAntideriv, rk4Refinement,
-  simpsonIntegral, revolutionVolume, revolutionVolumeBetween, revolutionVolumeAboutLine, parseRevolutionFunction,
-  curveIntersections,
-  taylorCoefficients, partialDerivative,
-  gradient2D, midpointIntegral2D, implicitDerivative, implicitCurveAt,
-} from '../math/calculus.mjs';
+import { calcParse, collectVariables, normalizeExpression } from '../math/expression.mjs';
+import { symbolicDeriv, derivativeDetails, implicitCurveAt } from '../math/calculus/derivatives.mjs';
+import { computeLimit, calculateLimitOperation } from '../math/calculus/limits.mjs';
+import { fmtA, fmtNum, fmtResult } from '../math/calculus/format.mjs';
+import { visSubstitute } from '../math/calculus/limit-forms.mjs';
+import { basicAntideriv } from '../math/calculus/antiderivative.mjs';
+import { rk4Refinement, simpsonIntegral, taylorCoefficients, partialDerivative, gradient2D, midpointIntegral2D, implicitDerivative } from '../math/calculus/numeric.mjs';
+import { revolutionVolume, revolutionVolumeBetween, revolutionVolumeAboutLine, parseRevolutionFunction, curveIntersections } from '../math/calculus/revolution.mjs';
 import { fN, formatResult } from '../utils/format.mjs';
 import {
   optimizeFunction, populationGrowth, motionAt, relatedRates, solveSecondOrderHomogeneous,

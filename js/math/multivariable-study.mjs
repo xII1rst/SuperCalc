@@ -1,4 +1,9 @@
-import { tokenize, parseExpr, diffAST, simplify, astToStr, calcParse, collectVariables, simpsonIntegral } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { diffAST } from './calculus/derivatives.mjs';
+import { simplify } from './calculus/ast.mjs';
+import { astToStr } from './calculus/printer.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
+import { simpsonIntegral } from './calculus/numeric.mjs';
 import { integrateVariableRegion } from './study-calculus.mjs';
 const finite=(x,label='Resultado')=>{if(!Number.isFinite(x))throw new RangeError(`${label}: fuera de dominio o rango numérico`);return x;};
 const ast=(source,variables)=>{

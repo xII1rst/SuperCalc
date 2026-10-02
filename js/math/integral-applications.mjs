@@ -2,7 +2,7 @@
 // superficie de revolución, trabajo, fuerza hidrostática, centroides y teoremas
 // de Pappus. Sin DOM; las funciones siguen la convención fn(x, 0).
 
-import { simpsonIntegral } from './calculus.mjs';
+import { simpsonIntegral } from './calculus/numeric.mjs';
 import { requireFiniteOn } from './domain-guard.mjs';
 
 function requireFn(fn) {

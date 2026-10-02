@@ -3,10 +3,13 @@
 // por partes, integrales trigonométricas, fracciones parciales y formas cuadráticas
 // (sustitución trigonométrica). Devuelve la antiderivada como cadena legible.
 
-import {
-  tokenize, parseExpr, simplify, collectTerms, astToStr, diffAST,
-  substAST, evalAST, toExact, calcParse, collectVariables, derivativeDetails, simpsonIntegral, fmtNum,
-} from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { simplify, substAST, evalAST } from './calculus/ast.mjs';
+import { collectTerms, astToStr } from './calculus/printer.mjs';
+import { diffAST, derivativeDetails } from './calculus/derivatives.mjs';
+import { toExact, fmtNum } from './calculus/format.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
+import { simpsonIntegral } from './calculus/numeric.mjs';
 
 // ── Constructores de AST ──
 const num   = n => ({ type: 'num', val: n });

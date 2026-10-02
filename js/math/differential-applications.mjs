@@ -1,6 +1,8 @@
 import { realPolynomialRoots } from './algebra/polynomial.mjs';
 export { realPolynomialRoots } from './algebra/polynomial.mjs';
-import { tokenize, parseExpr, calcParse, collectVariables, derivativeDetails } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
+import { derivativeDetails } from './calculus/derivatives.mjs';
 const finite=(value,name)=>{if(!Number.isFinite(value))throw new RangeError(`${name}: valor finito requerido`);return value;};
 const positive=(value,name)=>{finite(value,name);if(value<=0)throw new RangeError(`${name}: valor positivo requerido`);return value;};
 const trim=p=>{p=p.slice();while(p.length>1&&p.at(-1)===0)p.pop();return p;};

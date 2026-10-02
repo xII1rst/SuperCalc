@@ -1,7 +1,9 @@
 import { calcParse, collectVariables } from './expression.mjs';
 import { matGauss } from './algebra/matrix.mjs';
 import { integrate, definiteIntegral } from './integration.mjs';
-import { tokenize, parseExpr, substAST, evalAST, symbolicDeriv } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { substAST, evalAST } from './calculus/ast.mjs';
+import { symbolicDeriv } from './calculus/derivatives.mjs';
 import { taylorSeries } from './series.mjs';
 
 function expressionFunction(expression,variable) {

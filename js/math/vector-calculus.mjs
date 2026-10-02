@@ -4,7 +4,8 @@
 // Convención de variables: los campos se escriben con 'x', 'y', 'z'; las curvas
 // paramétricas con el parámetro 't'.
 
-import { calcParse, collectVariables, simpsonIntegral, midpointIntegral2D } from './calculus.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
+import { simpsonIntegral, midpointIntegral2D } from './calculus/numeric.mjs';
 
 // ── Parsers por aridad ──
 // Devuelven clausuras de aridad fija (2 para campos planos, 3 para espaciales, 1

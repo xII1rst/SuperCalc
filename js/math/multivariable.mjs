@@ -4,11 +4,13 @@ import { polynomialRadialLimit } from './multivariable-study.mjs';
 // Hessiano, multiplicadores de Lagrange, derivada direccional, integrales dobles
 // (polares) y triples, jacobiano 2D y centro de masa.
 
-import {
-  calcParse, collectVariables, normalizeExpression, symbolicDeriv, symbolicLimit,
-  tokenize, parseExpr, diffAST, simplify, collectTerms, astToStr,
-  gradient2D, midpointIntegral2D, simpsonIntegral,
-} from './calculus.mjs';
+import { calcParse, collectVariables, normalizeExpression } from './expression.mjs';
+import { symbolicDeriv, diffAST } from './calculus/derivatives.mjs';
+import { symbolicLimit } from './calculus/limits.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { simplify } from './calculus/ast.mjs';
+import { collectTerms, astToStr } from './calculus/printer.mjs';
+import { gradient2D, midpointIntegral2D, simpsonIntegral } from './calculus/numeric.mjs';
 
 // ── Parsers de aridad fija (x,y), (x,y,z), (u,v) y (t) ──
 function f2(expr) {

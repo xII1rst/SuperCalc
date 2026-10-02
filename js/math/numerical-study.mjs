@@ -1,4 +1,8 @@
-import { tokenize, parseExpr, simplify, diffAST, astToStr, calcParse, collectVariables, derivativeDetails } from './calculus.mjs';
+import { tokenize, parseExpr } from './calculus/parser.mjs';
+import { simplify } from './calculus/ast.mjs';
+import { diffAST, derivativeDetails } from './calculus/derivatives.mjs';
+import { astToStr } from './calculus/printer.mjs';
+import { calcParse, collectVariables } from './expression.mjs';
 import { newtonInterpolation } from './numerical-analysis.mjs';
 
 const finite=(x)=>{if(!Number.isFinite(x))throw new RangeError('Resultado fuera del rango numérico');return x;};
