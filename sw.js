@@ -1,5 +1,5 @@
 // SuperCalc Service Worker: recursos de los módulos ES
-const CACHE = 'supercalc-v1.0-rework-16';
+const CACHE = 'supercalc-v1.0-rework-17';
 const APP_PRECACHE = [
   './',
   './index.html',
@@ -76,6 +76,11 @@ const APP_PRECACHE = [
   './js/ui/numerical/ode.mjs',
   './js/ui/logic.mjs',
   './js/ui/waves.mjs',
+  './js/ui/waves/output.mjs',
+  './js/ui/waves/animation.mjs',
+  './js/ui/waves/oscillations.mjs',
+  './js/ui/waves/mechanical.mjs',
+  './js/ui/waves/optics.mjs',
   './js/ui/mechanics-advanced.mjs',
   './js/ui/mechanics/units.mjs',
   './js/ui/mechanics/forces.mjs',

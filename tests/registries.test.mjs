@@ -11,6 +11,9 @@ import * as forces from '../js/ui/mechanics/forces.mjs';
 import * as motion from '../js/ui/mechanics/motion.mjs';
 import * as collisions from '../js/ui/mechanics/collisions.mjs';
 import * as rotation from '../js/ui/mechanics/rotation.mjs';
+import * as oscillations from '../js/ui/waves/oscillations.mjs';
+import * as mechanical from '../js/ui/waves/mechanical.mjs';
+import * as optics from '../js/ui/waves/optics.mjs';
 
 // Each tool splits its modes into family registries; together they must
 // declare fields, metadata and a solver for exactly the same keys.
@@ -18,6 +21,7 @@ const registries = {
   'estudio de cálculo': { families: { differential, integral, multivariable, ode }, total: 81 },
   'electromagnetismo avanzado': { families: { electrostatics, circuits, magnetism }, total: 49 },
   'mecánica avanzada': { families: { forces, motion, collisions, rotation }, total: 33 },
+  ondas: { families: { oscillations, mechanical, optics }, total: 31 },
 };
 
 for (const [tool, { families, total }] of Object.entries(registries)) {
@@ -27,10 +31,10 @@ for (const [tool, { families, total }] of Object.entries(registries)) {
       // Only the order of `modes` is visible (it fills the selector); the
       // other tables are looked up by key.
       const keys = Object.keys(family.modes);
-      assert.deepEqual(Object.keys(family.fields).sort(), [...keys].sort(), `${group}: campos`);
+      if (family.fields) assert.deepEqual(Object.keys(family.fields).sort(), [...keys].sort(), `${group}: campos`);
       assert.deepEqual(Object.keys(family.solvers).sort(), [...keys].sort(), `${group}: solucionadores`);
       for (const key of keys) {
-        assert.equal(family.modes[key][0], group, `${key}: grupo`);
+        assert.equal(Array.isArray(family.modes[key]) ? family.modes[key][0] : family.modes[key].group, group, `${key}: grupo`);
         assert.equal(typeof family.solvers[key], 'function', `${key}: solucionador`);
         assert.ok(!seen.has(key), `${key} repetido en ${seen.get(key)} y ${group}`);
         seen.set(key, group);
